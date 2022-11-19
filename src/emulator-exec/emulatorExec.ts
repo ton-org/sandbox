@@ -113,9 +113,13 @@ export const emulateTransaction = async (config: Cell | string, shardAccount: Ce
 
     const resp = JSON.parse(respStr);
 
+    if ('fail' in resp && resp.fail) {
+        throw new Error('message' in resp ? resp.message : 'Unknown emulation error');
+    }
+
     const logs: string = resp.logs;
 
-    const result: ResultSuccess | ResultError = JSON.parse(resp.output);
+    const result: ResultSuccess | ResultError = resp.output;
 
     allocatedPtrs.forEach(ptr => mod._free(ptr));
 
