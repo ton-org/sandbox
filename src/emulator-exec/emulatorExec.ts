@@ -1,6 +1,7 @@
 import { Cell } from "ton";
 import BN from "bn.js";
 import { base64Decode } from "../utils/base64";
+import { bocOrCellToStr } from "../utils/boc";
 
 const EmulatorModule = require('./emulator-exec.js');
 const EmulatorExecWasmBinary = base64Decode(require('./emulator-exec.wasm.js').EmulatorExecWasm);
@@ -15,8 +16,6 @@ const copyToCString = (mod: any, str: string) => {
 const copyFromCString = (mod: any, ptr: any): string => {
     return mod.UTF8ToString(ptr);
 };
-
-const bocOrCellToStr = (input: Cell | string): string => typeof input === 'string' ? input : input.toBoc().toString('base64');
 
 export type EmulationParams = Partial<{
     unixTime: number

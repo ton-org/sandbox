@@ -1,11 +1,10 @@
-import { BN } from "bn.js";
-import { Address, Cell, parseTransaction, Slice, toNano, TonClient4 } from "ton";
-import { emulateTransaction } from "../src/emulator-exec/emulatorExec";
-import { client4AccountToShardAccount } from "../src/utils/client4";
-import { encodeShardAccount } from "../src/utils/encode";
+import BN from "bn.js";
+import { TonClient4, Address, parseTransaction, Slice, ExternalMessage, CommonMessageInfo, CellMessage, toNano } from "ton";
+import { SmartContract } from "../src/smartContract/SmartContract";
+import { encodeAPIAccountState } from "../src/utils/apiAccount";
 
-describe('emulator', () => {
-    it('should work', async () => {
+describe('SmartContract', () => {
+    it('should successfully execute existing transactions', async () => {
         const api = new TonClient4({
             endpoint: 'https://testnet-v4.tonhubapi.com'
         });
@@ -17,29 +16,36 @@ describe('emulator', () => {
         const txLt = new BN('6150008000001', 10);
         const txHash = Buffer.from('C5EB5C8F972D6AFB38ADBE789FA35FB53D70E03B9BA38934AE49AA9D02E2BBFB', 'hex');
 
-        const lastStorageTransLt = new BN('6149729000003', 10);
-
         const acc = await api.getAccount(masterchainBlock, addr);
 
         const txs = await api.getAccountTransactions(addr, txLt, txHash);
 
         const tx = parseTransaction(0, Slice.fromCell(txs[0].tx));
 
-        const msg = tx.inMessage!.raw;
+        const bal = new BN(acc.account.balance.coins, 10);
 
-        const config = await api.getConfig(masterchainBlock);
+        const smc = SmartContract.fromState({
+            address: addr,
+            accountState: encodeAPIAccountState(acc.account.state),
+            balance: bal,
+        });
 
-        const shardAccount = client4AccountToShardAccount(acc, addr, lastStorageTransLt);
-
-        const res = await emulateTransaction(config.config.cell, encodeShardAccount(shardAccount), msg, {
+        const res = await smc.sendMessage(new ExternalMessage({
+            to: addr,
+            from: null,
+            importFee: 0,
+            body: new CommonMessageInfo({
+                body: new CellMessage(tx.inMessage!.body),
+            })
+        }), {
             params: {
                 unixTime: 1668781033,
             },
         });
 
-        if (!res.result.success) throw new Error('tx was not successful');
+        if (res.type !== 'success') throw new Error('tx was not successful');
 
-        const outTx = parseTransaction(0, Slice.fromCell(Cell.fromBoc(Buffer.from(res.result.transaction, 'base64'))[0]));
+        const outTx = res.transaction;
 
         expect(outTx.outMessagesCount).toBe(1);
 

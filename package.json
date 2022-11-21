@@ -25,6 +25,7 @@
     "wasm:pack": "node ./scripts/pack-wasm.js",
     "wasm:copy": "cp ./src/emulator-exec/emulator-exec.js ./src/emulator-exec/emulator-exec.wasm.js ./dist/emulator-exec",
     "test": "yarn jest",
-    "build": "rm -rf dist && yarn wasm:pack && yarn test && tsc && yarn wasm:copy"
+    "build": "rm -rf dist && yarn wasm:pack && yarn test && tsc && yarn wasm:copy",
+    "config:pack": "node ./scripts/pack-config.js"
   }
 }

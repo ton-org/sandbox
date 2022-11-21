@@ -8,7 +8,7 @@ export type AccountState = { type: 'uninit' }
 // account_uninit$00 = AccountState;
 // account_active$1 _:StateInit = AccountState;
 // account_frozen$01 state_hash:bits256 = AccountState;
-const encodeAccountState = (state: AccountState): Cell => {
+export const encodeAccountState = (state: AccountState): Cell => {
     switch (state.type) {
         case 'uninit':
             return new Builder().storeUint(0, 2).endCell();
@@ -33,7 +33,7 @@ export type CurrencyCollection = {
 //                  = ExtraCurrencyCollection;
 // currencies$_ grams:Grams other:ExtraCurrencyCollection 
 //            = CurrencyCollection;
-const encodeCurrencyCollection = (currencyCollection: CurrencyCollection): Cell => {
+export const encodeCurrencyCollection = (currencyCollection: CurrencyCollection): Cell => {
     return new Builder()
         .storeCoins(currencyCollection.coins)
         .storeUint(0, 1)
@@ -49,7 +49,7 @@ export type AccountStorage = {
 // account_storage$_ last_trans_lt:uint64
 //     balance:CurrencyCollection state:AccountState 
 //   = AccountStorage;
-const encodeAccountStorage = (storage: AccountStorage): Cell => {
+export const encodeAccountStorage = (storage: AccountStorage): Cell => {
     return new Builder()
         .storeUint(storage.lastTransLT, 64)
         .storeCellCopy(encodeCurrencyCollection(storage.currencyCollection))
@@ -65,7 +65,7 @@ export type StorageUsed = {
 
 // storage_used$_ cells:(VarUInteger 7) bits:(VarUInteger 7) 
 //   public_cells:(VarUInteger 7) = StorageUsed;
-const encodeStorageUsed = (used: StorageUsed): Cell => {
+export const encodeStorageUsed = (used: StorageUsed): Cell => {
     return new Builder()
         .storeVarUint(used.cells, 3) // 0-6 can be stored in 3 bits
         .storeVarUint(used.bits, 3)
@@ -81,7 +81,7 @@ export type StorageInfo = {
 
 // storage_info$_ used:StorageUsed last_paid:uint32
 //               due_payment:(Maybe Grams) = StorageInfo;
-const encodeStorageInfo = (info: StorageInfo): Cell => {
+export const encodeStorageInfo = (info: StorageInfo): Cell => {
     const c = new Builder()
         .storeCellCopy(encodeStorageUsed(info.used))
         .storeUint(info.lastPaid, 32)
@@ -106,7 +106,7 @@ export type Account = {
 // account_none$0 = Account;
 // account$1 addr:MsgAddressInt storage_stat:StorageInfo
 //           storage:AccountStorage = Account;
-const encodeAccount = (account: Account): Cell => {
+export const encodeAccount = (account: Account): Cell => {
     return new Builder()
         .storeUint(1, 1)
         .storeAddress(account.address)

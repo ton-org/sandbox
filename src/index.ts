@@ -9,9 +9,18 @@ export {
 } from './emulator-exec/emulatorExec';
 
 export {
-    Client4Account,
-    client4AccountToShardAccount,
-} from './utils/client4';
+    getConfigBoc,
+} from './config/config';
+
+export {
+    defaultConfig,
+    defaultConfigSeqno,
+} from './config/defaultConfig';
+
+export {
+    encodeAPIAccountState,
+    APIAccountState
+} from './utils/apiAccount';
 
 export {
     encodeShardAccount,
@@ -23,3 +32,11 @@ export {
     Account,
     ShardAccount,
 } from './utils/encode';
+
+export {
+    SmartContract,
+    SendMessageResult,
+    SendMessageSuccess,
+    SendMessageError,
+    SendMessageExternalNotAccepted,
+} from './smartContract/SmartContract';
