@@ -2,7 +2,6 @@ import BN from "bn.js";
 import { Address, Cell, ExternalMessage, InternalMessage, parseTransaction, RawTransaction, Slice } from "ton";
 import { defaultConfig } from "../config/defaultConfig";
 import { emulateTransaction, EmulationParams, VMResults } from "../emulator-exec/emulatorExec";
-import { bocOrCellToStr } from "../utils/boc";
 import { AccountState, AccountStorage, encodeShardAccount } from "../utils/encode";
 import { parseShardAccount, RawShardAccount } from "../utils/parse";
 import { calcStorageUsed } from "../utils/storage";
@@ -128,12 +127,12 @@ export class SmartContract {
         return this.rawShardAccount;
     }
 
-    setConfig(config: Cell | string) {
-        this.configBoc = bocOrCellToStr(config);
+    setConfig(config: Cell) {
+        this.configBoc = config.toBoc().toString('base64');
     }
 
-    setLibs(libs?: Cell | string) {
-        this.libsBoc = libs === undefined ? undefined : bocOrCellToStr(libs);
+    setLibs(libs?: Cell) {
+        this.libsBoc = libs === undefined ? undefined : libs.toBoc().toString('base64');
     }
 
     setVerbosity(verbosity: number) {
