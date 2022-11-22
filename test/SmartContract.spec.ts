@@ -43,8 +43,6 @@ describe('SmartContract', () => {
             },
         });
 
-        if (res.type !== 'success') throw new Error('tx was not successful');
-
         const outTx = res.transaction;
 
         expect(outTx.outMessagesCount).toBe(1);

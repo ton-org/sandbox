@@ -1,13 +1,13 @@
 import BN from "bn.js";
 import { Address, Cell, ExternalMessage, InternalMessage, parseTransaction, RawTransaction, Slice } from "ton";
 import { defaultConfig } from "../config/defaultConfig";
-import { emulateTransaction, EmulationParams, VMResults } from "../emulator-exec/emulatorExec";
+import { emulateTransaction, EmulationParams } from "../emulator-exec/emulatorExec";
 import { AccountState, AccountStorage, encodeShardAccount } from "../utils/encode";
 import { parseShardAccount, RawShardAccount } from "../utils/parse";
 import { calcStorageUsed } from "../utils/storage";
+import { SmartContractError, SmartContractExternalNotAcceptedError } from "./errors";
 
-export type SendMessageSuccess = {
-    type: 'success';
+export type SendMessageResult = {
     transaction: RawTransaction;
     shardAccount: RawShardAccount;
     transactionCell: Cell;
@@ -15,21 +15,6 @@ export type SendMessageSuccess = {
     logs: string;
     vmLogs: string;
 };
-
-export type SendMessageExternalNotAccepted = {
-    type: 'external_not_accepted'
-    error: string;
-    vmResults: VMResults;
-    logs: string;
-};
-
-export type SendMessageError = {
-    type: 'error';
-    error: string;
-    logs: string;
-};
-
-export type SendMessageResult = SendMessageSuccess | SendMessageError | SendMessageExternalNotAccepted;
 
 export type Verbosity = 'short' | 'full' | 'full_location' | 'full_location_stack';
 
@@ -48,7 +33,7 @@ export class SmartContract {
     private rawShardAccount: RawShardAccount;
 
     constructor(shardAccount: Cell) {
-        this.rawShardAccount = parseShardAccount(shardAccount); // check for exceptions
+        this.rawShardAccount = parseShardAccount(shardAccount); // can throw an exception if `account` is `none`
         this.shardAccount = shardAccount;
     }
 
@@ -92,18 +77,11 @@ export class SmartContract {
         });
 
         if (!res.result.success) {
-            if (res.result.vmResults !== undefined) return {
-                type: 'external_not_accepted',
-                error: res.result.error,
-                vmResults: res.result.vmResults,
-                logs: res.logs,
-            };
+            if (res.result.vmResults !== undefined) {
+                throw new SmartContractExternalNotAcceptedError(res.result.error, res.logs, res.result.vmResults);
+            }
 
-            return {
-                type: 'error',
-                error: res.result.error,
-                logs: res.logs,
-            };
+            throw new SmartContractError(res.result.error, res.logs);
         }
 
         const shardAccountCell = Cell.fromBoc(Buffer.from(res.result.shardAccount, 'base64'))[0];
@@ -122,7 +100,6 @@ export class SmartContract {
         );
 
         return {
-            type: 'success',
             shardAccount,
             shardAccountCell,
             transaction: tx,

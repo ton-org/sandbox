@@ -34,10 +34,12 @@ export {
 } from './utils/encode';
 
 export {
+    SmartContractError,
+    SmartContractExternalNotAcceptedError,
+} from './smartContract/errors';
+
+export {
     SmartContract,
     SendMessageResult,
-    SendMessageSuccess,
-    SendMessageError,
-    SendMessageExternalNotAccepted,
     Verbosity,
 } from './smartContract/SmartContract';
