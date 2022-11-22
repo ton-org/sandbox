@@ -39,4 +39,5 @@ export {
     SendMessageSuccess,
     SendMessageError,
     SendMessageExternalNotAccepted,
+    Verbosity,
 } from './smartContract/SmartContract';

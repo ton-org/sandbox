@@ -31,10 +31,19 @@ export type SendMessageError = {
 
 export type SendMessageResult = SendMessageSuccess | SendMessageError | SendMessageExternalNotAccepted;
 
+export type Verbosity = 'short' | 'full' | 'full_location' | 'full_location_stack';
+
+const verbosityToNum: Record<Verbosity, number> = {
+    'short': 0,
+    'full': 1,
+    'full_location': 2,
+    'full_location_stack': 3,
+};
+
 export class SmartContract {
     private configBoc: string = defaultConfig;
     private libsBoc?: string;
-    private verbosity: number = 1;
+    private verbosity: Verbosity = 'full';
     private shardAccount: Cell;
     private rawShardAccount: RawShardAccount;
 
@@ -78,7 +87,7 @@ export class SmartContract {
         message.writeTo(msgCell);
         const res = await emulateTransaction(this.configBoc, this.shardAccount, msgCell, {
             libs: this.libsBoc,
-            verbosity: this.verbosity,
+            verbosity: verbosityToNum[this.verbosity],
             params: opts?.params,
         });
 
@@ -135,7 +144,7 @@ export class SmartContract {
         this.libsBoc = libs === undefined ? undefined : libs.toBoc().toString('base64');
     }
 
-    setVerbosity(verbosity: number) {
+    setVerbosity(verbosity: Verbosity) {
         this.verbosity = verbosity;
     }
 }
