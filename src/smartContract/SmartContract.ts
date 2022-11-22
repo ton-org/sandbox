@@ -14,6 +14,7 @@ export type SendMessageSuccess = {
     transactionCell: Cell;
     shardAccountCell: Cell;
     logs: string;
+    vmLogs: string;
 };
 
 export type SendMessageExternalNotAccepted = {
@@ -119,6 +120,7 @@ export class SmartContract {
             transaction: tx,
             transactionCell: txCell,
             logs: res.logs,
+            vmLogs: res.result.vmLog,
         };
     }
 
