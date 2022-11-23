@@ -42,6 +42,7 @@ type ResultSuccess = {
     transaction: string
     shard_account: string
     vm_log: string
+    actions: string
 };
 
 type ResultError = {
@@ -57,6 +58,7 @@ export type EmulationResultSuccess = {
     transaction: string
     shardAccount: string
     vmLog: string
+    actions: string
 };
 
 export type VMResults = {
@@ -128,6 +130,7 @@ export const emulateTransaction = async (config: Cell | string, shardAccount: Ce
             transaction: result.transaction,
             shardAccount: result.shard_account,
             vmLog: result.vm_log,
+            actions: result.actions,
         } : {
             success: false,
             error: result.error,

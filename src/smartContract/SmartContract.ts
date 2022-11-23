@@ -14,6 +14,7 @@ export type SendMessageResult = {
     shardAccountCell: Cell;
     logs: string;
     vmLogs: string;
+    actionsCell: Cell;
 };
 
 export type Verbosity = 'short' | 'full' | 'full_location' | 'full_location_stack';
@@ -106,6 +107,7 @@ export class SmartContract {
             transactionCell: txCell,
             logs: res.logs,
             vmLogs: res.result.vmLog,
+            actionsCell: Cell.fromBoc(Buffer.from(res.result.actions, 'base64'))[0],
         };
     }
 

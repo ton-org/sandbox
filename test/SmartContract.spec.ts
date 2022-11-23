@@ -51,5 +51,10 @@ describe('SmartContract', () => {
 
         expect(outTx.outMessages[0].info.value.coins.eq(toNano('2'))).toBeTruthy();
         expect(outTx.outMessages[0].info.dest.equals(Address.parse('EQAVvjwxcZEQCbvMRz0H2PwrzAxxkv7SI3cZ2iVuB_p5SIoe'))).toBeTruthy();
+
+        expect(res.transaction.description.type).toBe('generic');
+        if (res.transaction.description.type !== 'generic') return;
+
+        expect(res.actionsCell.hash().equals(res.transaction.description.actionPhase!.actionListHash)).toBeTruthy();
     })
 })
