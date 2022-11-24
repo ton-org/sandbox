@@ -3,8 +3,8 @@ import BN from "bn.js";
 import { base64Decode } from "../utils/base64";
 import { bocOrCellToStr } from "../utils/boc";
 
-const EmulatorModule = require('./emulator-exec.js');
-const EmulatorExecWasmBinary = base64Decode(require('./emulator-exec.wasm.js').EmulatorExecWasm);
+const EmulatorModule = require('./emulator-emscripten.js');
+const EmulatorEmscriptenWasmBinary = base64Decode(require('./emulator-emscripten.wasm.js').EmulatorEmscriptenWasm);
 
 const copyToCString = (mod: any, str: string) => {
     const len = mod.lengthBytesUTF8(str) + 1;
@@ -79,7 +79,7 @@ export type EmulationResult = {
 
 export const emulateTransaction = async (config: Cell | string, shardAccount: Cell | string, message: Cell | string, opts?: EmulationOptions): Promise<EmulationResult> => {
     const mod = await EmulatorModule({
-        wasmBinary: EmulatorExecWasmBinary,
+        wasmBinary: EmulatorEmscriptenWasmBinary,
     });
 
     const allocatedPtrs: any[] = [];
@@ -102,7 +102,7 @@ export const emulateTransaction = async (config: Cell | string, shardAccount: Ce
     const params: Params = {
         utime: opts?.params?.unixTime ?? 0,
         lt: opts?.params?.lt?.toString() ?? '0',
-        rand_seed: opts?.params?.randSeed?.toString('base64') ?? '',
+        rand_seed: opts?.params?.randSeed?.toString('hex') ?? '',
         ignore_chksig: opts?.params?.ignoreChksig ?? false,
     };
 
