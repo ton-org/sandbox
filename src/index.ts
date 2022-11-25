@@ -6,6 +6,17 @@ export {
     EmulationResultSuccess,
     EmulationResultError,
     EmulationResult,
+    TVMStackEntry,
+    TVMStackEntryCell,
+    TVMStackEntryCellSlice,
+    TVMStackEntryNull,
+    TVMStackEntryNumber,
+    TVMStackEntryTuple,
+    runGetMethod,
+    GetMethodParams,
+    GetMethodResult,
+    GetMethodResultError,
+    GetMethodResultSuccess,
 } from './emulator-exec/emulatorExec';
 
 export {
@@ -39,7 +50,25 @@ export {
 } from './smartContract/errors';
 
 export {
+    stackCell,
+    stackCellSlice,
+    stackNull,
+    stackNumber,
+    stackTuple,
+    StackEntry,
+    StackEntryCell,
+    StackEntryCellSlice,
+    StackEntryNull,
+    StackEntryNumber,
+    StackEntryTuple,
+    oneStackEntryToTVM,
+    oneTVMToStackEntry,
+} from './smartContract/stack';
+
+export {
     SmartContract,
     SendMessageResult,
     Verbosity,
+    RunGetMethodParams,
+    RunGetMethodResult,
 } from './smartContract/SmartContract';

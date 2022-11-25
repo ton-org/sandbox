@@ -1,6 +1,7 @@
 import BN from "bn.js";
 import { TonClient4, Address, parseTransaction, Slice, ExternalMessage, CommonMessageInfo, CellMessage, toNano } from "ton";
 import { SmartContract } from "../src/smartContract/SmartContract";
+import { StackEntryNumber } from "../src/smartContract/stack";
 import { encodeAPIAccountState } from "../src/utils/apiAccount";
 
 describe('SmartContract', () => {
@@ -30,6 +31,8 @@ describe('SmartContract', () => {
             balance: bal,
         });
 
+        const seqnoBefore = ((await smc.runGetMethod('seqno', [])).stack[0] as StackEntryNumber).value;
+
         const res = await smc.sendMessage(new ExternalMessage({
             to: addr,
             from: null,
@@ -56,5 +59,9 @@ describe('SmartContract', () => {
         if (res.transaction.description.type !== 'generic') return;
 
         expect(res.actionsCell.hash().equals(res.transaction.description.actionPhase!.actionListHash)).toBeTruthy();
+
+        const seqnoAfter = ((await smc.runGetMethod('seqno', [])).stack[0] as StackEntryNumber).value;
+
+        expect(seqnoAfter.eq(seqnoBefore.addn(1))).toBeTruthy();
     })
 })
