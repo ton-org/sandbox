@@ -16,7 +16,7 @@ npm i @ton-community/tx-emulator ton
 
 ## Usage
 
-To use this package, you need to obtain an instance of the `SmartContract` class. The easiest way to do this is to invoke the static method `fromStatic` of that class.
+To use this package, you need to obtain an instance of the `SmartContract` class. The easiest way to do this is to invoke the static method `fromState` of that class.
 
 Here is an example:
 ```typescript
