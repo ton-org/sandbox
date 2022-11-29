@@ -1,13 +1,19 @@
 {
-  "name": "ton-tx-emulator",
+  "name": "tx-emulator",
   "version": "0.0.1",
   "description": "TON transaction emulator",
   "main": "dist/index.js",
   "license": "MIT",
+  "author": "TonTech",
   "files": [
     "dist/**/*"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ton-community/tx-emulator"
+},
   "devDependencies": {
+    "@ton-community/func-js": "^0.2.1",
     "@types/bn.js": "^5.1.1",
     "@types/jest": "^29.2.3",
     "jest": "^29.3.1",

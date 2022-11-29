@@ -16,7 +16,7 @@ export type SendMessageResult = {
     shardAccountCell: Cell
     logs: string
     vmLogs: string
-    actionsCell: Cell
+    actionsCell?: Cell
 };
 
 export type Verbosity = 'short' | 'full' | 'full_location' | 'full_location_stack';
@@ -124,11 +124,11 @@ export class SmartContract {
             transactionCell: txCell,
             logs: res.logs,
             vmLogs: res.result.vmLog,
-            actionsCell: Cell.fromBoc(Buffer.from(res.result.actions, 'base64'))[0],
+            actionsCell: res.result.actions.length > 0 ? Cell.fromBoc(Buffer.from(res.result.actions, 'base64'))[0] : undefined,
         };
     }
 
-    async runGetMethod(method: string, stack: StackEntry[], params?: RunGetMethodParams): Promise<RunGetMethodResult> {
+    async runGetMethod(method: string, stack: StackEntry[] = [], params?: RunGetMethodParams): Promise<RunGetMethodResult> {
         const acc = this.getShardAccount();
         if (acc.account.storage.state.type !== 'active') {
             throw new Error('cannot run get methods on inactive accounts');
@@ -165,6 +165,10 @@ export class SmartContract {
             logs: res.logs,
             vmLogs: res.result.vm_log,
         };
+    }
+
+    getAddress() {
+        return this.getShardAccount().account.address;
     }
 
     getShardAccount() {

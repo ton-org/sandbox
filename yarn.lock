@@ -569,6 +569,11 @@
   dependencies:
     "@sinonjs/commons" "^1.7.0"
 
+"@ton-community/func-js@^0.2.1":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@ton-community/func-js/-/func-js-0.2.1.tgz#0f1eb72c4ac9f7fcf069eebd90b8b0ca23c7aa60"
+  integrity sha512-4rbjhiAmVY+a5xuyg9ZO8X+YAuOEJNshmgtCh5NpH1zKleZEZ+OwBR6KK/c+JaEElpRS+Y53uLbWLGYwMF2B1A==
+
 "@types/babel__core@^7.1.14":
   version "7.1.20"
   resolved "https://registry.yarnpkg.com/@types/babel__core/-/babel__core-7.1.20.tgz#e168cdd612c92a2d335029ed62ac94c95b362359"

@@ -1,0 +1,44 @@
+#include "stdlib.fc";
+
+const op::send_back = "op::send_back"c;
+
+global int ctx_times_sent;
+global int ctx_total_volume;
+
+() load_data() impure {
+    var data = get_data().begin_parse();
+    ctx_times_sent = data~load_uint(32);
+    ctx_total_volume = data~load_coins();
+    data.end_parse();
+}
+
+() store_data() impure {
+    set_data(begin_cell()
+                .store_uint(ctx_times_sent, 32)
+                .store_coins(ctx_total_volume)
+            .end_cell());
+}
+
+() recv_internal(int my_balance, int msg_value, cell in_msg_full, slice in_msg_body) impure {
+    load_data();
+
+    ctx_times_sent += 1;
+    ctx_total_volume += msg_value;
+
+    store_data();
+
+    send_raw_message(begin_cell()
+                    .store_uint(0x18, 6) ;; no bounce
+                    .store_slice(in_msg_body~load_msg_addr())
+                    .store_coins(msg_value)
+                    .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1)
+                    .store_uint(op::send_back, 32)
+                    .end_cell(), 1);
+    
+    return ();
+}
+
+(int, int) get_info() method_id {
+    load_data();
+    return (ctx_times_sent, ctx_total_volume);
+}
