@@ -1,5 +1,5 @@
 {
-  "name": "tx-emulator",
+  "name": "@ton-community/tx-emulator",
   "version": "0.0.1",
   "description": "TON transaction emulator",
   "main": "dist/index.js",
