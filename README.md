@@ -4,6 +4,16 @@ This package allows you to emulate arbitrary smart contracts, send messages to t
 
 The key difference of this package from [ton-contract-executor](https://github.com/ton-community/ton-contract-executor) is the fact that the latter only emulates the compute phase of the contract - it does not know about any other phases and thus does not know anything about fees and balances (in a sense that it does not know whether a contract's balance will be enough to process all the out messages that it produces). On the other hand, this package emulates all the phases of a contract, and as a result, the emulation is much closer to what would happen in a real network.
 
+## Installation
+
+```
+yarn add @ton-community/tx-emulator ton
+```
+or
+```
+npm i @ton-community/tx-emulator ton
+```
+
 ## Usage
 
 To use this package, you need to obtain an instance of the `SmartContract` class. The easiest way to do this is to invoke the static method `fromStatic` of that class.
