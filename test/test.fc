@@ -28,7 +28,7 @@ global int ctx_total_volume;
     store_data();
 
     send_raw_message(begin_cell()
-                    .store_uint(0x18, 6) ;; no bounce
+                    .store_uint(0x10, 6) ;; no bounce
                     .store_slice(in_msg_body~load_msg_addr())
                     .store_coins(msg_value)
                     .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1)

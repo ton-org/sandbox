@@ -3,7 +3,7 @@ import { Address, Cell, ExternalMessage, InternalMessage, parseTransaction, RawT
 import { defaultConfig } from "../config/defaultConfig";
 import { emulateTransaction, EmulationParams, runGetMethod } from "../emulator-exec/emulatorExec";
 import { AccountState, AccountStorage, encodeShardAccount } from "../utils/encode";
-import { parseShardAccount, RawShardAccount } from "../utils/parse";
+import { parseShardAccount, RawAccount, RawShardAccount, RawShardAccountNullable } from "../utils/parse";
 import { getSelectorForMethod } from "../utils/selector";
 import { calcStorageUsed } from "../utils/storage";
 import { SmartContractError, SmartContractExternalNotAcceptedError } from "./errors";
@@ -11,7 +11,7 @@ import { oneStackEntryToTVM, oneTVMToStackEntry, StackEntry } from "./stack";
 
 export type SendMessageResult = {
     transaction: RawTransaction
-    shardAccount: RawShardAccount
+    shardAccount: RawShardAccountNullable
     transactionCell: Cell
     shardAccountCell: Cell
     logs: string
@@ -48,10 +48,19 @@ export class SmartContract {
     private libsBoc?: string;
     private verbosity: Verbosity = 'full';
     private shardAccount: Cell;
-    private rawShardAccount: RawShardAccount;
+    private rawShardAccount: RawShardAccountNullable;
+    private address: Address;
 
-    constructor(shardAccount: Cell) {
-        this.rawShardAccount = parseShardAccount(shardAccount); // can throw an exception if `account` is `none`
+    constructor(shardAccount: Cell, address?: Address) {
+        this.rawShardAccount = parseShardAccount(shardAccount);
+        const addr = address ?? this.rawShardAccount.account?.address;
+        if (addr === undefined) {
+            throw new Error('ShardAccount has `none` account and address was not given');
+        }
+        this.address = addr;
+        if (this.rawShardAccount.account !== null && !this.address.equals(this.rawShardAccount.account.address)) {
+            throw new Error('ShardAccount address and given address do not match');
+        }
         this.shardAccount = shardAccount;
     }
 
@@ -82,6 +91,14 @@ export class SmartContract {
         }));
     }
 
+    static empty(address: Address) {
+        return new SmartContract(encodeShardAccount({
+            account: null,
+            lastTransHash: Buffer.alloc(32),
+            lastTransLT: new BN(0),
+        }), address);
+    }
+
     async sendMessage(message: ExternalMessage | InternalMessage, opts?: {
         mutateAccount?: boolean
         params?: EmulationParams
@@ -105,6 +122,10 @@ export class SmartContract {
         const shardAccountCell = Cell.fromBoc(Buffer.from(res.result.shardAccount, 'base64'))[0];
         const shardAccount = parseShardAccount(shardAccountCell);
 
+        if (shardAccount.account !== null && !this.address.equals(shardAccount.account.address)) {
+            throw new Error('new ShardAccount address and stored address do not match');
+        }
+
         if (opts?.mutateAccount ?? true) {
             this.shardAccount = shardAccountCell;
             this.rawShardAccount = shardAccount;
@@ -113,7 +134,7 @@ export class SmartContract {
         const txCell = Cell.fromBoc(Buffer.from(res.result.transaction, 'base64'))[0];
 
         const tx = parseTransaction(
-            this.getShardAccount().account.address.workChain,
+            this.getAddress().workChain,
             Slice.fromCell(txCell)
         );
 
@@ -168,11 +189,32 @@ export class SmartContract {
     }
 
     getAddress() {
-        return this.getShardAccount().account.address;
+        return this.address;
     }
 
-    getShardAccount() {
+    getShardAccount(): RawShardAccount {
+        if (this.rawShardAccount.account === null) throw new Error('ShardAccount has `none` account');
+        return {
+            ...this.rawShardAccount,
+            account: this.rawShardAccount.account,
+        };
+    }
+
+    getShardAccountNullable() {
         return this.rawShardAccount;
+    }
+
+    getAccount(): RawAccount {
+        if (this.rawShardAccount.account === null) throw new Error('ShardAccount has `none` account');
+        return this.rawShardAccount.account;
+    }
+
+    getAccountNullable(): RawAccount | null {
+        return this.rawShardAccount.account;
+    }
+
+    isAccountNull() {
+        return this.rawShardAccount.account === null;
     }
 
     setConfig(config: Cell) {
