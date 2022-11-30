@@ -1,6 +1,12 @@
 import BN from "bn.js";
 import { Address, RawStorageInfo, RawAccountStorage, Cell, Slice, parseAccount } from "ton";
 
+export type RawShardAccountNullable = {
+    account: RawAccount | null;
+    lastTransHash: Buffer;
+    lastTransLT: BN;
+};
+
 export type RawShardAccount = {
     account: RawAccount;
     lastTransHash: Buffer;
@@ -13,10 +19,9 @@ export type RawAccount = {
     storage: RawAccountStorage;
 };
 
-export const parseShardAccount = (sa: Cell): RawShardAccount => {
+export const parseShardAccount = (sa: Cell): RawShardAccountNullable => {
     const cs = Slice.fromCell(sa);
     const acc = parseAccount(cs.readCell().beginParse());
-    if (acc === null) throw new Error('ShardAccount.Account is null');
     return {
         account: acc,
         lastTransHash: cs.readBuffer(32),

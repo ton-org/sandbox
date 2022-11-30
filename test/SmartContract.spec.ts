@@ -66,7 +66,7 @@ describe('SmartContract', () => {
 
         expect(res.transaction.outMessages[0].info.dest.equals(returnTo)).toBeTruthy();
         expect(res.transaction.outMessages[0].info.value.coins.eq(coins)).toBeTruthy();
-        expect(res.shardAccount.account.storage.balance.coins.lt(initBalance)).toBeTruthy(); // contract pays for gas out of initial balance
+        expect(smc.getAccount().storage.balance.coins.lt(initBalance)).toBeTruthy(); // contract pays for gas out of initial balance
 
         const info = await smc.runGetMethod('get_info');
 

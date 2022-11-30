@@ -106,7 +106,13 @@ export type Account = {
 // account_none$0 = Account;
 // account$1 addr:MsgAddressInt storage_stat:StorageInfo
 //           storage:AccountStorage = Account;
-export const encodeAccount = (account: Account): Cell => {
+export const encodeAccount = (account: Account | null): Cell => {
+    if (account === null) {
+        return new Builder()
+            .storeUint(0, 1)
+            .endCell();
+    }
+
     return new Builder()
         .storeUint(1, 1)
         .storeAddress(account.address)
@@ -116,7 +122,7 @@ export const encodeAccount = (account: Account): Cell => {
 };
 
 export type ShardAccount = {
-    account: Account
+    account: Account | null
     lastTransHash: Buffer
     lastTransLT: BN
 };
