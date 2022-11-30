@@ -1,10 +1,22 @@
 # TON transaction emulator
 
-This library allows you to emulate arbitrary smart contracts, send messages to them and run get methods on them as if they were deployed on a real network.
+This package allows you to emulate arbitrary smart contracts, send messages to them and run get methods on them as if they were deployed on a real network.
+
+The key difference of this package from [ton-contract-executor](https://github.com/ton-community/ton-contract-executor) is the fact that the latter only emulates the compute phase of the contract - it does not know about any other phases and thus does not know anything about fees and balances (in a sense that it does not know whether a contract's balance will be enough to process all the out messages that it produces). On the other hand, this package emulates all the phases of a contract, and as a result, the emulation is much closer to what would happen in a real network.
+
+## Installation
+
+```
+yarn add @ton-community/tx-emulator ton
+```
+or
+```
+npm i @ton-community/tx-emulator ton
+```
 
 ## Usage
 
-To use this library, you need to obtain an instance of the `SmartContract` class. The easiest way to do this is to invoke the static method `fromStatic` of that class.
+To use this package, you need to obtain an instance of the `SmartContract` class. The easiest way to do this is to invoke the static method `fromStatic` of that class.
 
 Here is an example:
 ```typescript
@@ -37,7 +49,7 @@ One could also create a smart contract with a calculated address but with `accou
 
 Another way to create a smart contract is to compile the code using a compiler package such as `@ton-community/func-js` and calculate the required data, like in this [unit test](/test/SmartContract.spec.ts#L18).
 
-Yet another way to create smart contracts is used in another [unit test](/test/SmartContract.spec.ts#L72) - here an existing transaction on a faucet wallet is queried from the testnet together with the account state at the time, and then the message is emulated locally.
+Yet another way to create smart contracts is used in another [unit test](/test/SmartContract.spec.ts#L77) - here an existing transaction on a faucet wallet is queried from the testnet together with the account state at the time, and then the message is emulated locally.
 
 ### Sending emulated messages
 
@@ -81,7 +93,7 @@ export type SendMessageResult = {
     actionsCell: Cell
 };
 ```
-Note that the `RawTransaction` and `RawShardAccount` types are the same as in the `ton` library, but `RawShardAccount` cannot contain a `none` account.
+Note that the `RawTransaction` and `RawShardAccount` types are the same as in the `ton` package, but `RawShardAccount` cannot contain a `none` account.
 
 Here is an excerpt from a unit test that demonstrates the usage of this result:
 ```typescript
@@ -99,7 +111,7 @@ expect(res.shardAccount.account.storage.balance.coins.lt(initBalance)).toBeTruth
 
 You can run get methods on your contract with the desired stack (for example, to query the state of the contract after sending messages to it).
 
-Here is an excerpt from a [unit test](/test/SmartContract.spec.ts#L137) that demonstrates the usage of get methods:
+Here is an excerpt from a [unit test](/test/SmartContract.spec.ts#L181) that demonstrates the usage of get methods:
 ```typescript
 const res = await smc.runGetMethod('add_and_multiply', [
     stackNumber(3),
@@ -118,3 +130,15 @@ Here are all the stack types with their respective helper functions:
 - `StackEntryNumber` - `stackNumber`
 - `StackEntryTuple` - `stackTuple`
 - `StackEntryNull` - `stackNull`
+
+### Network/Block configuration
+
+By default, this package will use its [stored network configuration](src/config/defaultConfig.ts) to emulate messages. However, you can set any configuration you want using the `SmartContract.setConfig` method. You can use the helper `getConfigBoc` function to get the BOC of the needed configuration; by default it will return the configuration of the latest block on the mainnet.
+
+## Contributors
+
+Special thanks to [@dungeon-master-666](https://github.com/dungeon-master-666) for their C++ code of the emulator.
+
+## License
+
+This package is released under the [MIT License](LICENSE).

@@ -26,7 +26,7 @@ export const oneStackEntryToTVM = (e: StackEntry): TVMStackEntry => {
         case 'cell':
             return { type: 'cell', value: e.value.toBoc().toString('base64') };
         case 'cell_slice':
-            return { type: 'cell', value: e.value.toBoc().toString('base64') };
+            return { type: 'cell_slice', value: e.value.toBoc().toString('base64') };
         case 'number':
             return { type: 'number', value: e.value.toString() };
         case 'tuple':
