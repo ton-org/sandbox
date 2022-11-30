@@ -42,7 +42,7 @@ type ResultSuccess = {
     transaction: string
     shard_account: string
     vm_log: string
-    actions: string
+    actions: string | null
 };
 
 type ResultError = {
@@ -58,7 +58,7 @@ export type EmulationResultSuccess = {
     transaction: string
     shardAccount: string
     vmLog: string
-    actions: string
+    actions: string | null
 };
 
 export type VMResults = {

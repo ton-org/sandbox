@@ -124,7 +124,7 @@ export class SmartContract {
             transactionCell: txCell,
             logs: res.logs,
             vmLogs: res.result.vmLog,
-            actionsCell: res.result.actions.length > 0 ? Cell.fromBoc(Buffer.from(res.result.actions, 'base64'))[0] : undefined,
+            actionsCell: res.result.actions === null ? undefined : Cell.fromBoc(Buffer.from(res.result.actions, 'base64'))[0],
         };
     }
 
