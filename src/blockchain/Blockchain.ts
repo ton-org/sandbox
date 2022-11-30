@@ -2,7 +2,6 @@ import BN from "bn.js";
 import { Address, AddressExternal, Cell, CellMessage, CommonMessageInfo, ExternalMessage, InternalMessage, RawMessage, StateInit } from "ton";
 import { EmulationParams } from "../emulator-exec/emulatorExec";
 import { SendMessageResult, SmartContract } from "../smartContract/SmartContract";
-import { RawShardAccount } from "../utils/parse";
 
 export type ExternalOut = {
     from: Address;
@@ -13,12 +12,14 @@ export type ExternalOut = {
 };
 
 export type TransactionOutput = {
+    smartContract: SmartContract;
     result: SendMessageResult;
     outTransactions: Transaction[];
     outExternals: ExternalOut[];
 };
 
 type TransactionOutputInternal = {
+    smartContract: SmartContract;
     result: SendMessageResult;
     outMessages: InternalMessage[];
     outExternals: ExternalOut[];
@@ -91,13 +92,7 @@ export class Blockchain {
         const addrString = this.addressToString(msg.to);
         let contract = this.contracts.get(addrString);
         if (contract === undefined) {
-            contract = SmartContract.fromState({
-                address: msg.to,
-                accountState: {
-                    type: 'uninit'
-                },
-                balance: new BN(0),
-            });
+            contract = SmartContract.empty(msg.to);
             this.setSmartContract(contract);
         }
         const res = await contract.sendMessage(msg, opts);
@@ -117,6 +112,7 @@ export class Blockchain {
         }
 
         return {
+            smartContract: contract,
             result: res,
             outMessages: msgs,
             outExternals: exts,
@@ -130,6 +126,7 @@ export class Blockchain {
         const rootOut = await this.processMessage(message, opts);
         const rootTx: RootTransaction = {
             input: message,
+            smartContract: rootOut.smartContract,
             result: rootOut.result,
             outExternals: rootOut.outExternals,
             outTransactions: [],
@@ -143,6 +140,7 @@ export class Blockchain {
             const out = await this.processMessage(el.input, opts);
             const tx: Transaction = {
                 input: el.input,
+                smartContract: out.smartContract,
                 result: out.result,
                 outExternals: out.outExternals,
                 outTransactions: [],
@@ -156,8 +154,8 @@ export class Blockchain {
         return rootTx;
     }
 
-    getShardAccount(address: Address): RawShardAccount | undefined {
-        return this.contracts.get(this.addressToString(address))?.getShardAccount();
+    getSmartContract(address: Address) {
+        return this.contracts.get(this.addressToString(address));
     }
 
     setSmartContract(contract: SmartContract) {

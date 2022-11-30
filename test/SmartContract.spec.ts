@@ -5,14 +5,7 @@ import { StackEntryNumber, stackNumber } from "../src/smartContract/stack";
 import { encodeAPIAccountState } from "../src/utils/apiAccount";
 import { compileFunc } from "@ton-community/func-js";
 import { readFileSync } from "fs";
-
-const randomAddress = (wc: number = 0) => {
-    const buf = Buffer.alloc(32);
-    for (let i = 0; i < buf.length; i++) {
-        buf[i] = Math.floor(Math.random() * 256);
-    }
-    return new Address(wc, buf);
-};
+import { randomAddress } from "./utils";
 
 describe('SmartContract', () => {
     it('should handle compiled contracts', async () => {
