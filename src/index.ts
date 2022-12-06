@@ -72,3 +72,11 @@ export {
     RunGetMethodParams,
     RunGetMethodResult,
 } from './smartContract/SmartContract';
+
+export {
+    Blockchain,
+    Transaction,
+    RootTransaction,
+    TransactionOutput,
+    ExternalOut,
+} from './blockchain/Blockchain';
