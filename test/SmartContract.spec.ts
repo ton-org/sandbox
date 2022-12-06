@@ -188,4 +188,60 @@ describe('SmartContract', () => {
         expect((res.stack[0] as StackEntryNumber).value.eqn(5)).toBeTruthy();
         expect((res.stack[1] as StackEntryNumber).value.eqn(6)).toBeTruthy();
     })
+
+    it('should output debug logs', async () => {
+        const compilationResult = await compileFunc({
+            entryPoints: ['test.fc'],
+            sources: {
+                'test.fc': `
+                (int) print_a() method_id {
+                    ~strdump("a");
+                    return 0;
+                }
+
+                () recv_internal() impure {
+                    ~strdump("b");
+                }
+                `,
+            },
+        });
+
+        if (compilationResult.status === 'error') throw new Error(compilationResult.message);
+
+        const code = Cell.fromBoc(Buffer.from(compilationResult.codeBoc, 'base64'))[0];
+
+        const data = new Cell();
+
+        const address = contractAddress({
+            workchain: 0,
+            initialCode: code,
+            initialData: data,
+        });
+
+        const smc = SmartContract.fromState({
+            address,
+            accountState: {
+                type: 'active',
+                code,
+                data,
+            },
+            balance: new BN(0),
+        });
+
+        const getMethodRes = await smc.runGetMethod('print_a');
+
+        expect(getMethodRes.debugLogs[0]).toBe('#DEBUG#: a');
+
+        const res = await smc.sendMessage(new InternalMessage({
+            from: randomAddress(),
+            to: smc.getAddress(),
+            bounce: true,
+            value: toNano('0.05'),
+            body: new CommonMessageInfo({
+                body: new CellMessage(new Cell()),
+            })
+        }));
+
+        expect(res.debugLogs[0]).toBe('#DEBUG#: b');
+    })
 })

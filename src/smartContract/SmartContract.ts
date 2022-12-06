@@ -16,6 +16,7 @@ export type SendMessageResult = {
     shardAccountCell: Cell
     logs: string
     vmLogs: string
+    debugLogs: string[]
     actionsCell?: Cell
 };
 
@@ -41,6 +42,7 @@ export type RunGetMethodResult = {
     missingLibrary: Buffer | null
     logs: string
     vmLogs: string
+    debugLogs: string[]
 };
 
 export class SmartContract {
@@ -113,10 +115,10 @@ export class SmartContract {
 
         if (!res.result.success) {
             if (res.result.vmResults !== undefined) {
-                throw new SmartContractExternalNotAcceptedError(res.result.error, res.logs, res.result.vmResults);
+                throw new SmartContractExternalNotAcceptedError(res.result.error, res.logs, res.debugLogs, res.result.vmResults);
             }
 
-            throw new SmartContractError(res.result.error, res.logs);
+            throw new SmartContractError(res.result.error, res.logs, res.debugLogs);
         }
 
         const shardAccountCell = Cell.fromBoc(Buffer.from(res.result.shardAccount, 'base64'))[0];
@@ -146,6 +148,7 @@ export class SmartContract {
             logs: res.logs,
             vmLogs: res.result.vmLog,
             actionsCell: res.result.actions === null ? undefined : Cell.fromBoc(Buffer.from(res.result.actions, 'base64'))[0],
+            debugLogs: res.debugLogs,
         };
     }
 
@@ -175,7 +178,7 @@ export class SmartContract {
         );
 
         if (!res.result.success) {
-            throw new SmartContractError(res.result.error, res.logs);
+            throw new SmartContractError(res.result.error, res.logs, res.debugLogs);
         }
 
         return {
@@ -185,6 +188,7 @@ export class SmartContract {
             missingLibrary: res.result.missing_library === null ? null : Buffer.from(res.result.missing_library, 'hex'),
             logs: res.logs,
             vmLogs: res.result.vm_log,
+            debugLogs: res.debugLogs,
         };
     }
 

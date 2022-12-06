@@ -75,11 +75,15 @@ export type EmulationResultError = {
 export type EmulationResult = {
     result: EmulationResultSuccess | EmulationResultError
     logs: string
+    debugLogs: string[]
 };
 
 export const emulateTransaction = async (config: Cell | string, shardAccount: Cell | string, message: Cell | string, opts?: EmulationOptions): Promise<EmulationResult> => {
+    let debugLogs: string[] = [];
+
     const mod = await EmulatorModule({
         wasmBinary: EmulatorEmscriptenWasmBinary,
+        printErr: (text: string) => debugLogs.push(text),
     });
 
     const allocatedPtrs: any[] = [];
@@ -140,6 +144,7 @@ export const emulateTransaction = async (config: Cell | string, shardAccount: Ce
             } : undefined,
         },
         logs,
+        debugLogs,
     };
 };
 
@@ -182,6 +187,7 @@ export type GetMethodResultError = {
 
 export type GetMethodResult = {
     logs: string
+    debugLogs: string[]
     result: GetMethodResultSuccess | GetMethodResultError
 };
 
@@ -206,8 +212,11 @@ export const runGetMethod = async (
     config: Cell | string,
     opts?: GetMethodParams
 ): Promise<GetMethodResult> => {
+    let debugLogs: string[] = [];
+
     const mod = await EmulatorModule({
         wasmBinary: EmulatorEmscriptenWasmBinary,
+        printErr: (text: string) => debugLogs.push(text),
     });
 
     const allocatedPtrs: any[] = [];
@@ -251,5 +260,6 @@ export const runGetMethod = async (
     return {
         logs: resp.logs,
         result: resp.output,
+        debugLogs,
     };
 };

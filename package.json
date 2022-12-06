@@ -1,6 +1,6 @@
 {
   "name": "@ton-community/tx-emulator",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "TON transaction emulator",
   "main": "dist/index.js",
   "license": "MIT",
@@ -30,7 +30,7 @@
   "scripts": {
     "wasm:pack": "node ./scripts/pack-wasm.js",
     "wasm:copy": "cp ./src/emulator-exec/emulator-emscripten.js ./src/emulator-exec/emulator-emscripten.wasm.js ./dist/emulator-exec",
-    "test": "yarn jest",
+    "test": "yarn wasm:pack && yarn jest",
     "build": "rm -rf dist && yarn wasm:pack && yarn test && tsc && yarn wasm:copy",
     "config:pack": "node ./scripts/pack-config.js"
   }
