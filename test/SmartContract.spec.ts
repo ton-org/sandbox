@@ -1,7 +1,7 @@
 import BN from "bn.js";
 import { TonClient4, Address, parseTransaction, Slice, ExternalMessage, CommonMessageInfo, CellMessage, toNano, Cell, beginCell, contractAddress, InternalMessage } from "ton";
 import { SmartContract } from "../src/smartContract/SmartContract";
-import { StackEntryNumber, stackNumber } from "../src/smartContract/stack";
+import { stackCell, stackCellSlice, StackEntry, StackEntryNumber, stackNull, stackNumber, stacksEqual, stackTuple } from "../src/smartContract/stack";
 import { encodeAPIAccountState } from "../src/utils/apiAccount";
 import { compileFunc } from "@ton-community/func-js";
 import { readFileSync } from "fs";
@@ -15,6 +15,8 @@ const randomAddress = (wc: number = 0) => {
 };
 
 describe('SmartContract', () => {
+    jest.setTimeout(15000);
+
     it('should handle compiled contracts', async () => {
         const compilationResult = await compileFunc({
             entryPoints: ['test.fc'],
@@ -243,5 +245,76 @@ describe('SmartContract', () => {
         }));
 
         expect(res.debugLogs[0]).toBe('#DEBUG#: b');
+    })
+
+    it('should serialize and parse stack for get methods correctly', async () => {
+        const compilationResult = await compileFunc({
+            entryPoints: ['test.fc'],
+            sources: {
+                'test.fc': `
+                ([int, [cell, slice, int], cell, slice], slice, cell, int, int) test(int a, int b, cell c, slice d, [int, [cell, slice, int], cell, slice] e, int f) method_id {
+                    return (e, d, c, b - f, a);
+                }
+
+                () recv_internal() impure {
+                    ;; required for compilation
+                }
+                `,
+            },
+        });
+
+        if (compilationResult.status === 'error') throw new Error(compilationResult.message);
+
+        const code = Cell.fromBoc(Buffer.from(compilationResult.codeBoc, 'base64'))[0];
+
+        const data = new Cell();
+
+        const address = contractAddress({
+            workchain: 0,
+            initialCode: code,
+            initialData: data,
+        });
+
+        const smc = SmartContract.fromState({
+            address,
+            accountState: {
+                type: 'active',
+                code,
+                data,
+            },
+            balance: new BN(0),
+        });
+
+        let cn = 0;
+        const genCell = () => beginCell().storeUint(cn++, 8).endCell();
+
+        const f = new BN(5);
+
+        const stackIn: StackEntry[] = [
+            stackNull(),
+            stackNumber(new BN(1).shln(100)),
+            stackCell(genCell()),
+            stackCellSlice(genCell()),
+            stackTuple([
+                stackNumber(new BN(-1)),
+                stackTuple([
+                    stackCell(genCell()),
+                    stackCellSlice(genCell()),
+                    stackNumber(new BN(1).shln(100).neg()),
+                ]),
+                stackCell(genCell()),
+                stackCellSlice(genCell()),
+            ]),
+            stackNumber(f),
+        ];
+
+        const res = await smc.runGetMethod('test', stackIn);
+
+        stackIn.pop();
+        (stackIn[1] as StackEntryNumber).value.isub(f);
+
+        res.stack.reverse();
+
+        expect(stacksEqual(stackIn, res.stack)).toBeTruthy();
     })
 })

@@ -7,7 +7,7 @@ import { parseShardAccount, RawAccount, RawShardAccount, RawShardAccountNullable
 import { getSelectorForMethod } from "../utils/selector";
 import { calcStorageUsed } from "../utils/storage";
 import { SmartContractError, SmartContractExternalNotAcceptedError } from "./errors";
-import { oneStackEntryToTVM, oneTVMToStackEntry, StackEntry } from "./stack";
+import { StackEntry, cellToStack, stackToCell } from "./stack";
 
 export type SendMessageResult = {
     transaction: RawTransaction
@@ -164,7 +164,7 @@ export class SmartContract {
             acc.account.storage.state.state.code,
             acc.account.storage.state.state.data,
             getSelectorForMethod(method),
-            stack.map(e => oneStackEntryToTVM(e)),
+            stackToCell(stack),
             this.configBoc,
             {
                 verbosity: verbosityToNum[this.verbosity],
@@ -182,7 +182,7 @@ export class SmartContract {
         }
 
         return {
-            stack: res.result.stack.map(e => oneTVMToStackEntry(e)),
+            stack: cellToStack(Cell.fromBoc(Buffer.from(res.result.stack, 'base64'))[0]),
             exitCode: res.result.vm_exit_code,
             gasUsed: new BN(res.result.gas_used, 10),
             missingLibrary: res.result.missing_library === null ? null : Buffer.from(res.result.missing_library, 'hex'),

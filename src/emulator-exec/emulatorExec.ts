@@ -148,19 +148,6 @@ export const emulateTransaction = async (config: Cell | string, shardAccount: Ce
     };
 };
 
-export type TVMStackEntryCell = { type: 'cell', value: string };
-export type TVMStackEntryCellSlice = { type: 'cell_slice', value: string };
-export type TVMStackEntryNumber = { type: 'number', value: string };
-export type TVMStackEntryTuple = { type: 'tuple', value: TVMStackEntry[] };
-export type TVMStackEntryNull = { type: 'null' };
-
-export type TVMStackEntry =
-    | TVMStackEntryCell
-    | TVMStackEntryCellSlice
-    | TVMStackEntryNumber
-    | TVMStackEntryTuple
-    | TVMStackEntryNull;
-
 export type GetMethodParams = Partial<{
     verbosity: number
     libs: Cell | string
@@ -173,7 +160,7 @@ export type GetMethodParams = Partial<{
 
 export type GetMethodResultSuccess = {
     success: true
-    stack: TVMStackEntry[]
+    stack: string
     gas_used: string
     vm_exit_code: number
     vm_log: string
@@ -208,7 +195,7 @@ export const runGetMethod = async (
     code: Cell | string,
     data: Cell | string,
     method: number,
-    stack: TVMStackEntry[],
+    stack: Cell | string,
     config: Cell | string,
     opts?: GetMethodParams
 ): Promise<GetMethodResult> => {
@@ -228,7 +215,7 @@ export const runGetMethod = async (
 
     const configPtr = pushPtr(copyToCString(mod, bocOrCellToStr(config)));
 
-    const stackPtr = pushPtr(copyToCString(mod, JSON.stringify(stack)));
+    const stackPtr = pushPtr(copyToCString(mod, bocOrCellToStr(stack)));
 
     const params: GetMethodInternalParams = {
         code: bocOrCellToStr(code),

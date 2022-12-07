@@ -6,12 +6,6 @@ export {
     EmulationResultSuccess,
     EmulationResultError,
     EmulationResult,
-    TVMStackEntry,
-    TVMStackEntryCell,
-    TVMStackEntryCellSlice,
-    TVMStackEntryNull,
-    TVMStackEntryNumber,
-    TVMStackEntryTuple,
     runGetMethod,
     GetMethodParams,
     GetMethodResult,
@@ -61,8 +55,8 @@ export {
     StackEntryNull,
     StackEntryNumber,
     StackEntryTuple,
-    oneStackEntryToTVM,
-    oneTVMToStackEntry,
+    stackValuesEqual,
+    stacksEqual,
 } from './smartContract/stack';
 
 export {
