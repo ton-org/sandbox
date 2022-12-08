@@ -152,7 +152,7 @@ export class SmartContract {
         };
     }
 
-    async runGetMethod(method: string, stack: StackEntry[] = [], params?: RunGetMethodParams): Promise<RunGetMethodResult> {
+    async runGetMethod(method: string | number, stack: StackEntry[] = [], params?: RunGetMethodParams): Promise<RunGetMethodResult> {
         const acc = this.getShardAccount();
         if (acc.account.storage.state.type !== 'active') {
             throw new Error('cannot run get methods on inactive accounts');
@@ -163,7 +163,7 @@ export class SmartContract {
         const res = await runGetMethod(
             acc.account.storage.state.state.code,
             acc.account.storage.state.state.data,
-            getSelectorForMethod(method),
+            typeof method === 'string' ? getSelectorForMethod(method) : method,
             stackToCell(stack),
             this.configBoc,
             {
