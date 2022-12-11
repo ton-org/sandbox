@@ -7,7 +7,7 @@ import { parseShardAccount, RawAccount, RawShardAccount, RawShardAccountNullable
 import { getSelectorForMethod } from "../utils/selector";
 import { calcStorageUsed } from "../utils/storage";
 import { SmartContractError, SmartContractExternalNotAcceptedError } from "./errors";
-import { oneStackEntryToTVM, oneTVMToStackEntry, StackEntry } from "./stack";
+import { StackEntry, cellToStack, stackToCell } from "./stack";
 
 export type SendMessageResult = {
     transaction: RawTransaction
@@ -16,6 +16,7 @@ export type SendMessageResult = {
     shardAccountCell: Cell
     logs: string
     vmLogs: string
+    debugLogs: string[]
     actionsCell?: Cell
 };
 
@@ -41,6 +42,7 @@ export type RunGetMethodResult = {
     missingLibrary: Buffer | null
     logs: string
     vmLogs: string
+    debugLogs: string[]
 };
 
 export class SmartContract {
@@ -113,10 +115,10 @@ export class SmartContract {
 
         if (!res.result.success) {
             if (res.result.vmResults !== undefined) {
-                throw new SmartContractExternalNotAcceptedError(res.result.error, res.logs, res.result.vmResults);
+                throw new SmartContractExternalNotAcceptedError(res.result.error, res.logs, res.debugLogs, res.result.vmResults);
             }
 
-            throw new SmartContractError(res.result.error, res.logs);
+            throw new SmartContractError(res.result.error, res.logs, res.debugLogs);
         }
 
         const shardAccountCell = Cell.fromBoc(Buffer.from(res.result.shardAccount, 'base64'))[0];
@@ -146,10 +148,11 @@ export class SmartContract {
             logs: res.logs,
             vmLogs: res.result.vmLog,
             actionsCell: res.result.actions === null ? undefined : Cell.fromBoc(Buffer.from(res.result.actions, 'base64'))[0],
+            debugLogs: res.debugLogs,
         };
     }
 
-    async runGetMethod(method: string, stack: StackEntry[] = [], params?: RunGetMethodParams): Promise<RunGetMethodResult> {
+    async runGetMethod(method: string | number, stack: StackEntry[] = [], params?: RunGetMethodParams): Promise<RunGetMethodResult> {
         const acc = this.getShardAccount();
         if (acc.account.storage.state.type !== 'active') {
             throw new Error('cannot run get methods on inactive accounts');
@@ -160,8 +163,8 @@ export class SmartContract {
         const res = await runGetMethod(
             acc.account.storage.state.state.code,
             acc.account.storage.state.state.data,
-            getSelectorForMethod(method),
-            stack.map(e => oneStackEntryToTVM(e)),
+            typeof method === 'string' ? getSelectorForMethod(method) : method,
+            stackToCell(stack),
             this.configBoc,
             {
                 verbosity: verbosityToNum[this.verbosity],
@@ -175,16 +178,17 @@ export class SmartContract {
         );
 
         if (!res.result.success) {
-            throw new SmartContractError(res.result.error, res.logs);
+            throw new SmartContractError(res.result.error, res.logs, res.debugLogs);
         }
 
         return {
-            stack: res.result.stack.map(e => oneTVMToStackEntry(e)),
+            stack: cellToStack(Cell.fromBoc(Buffer.from(res.result.stack, 'base64'))[0]),
             exitCode: res.result.vm_exit_code,
             gasUsed: new BN(res.result.gas_used, 10),
             missingLibrary: res.result.missing_library === null ? null : Buffer.from(res.result.missing_library, 'hex'),
             logs: res.logs,
             vmLogs: res.result.vm_log,
+            debugLogs: res.debugLogs,
         };
     }
 

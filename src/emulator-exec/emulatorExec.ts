@@ -75,11 +75,15 @@ export type EmulationResultError = {
 export type EmulationResult = {
     result: EmulationResultSuccess | EmulationResultError
     logs: string
+    debugLogs: string[]
 };
 
 export const emulateTransaction = async (config: Cell | string, shardAccount: Cell | string, message: Cell | string, opts?: EmulationOptions): Promise<EmulationResult> => {
+    let debugLogs: string[] = [];
+
     const mod = await EmulatorModule({
         wasmBinary: EmulatorEmscriptenWasmBinary,
+        printErr: (text: string) => debugLogs.push(text),
     });
 
     const allocatedPtrs: any[] = [];
@@ -140,21 +144,9 @@ export const emulateTransaction = async (config: Cell | string, shardAccount: Ce
             } : undefined,
         },
         logs,
+        debugLogs,
     };
 };
-
-export type TVMStackEntryCell = { type: 'cell', value: string };
-export type TVMStackEntryCellSlice = { type: 'cell_slice', value: string };
-export type TVMStackEntryNumber = { type: 'number', value: string };
-export type TVMStackEntryTuple = { type: 'tuple', value: TVMStackEntry[] };
-export type TVMStackEntryNull = { type: 'null' };
-
-export type TVMStackEntry =
-    | TVMStackEntryCell
-    | TVMStackEntryCellSlice
-    | TVMStackEntryNumber
-    | TVMStackEntryTuple
-    | TVMStackEntryNull;
 
 export type GetMethodParams = Partial<{
     verbosity: number
@@ -168,7 +160,7 @@ export type GetMethodParams = Partial<{
 
 export type GetMethodResultSuccess = {
     success: true
-    stack: TVMStackEntry[]
+    stack: string
     gas_used: string
     vm_exit_code: number
     vm_log: string
@@ -182,6 +174,7 @@ export type GetMethodResultError = {
 
 export type GetMethodResult = {
     logs: string
+    debugLogs: string[]
     result: GetMethodResultSuccess | GetMethodResultError
 };
 
@@ -202,12 +195,15 @@ export const runGetMethod = async (
     code: Cell | string,
     data: Cell | string,
     method: number,
-    stack: TVMStackEntry[],
+    stack: Cell | string,
     config: Cell | string,
     opts?: GetMethodParams
 ): Promise<GetMethodResult> => {
+    let debugLogs: string[] = [];
+
     const mod = await EmulatorModule({
         wasmBinary: EmulatorEmscriptenWasmBinary,
+        printErr: (text: string) => debugLogs.push(text),
     });
 
     const allocatedPtrs: any[] = [];
@@ -219,7 +215,7 @@ export const runGetMethod = async (
 
     const configPtr = pushPtr(copyToCString(mod, bocOrCellToStr(config)));
 
-    const stackPtr = pushPtr(copyToCString(mod, JSON.stringify(stack)));
+    const stackPtr = pushPtr(copyToCString(mod, bocOrCellToStr(stack)));
 
     const params: GetMethodInternalParams = {
         code: bocOrCellToStr(code),
@@ -251,5 +247,6 @@ export const runGetMethod = async (
     return {
         logs: resp.logs,
         result: resp.output,
+        debugLogs,
     };
 };
