@@ -2,7 +2,7 @@ import BN from "bn.js";
 import { Address, Cell, ExternalMessage, InternalMessage, parseTransaction, RawTransaction, Slice } from "ton";
 import { defaultConfig } from "../config/defaultConfig";
 import { emulateTransaction, EmulationParams, runGetMethod } from "../emulator-exec/emulatorExec";
-import { AccountState, AccountStorage, encodeShardAccount } from "../utils/encode";
+import { AccountState, AccountStorage, accountStorageToRaw, encodeShardAccount } from "../utils/encode";
 import { parseShardAccount, RawAccount, RawShardAccount, RawShardAccountNullable } from "../utils/parse";
 import { getSelectorForMethod } from "../utils/selector";
 import { calcStorageUsed } from "../utils/storage";
@@ -79,14 +79,17 @@ export class SmartContract {
             accountState: state.accountState,
         };
 
+        const storageRaw = accountStorageToRaw(storage)
+
         return new SmartContract(encodeShardAccount({
             account: {
                 address: state.address,
                 storageStat: {
-                    used: calcStorageUsed(storage),
+                    used: calcStorageUsed(storageRaw),
                     lastPaid: 0,
+                    duePayment: null,
                 },
-                storage,
+                storage: storageRaw,
             },
             lastTransHash: Buffer.alloc(32),
             lastTransLT: new BN(0),
@@ -196,11 +199,15 @@ export class SmartContract {
         return this.address;
     }
 
+    private checkAccount() {
+        if (this.isAccountNull()) throw new Error('ShardAccount has `none` account');
+    }
+
     getShardAccount(): RawShardAccount {
-        if (this.rawShardAccount.account === null) throw new Error('ShardAccount has `none` account');
+        this.checkAccount();
         return {
             ...this.rawShardAccount,
-            account: this.rawShardAccount.account,
+            account: this.rawShardAccount.account!,
         };
     }
 
@@ -209,8 +216,8 @@ export class SmartContract {
     }
 
     getAccount(): RawAccount {
-        if (this.rawShardAccount.account === null) throw new Error('ShardAccount has `none` account');
-        return this.rawShardAccount.account;
+        this.checkAccount();
+        return this.rawShardAccount.account!;
     }
 
     getAccountNullable(): RawAccount | null {
@@ -219,6 +226,30 @@ export class SmartContract {
 
     isAccountNull() {
         return this.rawShardAccount.account === null;
+    }
+
+    private reencodeAccount() {
+        this.shardAccount = encodeShardAccount(this.rawShardAccount);
+    }
+
+    getBalance() {
+        return this.getAccount().storage.balance.coins;
+    }
+
+    setBalance(balance: BN) {
+        this.checkAccount();
+        this.rawShardAccount.account!.storage.balance.coins = balance;
+        this.reencodeAccount();
+    }
+
+    getStorageLastPaid() {
+        return this.getAccount().storageStat.lastPaid;
+    }
+
+    setStorageLastPaid(unixTime: number) {
+        this.checkAccount();
+        this.rawShardAccount.account!.storageStat.lastPaid = unixTime;
+        this.reencodeAccount();
     }
 
     setConfig(config: Cell) {

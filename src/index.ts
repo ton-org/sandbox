@@ -32,10 +32,8 @@ export {
     AccountState,
     CurrencyCollection,
     AccountStorage,
-    StorageUsed,
-    StorageInfo,
-    Account,
-    ShardAccount,
+    accountStateToRaw,
+    accountStorageToRaw,
 } from './utils/encode';
 
 export {
