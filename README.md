@@ -120,16 +120,18 @@ const res = await smc.runGetMethod('add_and_multiply', [
 
 expect(res.exitCode).toBe(0);
 
-expect((res.stack[0] as StackEntryNumber).value.eqn(5)).toBeTruthy();
-expect((res.stack[1] as StackEntryNumber).value.eqn(6)).toBeTruthy();
+expect(res.stackSlice.readNumber()).toBe(5);
+expect(res.stackSlice.readNumber()).toBe(6);
 ```
 
-Here are all the stack types with their respective helper functions:
-- `StackEntryCell` - `stackCell`
-- `StackEntryCellSlice` - `stackCellSlice`
-- `StackEntryNumber` - `stackNumber`
-- `StackEntryTuple` - `stackTuple`
-- `StackEntryNull` - `stackNull`
+Here are all the stack types (provided by the `ton` package) with their respective helper functions:
+- `StackCell` - `stackCell`
+- `StackSlice` - `stackSlice`
+- `StackInt` - `stackNumber`
+- `StackTuple` - `stackTuple`
+- `StackNull` - `stackNull`
+- `StackNan` - `stackNan`
+- `StackBuilder` - `stackBuilder`
 
 ### Network/Block configuration
 
