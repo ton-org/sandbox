@@ -1,5 +1,5 @@
 import BN from "bn.js";
-import { Address, Cell, ExternalMessage, InternalMessage, parseStack, parseTransaction, RawTransaction, serializeStack, Slice, StackItem, TupleSlice4 } from "ton";
+import { Address, Cell, configParseGasLimitsPrices, ExternalMessage, GasLimitsPrices, InternalMessage, parseDict, parseDictRefs, parseStack, parseTransaction, RawTransaction, serializeDict, serializeStack, Slice, StackItem, TupleSlice4 } from "ton";
 import { defaultConfig } from "../config/defaultConfig";
 import { emulateTransaction, EmulationParams, runGetMethod } from "../emulator-exec/emulatorExec";
 import { AccountState, AccountStorage, accountStorageToRaw, encodeShardAccount } from "../utils/encode";
@@ -7,6 +7,7 @@ import { parseShardAccount, RawAccount, RawShardAccount, RawShardAccountNullable
 import { getSelectorForMethod } from "../utils/selector";
 import { calcStorageUsed } from "../utils/storage";
 import { SmartContractError, SmartContractExternalNotAcceptedError } from "./errors";
+import { serializeGasLimitsPrices } from "./gas";
 
 export type SendMessageResult = {
     transaction: RawTransaction
@@ -43,6 +44,13 @@ export type RunGetMethodResult = {
     logs: string
     vmLogs: string
     debugLogs: string[]
+};
+
+export type Chain = 'masterchain' | 'workchain';
+
+const chainGasLimitsPricesIds: Record<Chain, string> = {
+    'masterchain': '20',
+    'workchain': '21',
 };
 
 export class SmartContract {
@@ -255,8 +263,25 @@ export class SmartContract {
         this.reencodeAccount();
     }
 
+    getConfig() {
+        return Cell.fromBoc(Buffer.from(this.configBoc, 'base64'))[0]
+    }
+
     setConfig(config: Cell) {
         this.configBoc = config.toBoc().toString('base64');
+    }
+
+    getConfigGasPrices(chain: Chain = 'workchain'): GasLimitsPrices {
+        const c = this.getConfig()
+        const d = parseDictRefs(c.beginParse(), 32)
+        return configParseGasLimitsPrices(d.get(chainGasLimitsPricesIds[chain]));
+    }
+
+    setConfigGasPrices(gas: GasLimitsPrices, chain: Chain = 'workchain') {
+        const c = this.getConfig()
+        const d = parseDictRefs(c.beginParse(), 32)
+        d.set(chainGasLimitsPricesIds[chain], serializeGasLimitsPrices(gas).beginParse());
+        this.setConfig(serializeDict(d, 32, (src, cell) => cell.withReference(src.toCell())));
     }
 
     setLibs(libs?: Cell) {

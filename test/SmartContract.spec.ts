@@ -1,10 +1,11 @@
 import BN from "bn.js";
-import { TonClient4, Address, parseTransaction, Slice, ExternalMessage, CommonMessageInfo, CellMessage, toNano, Cell, beginCell, contractAddress, InternalMessage, StackItem, StackInt } from "ton";
+import { TonClient4, Address, parseTransaction, Slice, ExternalMessage, CommonMessageInfo, CellMessage, toNano, Cell, beginCell, contractAddress, InternalMessage, StackItem, StackInt, parseDictRefs, configParseGasLimitsPrices, serializeDict, GasLimitsPrices } from "ton";
 import { SmartContract } from "../src/smartContract/SmartContract";
 import { stackCell, stackNull, stackNumber, stacksEqual, stackSlice, stackTuple } from "../src/smartContract/stack";
 import { encodeAPIAccountState } from "../src/utils/apiAccount";
 import { compileFunc } from "@ton-community/func-js";
 import { readFileSync } from "fs";
+import { defaultConfig } from "../src/config/defaultConfig";
 
 const randomAddress = (wc: number = 0) => {
     const buf = Buffer.alloc(32);
@@ -316,5 +317,22 @@ describe('SmartContract', () => {
         res.stack.reverse();
 
         expect(stacksEqual(stackIn, res.stack)).toBeTruthy();
+    })
+
+    it('should get and set config gas limits', async () => {
+        const smc = SmartContract.empty(randomAddress());
+
+        const initialGasLimits = smc.getConfigGasPrices();
+
+        const setGasLimits: GasLimitsPrices = {
+            ...initialGasLimits,
+            flatLimit: initialGasLimits.flatLimit.subn(1),
+        };
+
+        smc.setConfigGasPrices(setGasLimits);
+
+        const newGasLimits = smc.getConfigGasPrices();
+
+        expect(newGasLimits.flatLimit.addn(1).eq(initialGasLimits.flatLimit)).toBeTruthy();
     })
 })

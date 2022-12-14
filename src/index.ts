@@ -54,9 +54,14 @@ export {
 } from './smartContract/stack';
 
 export {
+    serializeGasLimitsPrices,
+} from './smartContract/gas';
+
+export {
     SmartContract,
     SendMessageResult,
     Verbosity,
     RunGetMethodParams,
     RunGetMethodResult,
+    Chain,
 } from './smartContract/SmartContract';
