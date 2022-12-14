@@ -11,7 +11,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ton-community/tx-emulator"
-},
+  },
   "devDependencies": {
     "@ton-community/func-js": "^0.2.1",
     "@types/bn.js": "^5.1.1",

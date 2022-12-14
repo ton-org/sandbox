@@ -1,5 +1,5 @@
 import BN from "bn.js";
-import { Address, Cell, ExternalMessage, InternalMessage, parseTransaction, RawTransaction, Slice } from "ton";
+import { Address, Cell, ExternalMessage, InternalMessage, parseStack, parseTransaction, RawTransaction, serializeStack, Slice, StackItem, TupleSlice4 } from "ton";
 import { defaultConfig } from "../config/defaultConfig";
 import { emulateTransaction, EmulationParams, runGetMethod } from "../emulator-exec/emulatorExec";
 import { AccountState, AccountStorage, accountStorageToRaw, encodeShardAccount } from "../utils/encode";
@@ -7,7 +7,6 @@ import { parseShardAccount, RawAccount, RawShardAccount, RawShardAccountNullable
 import { getSelectorForMethod } from "../utils/selector";
 import { calcStorageUsed } from "../utils/storage";
 import { SmartContractError, SmartContractExternalNotAcceptedError } from "./errors";
-import { StackEntry, cellToStack, stackToCell } from "./stack";
 
 export type SendMessageResult = {
     transaction: RawTransaction
@@ -36,7 +35,8 @@ export type RunGetMethodParams = Partial<{
 }>;
 
 export type RunGetMethodResult = {
-    stack: StackEntry[]
+    stack: StackItem[]
+    stackSlice: TupleSlice4
     exitCode: number
     gasUsed: BN
     missingLibrary: Buffer | null
@@ -155,7 +155,7 @@ export class SmartContract {
         };
     }
 
-    async runGetMethod(method: string | number, stack: StackEntry[] = [], params?: RunGetMethodParams): Promise<RunGetMethodResult> {
+    async runGetMethod(method: string | number, stack: StackItem[] = [], params?: RunGetMethodParams): Promise<RunGetMethodResult> {
         const acc = this.getShardAccount();
         if (acc.account.storage.state.type !== 'active') {
             throw new Error('cannot run get methods on inactive accounts');
@@ -167,7 +167,7 @@ export class SmartContract {
             acc.account.storage.state.state.code,
             acc.account.storage.state.state.data,
             typeof method === 'string' ? getSelectorForMethod(method) : method,
-            stackToCell(stack),
+            serializeStack(stack),
             this.configBoc,
             {
                 verbosity: verbosityToNum[this.verbosity],
@@ -184,8 +184,11 @@ export class SmartContract {
             throw new SmartContractError(res.result.error, res.logs, res.debugLogs);
         }
 
+        const retStack = parseStack(Cell.fromBoc(Buffer.from(res.result.stack, 'base64'))[0]);
+
         return {
-            stack: cellToStack(Cell.fromBoc(Buffer.from(res.result.stack, 'base64'))[0]),
+            stack: retStack,
+            stackSlice: new TupleSlice4(retStack),
             exitCode: res.result.vm_exit_code,
             gasUsed: new BN(res.result.gas_used, 10),
             missingLibrary: res.result.missing_library === null ? null : Buffer.from(res.result.missing_library, 'hex'),

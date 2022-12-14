@@ -43,16 +43,12 @@ export {
 
 export {
     stackCell,
-    stackCellSlice,
+    stackSlice,
     stackNull,
     stackNumber,
     stackTuple,
-    StackEntry,
-    StackEntryCell,
-    StackEntryCellSlice,
-    StackEntryNull,
-    StackEntryNumber,
-    StackEntryTuple,
+    stackNan,
+    stackBuilder,
     stackValuesEqual,
     stacksEqual,
 } from './smartContract/stack';
