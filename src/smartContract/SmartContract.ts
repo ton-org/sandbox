@@ -6,6 +6,7 @@ import { AccountState, AccountStorage, accountStorageToRaw, encodeShardAccount }
 import { parseShardAccount, RawAccount, RawShardAccount, RawShardAccountNullable } from "../utils/parse";
 import { getSelectorForMethod } from "../utils/selector";
 import { calcStorageUsed } from "../utils/storage";
+import { parseC7 } from "./c7";
 import { SmartContractError, SmartContractExternalNotAcceptedError } from "./errors";
 import { serializeGasLimitsPrices } from "./gas";
 
@@ -18,6 +19,7 @@ export type SendMessageResult = {
     vmLogs: string
     debugLogs: string[]
     actionsCell?: Cell
+    c7: StackItem[]
 };
 
 export type Verbosity = 'short' | 'full' | 'full_location' | 'full_location_stack';
@@ -44,6 +46,7 @@ export type RunGetMethodResult = {
     logs: string
     vmLogs: string
     debugLogs: string[]
+    c7: StackItem[]
 };
 
 export type Chain = 'masterchain' | 'workchain';
@@ -160,6 +163,7 @@ export class SmartContract {
             vmLogs: res.result.vmLog,
             actionsCell: res.result.actions === null ? undefined : Cell.fromBoc(Buffer.from(res.result.actions, 'base64'))[0],
             debugLogs: res.debugLogs,
+            c7: parseC7(res.result.c7),
         };
     }
 
@@ -199,6 +203,7 @@ export class SmartContract {
             stackSlice: new TupleSlice4(retStack),
             exitCode: res.result.vm_exit_code,
             gasUsed: new BN(res.result.gas_used, 10),
+            c7: parseC7(res.result.c7),
             missingLibrary: res.result.missing_library === null ? null : Buffer.from(res.result.missing_library, 'hex'),
             logs: res.logs,
             vmLogs: res.result.vm_log,
