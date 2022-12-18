@@ -19,7 +19,7 @@ export type SendMessageResult = {
     vmLogs: string
     debugLogs: string[]
     actionsCell?: Cell
-    c7: StackItem[]
+    c7?: StackItem[]
 };
 
 export type Verbosity = 'short' | 'full' | 'full_location' | 'full_location_stack';
@@ -163,7 +163,7 @@ export class SmartContract {
             vmLogs: res.result.vmLog,
             actionsCell: res.result.actions === null ? undefined : Cell.fromBoc(Buffer.from(res.result.actions, 'base64'))[0],
             debugLogs: res.debugLogs,
-            c7: parseC7(res.result.c7),
+            c7: res.result.c7 === null ? undefined : parseC7(res.result.c7),
         };
     }
 

@@ -327,4 +327,22 @@ describe('SmartContract', () => {
 
         expect(newGasLimits.flatLimit.addn(1).eq(initialGasLimits.flatLimit)).toBeTruthy();
     })
+
+    it('should not fail when sending messages to empty accounts', async () => {
+        const addr = randomAddress();
+
+        const smc = SmartContract.empty(addr);
+
+        const value = toNano('1');
+
+        const res = await smc.sendMessage(new InternalMessage({
+            to: addr,
+            from: randomAddress(),
+            value,
+            bounce: false,
+            body: new CommonMessageInfo({})
+        }));
+
+        expect(smc.getBalance().gte(value.muln(95).divn(100))).toBeTruthy();
+    })
 })
