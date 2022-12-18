@@ -47,9 +47,9 @@ The `createSmartContract` function will create a smart contract using the given 
 
 One could also create a smart contract with a calculated address but with `accountState: { type: 'uninit' }` and then emulate a message with a correct `StateInit` that would set the necessary code and data.
 
-Another way to create a smart contract is to compile the code using a compiler package such as `@ton-community/func-js` and calculate the required data, like in this [unit test](/test/SmartContract.spec.ts#L20).
+Another way to create a smart contract is to compile the code using a compiler package such as `@ton-community/func-js` and calculate the required data, like in this [unit test](/test/SmartContract.spec.ts#L21).
 
-Yet another way to create smart contracts is used in another [unit test](/test/SmartContract.spec.ts#L79) - here an existing transaction on a faucet wallet is queried from the testnet together with the account state at the time, and then the message is emulated locally.
+Yet another way to create smart contracts is used in another [unit test](/test/SmartContract.spec.ts#L80) - here an existing transaction on a faucet wallet is queried from the testnet together with the account state at the time, and then the message is emulated locally.
 
 ### Sending emulated messages
 
@@ -111,7 +111,7 @@ expect(res.shardAccount.account.storage.balance.coins.lt(initBalance)).toBeTruth
 
 You can run get methods on your contract with the desired stack (for example, to query the state of the contract after sending messages to it).
 
-Here is an excerpt from a [unit test](/test/SmartContract.spec.ts#L183) that demonstrates the usage of get methods:
+Here is an excerpt from a [unit test](/test/SmartContract.spec.ts#L184) that demonstrates the usage of get methods:
 ```typescript
 const res = await smc.runGetMethod('add_and_multiply', [
     stackNumber(3),
@@ -120,16 +120,18 @@ const res = await smc.runGetMethod('add_and_multiply', [
 
 expect(res.exitCode).toBe(0);
 
-expect((res.stack[0] as StackEntryNumber).value.eqn(5)).toBeTruthy();
-expect((res.stack[1] as StackEntryNumber).value.eqn(6)).toBeTruthy();
+expect(res.stackSlice.readNumber()).toBe(5);
+expect(res.stackSlice.readNumber()).toBe(6);
 ```
 
-Here are all the stack types with their respective helper functions:
-- `StackEntryCell` - `stackCell`
-- `StackEntryCellSlice` - `stackCellSlice`
-- `StackEntryNumber` - `stackNumber`
-- `StackEntryTuple` - `stackTuple`
-- `StackEntryNull` - `stackNull`
+Here are all the stack types (provided by the `ton` package) with their respective helper functions:
+- `StackCell` - `stackCell`
+- `StackSlice` - `stackSlice`
+- `StackInt` - `stackNumber`
+- `StackTuple` - `stackTuple`
+- `StackNull` - `stackNull`
+- `StackNan` - `stackNan`
+- `StackBuilder` - `stackBuilder`
 
 ### Network/Block configuration
 

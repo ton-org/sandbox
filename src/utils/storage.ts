@@ -1,5 +1,5 @@
-import { Cell } from "ton";
-import { AccountStorage, StorageUsed, encodeAccountStorage } from "./encode";
+import { Cell, RawAccountStorage, RawStorageUsed } from "ton";
+import { encodeAccountStorage } from "./encode";
 
 const calcCellStorageUsed = (c: Cell, dup?: Set<string>): { bits: number, cells: number } => {
     const h = c.hash().toString('hex');
@@ -16,7 +16,7 @@ const calcCellStorageUsed = (c: Cell, dup?: Set<string>): { bits: number, cells:
     return used;
 };
 
-export const calcStorageUsed = (storage: AccountStorage): StorageUsed => {
+export const calcStorageUsed = (storage: RawAccountStorage): RawStorageUsed => {
     const c = encodeAccountStorage(storage);
     const used = calcCellStorageUsed(c, new Set<string>());
     return {

@@ -1,7 +1,7 @@
 import BN from "bn.js";
-import { TonClient4, Address, parseTransaction, Slice, ExternalMessage, CommonMessageInfo, CellMessage, toNano, Cell, beginCell, contractAddress, InternalMessage } from "ton";
+import { TonClient4, Address, parseTransaction, Slice, ExternalMessage, CommonMessageInfo, CellMessage, toNano, Cell, beginCell, contractAddress, InternalMessage, StackItem, StackInt, parseDictRefs, configParseGasLimitsPrices, serializeDict, GasLimitsPrices } from "ton";
 import { SmartContract } from "../src/smartContract/SmartContract";
-import { stackCell, stackCellSlice, StackEntry, StackEntryNumber, stackNull, stackNumber, stacksEqual, stackTuple } from "../src/smartContract/stack";
+import { stackCell, stackNull, stackNumber, stacksEqual, stackSlice, stackTuple } from "../src/smartContract/stack";
 import { encodeAPIAccountState } from "../src/utils/apiAccount";
 import { compileFunc } from "@ton-community/func-js";
 import { readFileSync } from "fs";
@@ -65,8 +65,8 @@ describe('SmartContract', () => {
 
         const info = await smc.runGetMethod('get_info');
 
-        expect((info.stack[0] as StackEntryNumber).value.eqn(1)).toBeTruthy(); // total messages
-        expect((info.stack[1] as StackEntryNumber).value.eq(coins)).toBeTruthy(); // total volume
+        expect(info.stackSlice.readNumber()).toBe(1); // total messages
+        expect(info.stackSlice.readBigNumber().eq(coins)).toBeTruthy(); // total volume
     })
 
     it('should successfully execute existing transactions', async () => {
@@ -101,7 +101,7 @@ describe('SmartContract', () => {
             balance: bal,
         });
 
-        const seqnoBefore = ((await smc.runGetMethod('seqno', [])).stack[0] as StackEntryNumber).value;
+        const seqnoBefore = (await smc.runGetMethod('seqno', [])).stackSlice.readBigNumber();
 
         const res = await smc.sendMessage(new ExternalMessage({
             to: addr,
@@ -130,7 +130,7 @@ describe('SmartContract', () => {
 
         expect(res.actionsCell!.hash().equals(res.transaction.description.actionPhase!.actionListHash)).toBeTruthy();
 
-        const seqnoAfter = ((await smc.runGetMethod('seqno')).stack[0] as StackEntryNumber).value;
+        const seqnoAfter = (await smc.runGetMethod('seqno')).stackSlice.readBigNumber();
 
         expect(seqnoAfter.eq(seqnoBefore.addn(1))).toBeTruthy();
     })
@@ -180,8 +180,8 @@ describe('SmartContract', () => {
 
         expect(res.exitCode).toBe(0);
 
-        expect((res.stack[0] as StackEntryNumber).value.eqn(5)).toBeTruthy();
-        expect((res.stack[1] as StackEntryNumber).value.eqn(6)).toBeTruthy();
+        expect(res.stackSlice.readNumber()).toBe(5);
+        expect(res.stackSlice.readNumber()).toBe(6);
     })
 
     it('should output debug logs', async () => {
@@ -283,20 +283,20 @@ describe('SmartContract', () => {
 
         const f = new BN(5);
 
-        const stackIn: StackEntry[] = [
+        const stackIn: StackItem[] = [
             stackNull(),
             stackNumber(new BN(1).shln(100)),
             stackCell(genCell()),
-            stackCellSlice(genCell()),
+            stackSlice(genCell()),
             stackTuple([
                 stackNumber(new BN(-1)),
                 stackTuple([
                     stackCell(genCell()),
-                    stackCellSlice(genCell()),
+                    stackSlice(genCell()),
                     stackNumber(new BN(1).shln(100).neg()),
                 ]),
                 stackCell(genCell()),
-                stackCellSlice(genCell()),
+                stackSlice(genCell()),
             ]),
             stackNumber(f),
         ];
@@ -304,10 +304,27 @@ describe('SmartContract', () => {
         const res = await smc.runGetMethod('test', stackIn);
 
         stackIn.pop();
-        (stackIn[1] as StackEntryNumber).value.isub(f);
+        (stackIn[1] as StackInt).value.isub(f);
 
         res.stack.reverse();
 
         expect(stacksEqual(stackIn, res.stack)).toBeTruthy();
+    })
+
+    it('should get and set config gas limits', async () => {
+        const smc = SmartContract.empty(randomAddress());
+
+        const initialGasLimits = smc.getConfigGasPrices();
+
+        const setGasLimits: GasLimitsPrices = {
+            ...initialGasLimits,
+            flatLimit: initialGasLimits.flatLimit.subn(1),
+        };
+
+        smc.setConfigGasPrices(setGasLimits);
+
+        const newGasLimits = smc.getConfigGasPrices();
+
+        expect(newGasLimits.flatLimit.addn(1).eq(initialGasLimits.flatLimit)).toBeTruthy();
     })
 })

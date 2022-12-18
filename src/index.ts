@@ -32,10 +32,8 @@ export {
     AccountState,
     CurrencyCollection,
     AccountStorage,
-    StorageUsed,
-    StorageInfo,
-    Account,
-    ShardAccount,
+    accountStateToRaw,
+    accountStorageToRaw,
 } from './utils/encode';
 
 export {
@@ -45,19 +43,19 @@ export {
 
 export {
     stackCell,
-    stackCellSlice,
+    stackSlice,
     stackNull,
     stackNumber,
     stackTuple,
-    StackEntry,
-    StackEntryCell,
-    StackEntryCellSlice,
-    StackEntryNull,
-    StackEntryNumber,
-    StackEntryTuple,
+    stackNan,
+    stackBuilder,
     stackValuesEqual,
     stacksEqual,
 } from './smartContract/stack';
+
+export {
+    serializeGasLimitsPrices,
+} from './smartContract/gas';
 
 export {
     SmartContract,
@@ -65,6 +63,7 @@ export {
     Verbosity,
     RunGetMethodParams,
     RunGetMethodResult,
+    Chain,
 } from './smartContract/SmartContract';
 
 export {

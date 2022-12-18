@@ -1,13 +1,14 @@
 import BN from "bn.js";
-import { Address, Cell, ExternalMessage, InternalMessage, parseTransaction, RawTransaction, Slice } from "ton";
+import { Address, Cell, configParseGasLimitsPrices, ExternalMessage, GasLimitsPrices, InternalMessage, parseDict, parseDictRefs, parseStack, parseTransaction, RawTransaction, serializeDict, serializeStack, Slice, StackItem, TupleSlice4 } from "ton";
 import { defaultConfig } from "../config/defaultConfig";
 import { emulateTransaction, EmulationParams, runGetMethod } from "../emulator-exec/emulatorExec";
-import { AccountState, AccountStorage, encodeShardAccount } from "../utils/encode";
+import { AccountState, AccountStorage, accountStorageToRaw, encodeShardAccount } from "../utils/encode";
 import { parseShardAccount, RawAccount, RawShardAccount, RawShardAccountNullable } from "../utils/parse";
 import { getSelectorForMethod } from "../utils/selector";
 import { calcStorageUsed } from "../utils/storage";
+import { parseC7 } from "./c7";
 import { SmartContractError, SmartContractExternalNotAcceptedError } from "./errors";
-import { StackEntry, cellToStack, stackToCell } from "./stack";
+import { serializeGasLimitsPrices } from "./gas";
 
 export type SendMessageResult = {
     transaction: RawTransaction
@@ -18,6 +19,7 @@ export type SendMessageResult = {
     vmLogs: string
     debugLogs: string[]
     actionsCell?: Cell
+    c7: StackItem[]
 };
 
 export type Verbosity = 'short' | 'full' | 'full_location' | 'full_location_stack';
@@ -36,13 +38,22 @@ export type RunGetMethodParams = Partial<{
 }>;
 
 export type RunGetMethodResult = {
-    stack: StackEntry[]
+    stack: StackItem[]
+    stackSlice: TupleSlice4
     exitCode: number
     gasUsed: BN
     missingLibrary: Buffer | null
     logs: string
     vmLogs: string
     debugLogs: string[]
+    c7: StackItem[]
+};
+
+export type Chain = 'masterchain' | 'workchain';
+
+const chainGasLimitsPricesIds: Record<Chain, string> = {
+    'masterchain': '20',
+    'workchain': '21',
 };
 
 export class SmartContract {
@@ -79,14 +90,17 @@ export class SmartContract {
             accountState: state.accountState,
         };
 
+        const storageRaw = accountStorageToRaw(storage)
+
         return new SmartContract(encodeShardAccount({
             account: {
                 address: state.address,
                 storageStat: {
-                    used: calcStorageUsed(storage),
+                    used: calcStorageUsed(storageRaw),
                     lastPaid: 0,
+                    duePayment: null,
                 },
-                storage,
+                storage: storageRaw,
             },
             lastTransHash: Buffer.alloc(32),
             lastTransLT: new BN(0),
@@ -149,10 +163,11 @@ export class SmartContract {
             vmLogs: res.result.vmLog,
             actionsCell: res.result.actions === null ? undefined : Cell.fromBoc(Buffer.from(res.result.actions, 'base64'))[0],
             debugLogs: res.debugLogs,
+            c7: parseC7(res.result.c7),
         };
     }
 
-    async runGetMethod(method: string | number, stack: StackEntry[] = [], params?: RunGetMethodParams): Promise<RunGetMethodResult> {
+    async runGetMethod(method: string | number, stack: StackItem[] = [], params?: RunGetMethodParams): Promise<RunGetMethodResult> {
         const acc = this.getShardAccount();
         if (acc.account.storage.state.type !== 'active') {
             throw new Error('cannot run get methods on inactive accounts');
@@ -164,7 +179,7 @@ export class SmartContract {
             acc.account.storage.state.state.code,
             acc.account.storage.state.state.data,
             typeof method === 'string' ? getSelectorForMethod(method) : method,
-            stackToCell(stack),
+            serializeStack(stack),
             this.configBoc,
             {
                 verbosity: verbosityToNum[this.verbosity],
@@ -181,10 +196,14 @@ export class SmartContract {
             throw new SmartContractError(res.result.error, res.logs, res.debugLogs);
         }
 
+        const retStack = parseStack(Cell.fromBoc(Buffer.from(res.result.stack, 'base64'))[0]);
+
         return {
-            stack: cellToStack(Cell.fromBoc(Buffer.from(res.result.stack, 'base64'))[0]),
+            stack: retStack,
+            stackSlice: new TupleSlice4(retStack),
             exitCode: res.result.vm_exit_code,
             gasUsed: new BN(res.result.gas_used, 10),
+            c7: parseC7(res.result.c7),
             missingLibrary: res.result.missing_library === null ? null : Buffer.from(res.result.missing_library, 'hex'),
             logs: res.logs,
             vmLogs: res.result.vm_log,
@@ -196,11 +215,15 @@ export class SmartContract {
         return this.address;
     }
 
+    private checkAccount() {
+        if (this.isAccountNull()) throw new Error('ShardAccount has `none` account');
+    }
+
     getShardAccount(): RawShardAccount {
-        if (this.rawShardAccount.account === null) throw new Error('ShardAccount has `none` account');
+        this.checkAccount();
         return {
             ...this.rawShardAccount,
-            account: this.rawShardAccount.account,
+            account: this.rawShardAccount.account!,
         };
     }
 
@@ -209,8 +232,8 @@ export class SmartContract {
     }
 
     getAccount(): RawAccount {
-        if (this.rawShardAccount.account === null) throw new Error('ShardAccount has `none` account');
-        return this.rawShardAccount.account;
+        this.checkAccount();
+        return this.rawShardAccount.account!;
     }
 
     getAccountNullable(): RawAccount | null {
@@ -221,8 +244,49 @@ export class SmartContract {
         return this.rawShardAccount.account === null;
     }
 
+    private reencodeAccount() {
+        this.shardAccount = encodeShardAccount(this.rawShardAccount);
+    }
+
+    getBalance() {
+        return this.getAccount().storage.balance.coins;
+    }
+
+    setBalance(balance: BN) {
+        this.checkAccount();
+        this.rawShardAccount.account!.storage.balance.coins = balance;
+        this.reencodeAccount();
+    }
+
+    getStorageLastPaid() {
+        return this.getAccount().storageStat.lastPaid;
+    }
+
+    setStorageLastPaid(unixTime: number) {
+        this.checkAccount();
+        this.rawShardAccount.account!.storageStat.lastPaid = unixTime;
+        this.reencodeAccount();
+    }
+
+    getConfig() {
+        return Cell.fromBoc(Buffer.from(this.configBoc, 'base64'))[0]
+    }
+
     setConfig(config: Cell) {
         this.configBoc = config.toBoc().toString('base64');
+    }
+
+    getConfigGasPrices(chain: Chain = 'workchain'): GasLimitsPrices {
+        const c = this.getConfig()
+        const d = parseDictRefs(c.beginParse(), 32)
+        return configParseGasLimitsPrices(d.get(chainGasLimitsPricesIds[chain]));
+    }
+
+    setConfigGasPrices(gas: GasLimitsPrices, chain: Chain = 'workchain') {
+        const c = this.getConfig()
+        const d = parseDictRefs(c.beginParse(), 32)
+        d.set(chainGasLimitsPricesIds[chain], serializeGasLimitsPrices(gas).beginParse());
+        this.setConfig(serializeDict(d, 32, (src, cell) => cell.withReference(src.toCell())));
     }
 
     setLibs(libs?: Cell) {

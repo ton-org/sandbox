@@ -42,6 +42,7 @@ type ResultSuccess = {
     transaction: string
     shard_account: string
     vm_log: string
+    c7: string
     actions: string | null
 };
 
@@ -58,6 +59,7 @@ export type EmulationResultSuccess = {
     transaction: string
     shardAccount: string
     vmLog: string
+    c7: string
     actions: string | null
 };
 
@@ -134,6 +136,7 @@ export const emulateTransaction = async (config: Cell | string, shardAccount: Ce
             transaction: result.transaction,
             shardAccount: result.shard_account,
             vmLog: result.vm_log,
+            c7: result.c7,
             actions: result.actions,
         } : {
             success: false,
@@ -164,6 +167,7 @@ export type GetMethodResultSuccess = {
     gas_used: string
     vm_exit_code: number
     vm_log: string
+    c7: string
     missing_library: string | null
 };
 
