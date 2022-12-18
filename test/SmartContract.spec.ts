@@ -5,7 +5,6 @@ import { stackCell, stackNull, stackNumber, stacksEqual, stackSlice, stackTuple 
 import { encodeAPIAccountState } from "../src/utils/apiAccount";
 import { compileFunc } from "@ton-community/func-js";
 import { readFileSync } from "fs";
-import { defaultConfig } from "../src/config/defaultConfig";
 
 const randomAddress = (wc: number = 0) => {
     const buf = Buffer.alloc(32);
@@ -334,5 +333,23 @@ describe('SmartContract', () => {
         const newGasLimits = smc.getConfigGasPrices();
 
         expect(newGasLimits.flatLimit.addn(1).eq(initialGasLimits.flatLimit)).toBeTruthy();
+    })
+
+    it('should not fail when sending messages to empty accounts', async () => {
+        const addr = randomAddress();
+
+        const smc = SmartContract.empty(addr);
+
+        const value = toNano('1');
+
+        const res = await smc.sendMessage(new InternalMessage({
+            to: addr,
+            from: randomAddress(),
+            value,
+            bounce: false,
+            body: new CommonMessageInfo({})
+        }));
+
+        expect(smc.getBalance().gte(value.muln(95).divn(100))).toBeTruthy();
     })
 })
