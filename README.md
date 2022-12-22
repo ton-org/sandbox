@@ -6,6 +6,8 @@ The key difference of this package from [ton-contract-executor](https://github.c
 
 ## Installation
 
+Requires node 16.
+
 ```
 yarn add @ton-community/tx-emulator ton
 ```
