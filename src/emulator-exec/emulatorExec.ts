@@ -4,18 +4,6 @@ import { base64Decode } from "../utils/base64";
 import { bocOrCellToStr } from "../utils/boc";
 
 const EmulatorModule = require('./emulator-emscripten.js');
-const EmulatorEmscriptenWasmBinary = base64Decode(require('./emulator-emscripten.wasm.js').EmulatorEmscriptenWasm);
-
-const copyToCString = (mod: any, str: string) => {
-    const len = mod.lengthBytesUTF8(str) + 1;
-    const ptr = mod._malloc(len);
-    mod.stringToUTF8(str, ptr, len);
-    return ptr;
-}
-
-const copyFromCString = (mod: any, ptr: any): string => {
-    return mod.UTF8ToString(ptr);
-};
 
 export type EmulationParams = Partial<{
     unixTime: number
@@ -80,30 +68,96 @@ export type EmulationResult = {
     debugLogs: string[]
 };
 
-export const emulateTransaction = async (config: Cell | string, shardAccount: Cell | string, message: Cell | string, opts?: EmulationOptions): Promise<EmulationResult> => {
-    let debugLogs: string[] = [];
+const copyToCString = (mod: any, str: string) => {
+    const len = mod.lengthBytesUTF8(str) + 1;
+    const ptr = mod._malloc(len);
+    mod.stringToUTF8(str, ptr, len);
+    return ptr;
+}
 
-    const mod = await EmulatorModule({
-        wasmBinary: EmulatorEmscriptenWasmBinary,
-        printErr: (text: string) => debugLogs.push(text),
-    });
+const copyFromCString = (mod: any, ptr: any): string => {
+    return mod.UTF8ToString(ptr);
+};
 
-    const allocatedPtrs: any[] = [];
+let mod: any = null;
+let debugLogs: string[] = [];
+const createMod = async () => {
+    if (mod === null) {
+        mod = await EmulatorModule({
+            wasmBinary: base64Decode(require('./emulator-emscripten.wasm.js').EmulatorEmscriptenWasm),
+            printErr: (text: string) => debugLogs.push(text),
+        });
+    }
 
-    const pushPtr = (ptr: any): any => {
-        allocatedPtrs.push(ptr);
-        return ptr;
+    return mod;
+};
+
+let emulator: {
+    emPtr: any
+    config: string
+    verbosity: number
+} | null = null;
+const forceCreateEmulator = (mod: any, config: string, verbosity: number): any => {
+    const configPtr = copyToCString(mod, config);
+    const emPtr = mod._create_emulator(configPtr, verbosity);
+    mod._free(configPtr);
+    emulator = {
+        emPtr,
+        config,
+        verbosity,
     };
+    return emPtr;
+};
+const createEmulator = (mod: any, config: string, verbosity: number): any => {
+    if (emulator === null) {
+        return forceCreateEmulator(mod, config, verbosity);
+    }
 
-    const configPtr = pushPtr(copyToCString(mod, bocOrCellToStr(config)));
+    if (config === emulator.config && verbosity === emulator.verbosity) {
+        return emulator.emPtr;
+    }
 
-    const libsPtr = opts?.libs === undefined ? 0 : pushPtr(copyToCString(mod, bocOrCellToStr(opts.libs)));
+    mod._destroy_emulator(emulator.emPtr);
+
+    return forceCreateEmulator(mod, config, verbosity);
+};
+
+type StringPtr = { ptr: any, len: number } | null;
+
+const ptrs: { [key: string]: StringPtr } = {
+    libs: null,
+    shardAccount: null,
+    msg: null,
+    params: null,
+};
+
+const populatePtr = (mod: any, str: string, ptrsObj: typeof ptrs, key: string) => {
+    const len = mod.lengthBytesUTF8(str) + 1;
+    if (ptrsObj[key] === null || ptrsObj[key]!.len < len) {
+        if (ptrsObj[key] !== null) {
+            mod._free(ptrsObj[key]!.ptr);
+        }
+        const allocLen = len * 2;
+        const strPtr: StringPtr = { ptr: mod._malloc(allocLen), len: allocLen };
+        ptrsObj[key] = strPtr;
+    }
+
+    mod.stringToUTF8(str, ptrsObj[key]!.ptr, len);
+    return ptrsObj[key]!.ptr;
+};
+
+export const emulateTransaction = async (config: Cell | string, shardAccount: Cell | string, message: Cell | string, opts?: EmulationOptions): Promise<EmulationResult> => {
+    const mod = await createMod();
 
     const verbosity = opts?.verbosity ?? 1;
 
-    const shardAccountPtr = pushPtr(copyToCString(mod, bocOrCellToStr(shardAccount)));
+    const emPtr = createEmulator(mod, bocOrCellToStr(config), verbosity);
 
-    const msgPtr = pushPtr(copyToCString(mod, bocOrCellToStr(message)));
+    const libsPtr = opts?.libs === undefined ? 0 : populatePtr(mod, bocOrCellToStr(opts.libs), ptrs, 'libs');
+
+    const shardAccountPtr = populatePtr(mod, bocOrCellToStr(shardAccount), ptrs, 'shardAccount');
+
+    const msgPtr = populatePtr(mod, bocOrCellToStr(message), ptrs, 'msg');
 
     const params: EmulationInternalParams = {
         utime: opts?.params?.unixTime ?? 0,
@@ -112,11 +166,14 @@ export const emulateTransaction = async (config: Cell | string, shardAccount: Ce
         ignore_chksig: opts?.params?.ignoreChksig ?? false,
     };
 
-    const paramsPtr = pushPtr(copyToCString(mod, JSON.stringify(params)));
+    const paramsPtr = populatePtr(mod, JSON.stringify(params), ptrs, 'params');
 
-    const respPtr = pushPtr(mod._emulate(configPtr, libsPtr, verbosity, shardAccountPtr, msgPtr, paramsPtr));
+    debugLogs = [];
+    const respPtr = mod._emulate(emPtr, libsPtr, shardAccountPtr, msgPtr, paramsPtr);
+    const curDebugLogs = [...debugLogs];
 
     const respStr = copyFromCString(mod, respPtr);
+    mod._free(respPtr);
 
     const resp = JSON.parse(respStr);
 
@@ -127,8 +184,6 @@ export const emulateTransaction = async (config: Cell | string, shardAccount: Ce
     const logs: string = resp.logs;
 
     const result: ResultSuccess | ResultError = resp.output;
-
-    allocatedPtrs.forEach(ptr => mod._free(ptr));
 
     return {
         result: result.success ? {
@@ -147,7 +202,7 @@ export const emulateTransaction = async (config: Cell | string, shardAccount: Ce
             } : undefined,
         },
         logs,
-        debugLogs,
+        debugLogs: curDebugLogs,
     };
 };
 
@@ -203,12 +258,7 @@ export const runGetMethod = async (
     config: Cell | string,
     opts?: GetMethodParams
 ): Promise<GetMethodResult> => {
-    let debugLogs: string[] = [];
-
-    const mod = await EmulatorModule({
-        wasmBinary: EmulatorEmscriptenWasmBinary,
-        printErr: (text: string) => debugLogs.push(text),
-    });
+    const mod = await createMod();
 
     const allocatedPtrs: any[] = [];
 
@@ -236,7 +286,9 @@ export const runGetMethod = async (
 
     const paramsPtr = pushPtr(copyToCString(mod, JSON.stringify(params)));
 
+    debugLogs = [];
     const respPtr = pushPtr(mod._run_get_method(paramsPtr, stackPtr, configPtr));
+    const curDebugLogs = [...debugLogs];
 
     const respStr = copyFromCString(mod, respPtr);
 
@@ -251,6 +303,6 @@ export const runGetMethod = async (
     return {
         logs: resp.logs,
         result: resp.output,
-        debugLogs,
+        debugLogs: curDebugLogs,
     };
 };
