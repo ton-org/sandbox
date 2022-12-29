@@ -1,6 +1,5 @@
 import BN from "bn.js";
-import { TonClient4, Address, parseTransaction, Slice, ExternalMessage, CommonMessageInfo, CellMessage, beginCell, Cell, contractAddress, InternalMessage, toNano } from "ton";
-import { SmartContract } from "../src/smartContract/SmartContract";
+import { TonClient4, Address, parseTransaction, Slice, ExternalMessage, CommonMessageInfo, CellMessage, beginCell, Cell, contractAddress, InternalMessage, toNano, GasLimitsPrices } from "ton";
 import { encodeAPIAccountState } from "../src/utils/apiAccount";
 import { Blockchain } from "../src/blockchain/Blockchain";
 import { compileFunc } from "@ton-community/func-js";
@@ -34,15 +33,9 @@ describe('Blockchain', () => {
 
         const bal = new BN(acc.account.balance.coins, 10);
 
-        const smc = SmartContract.fromState({
-            address: addr,
-            accountState: encodeAPIAccountState(acc.account.state),
-            balance: bal,
-        });
-
         const blkch = new Blockchain();
 
-        blkch.setSmartContract(smc);
+        blkch.setSmartContractState(addr, encodeAPIAccountState(acc.account.state), bal);
 
         const res = await blkch.sendMessage(new ExternalMessage({
             to: addr,
@@ -57,7 +50,7 @@ describe('Blockchain', () => {
             },
         });
         
-        expect(res.outTransactions[0].smartContract.getAccount().storage.balance.coins.gtn(0)).toBeTruthy();
+        expect(blkch.getAccount(res.outTransactions[0].smartContract).storage.balance.coins.gtn(0)).toBeTruthy();
     })
 
     it('should handle compiled contracts', async () => {
@@ -74,30 +67,26 @@ describe('Blockchain', () => {
 
         const initBalance = toNano('0.05');
 
-        const smc = SmartContract.fromState({
-            address: contractAddress({
-                workchain: 0,
-                initialCode: code,
-                initialData: data,
-            }),
-            accountState: {
-                type: 'active',
-                code,
-                data,
-            },
-            balance: initBalance,
-        });
-
         const blkch = new Blockchain();
 
-        blkch.setSmartContract(smc);
+        const addr = contractAddress({
+            workchain: 0,
+            initialCode: code,
+            initialData: data,
+        });
+
+        blkch.setSmartContractState(addr, {
+            type: 'active',
+            code,
+            data,
+        }, initBalance);
 
         const returnTo = randomAddress();
 
         const coins = toNano('1');
 
         const res = await blkch.sendMessage(new InternalMessage({
-            to: smc.getAddress(),
+            to: addr,
             from: returnTo,
             value: coins,
             bounce: true,
@@ -108,7 +97,24 @@ describe('Blockchain', () => {
             })
         }));
 
-        expect(res.outTransactions[0].smartContract.getAccount().storage.balance.coins.eq(coins)).toBeTruthy();
-        expect(res.outTransactions[0].smartContract.getAddress().equals(returnTo)).toBeTruthy();
+        expect(blkch.getAccount(res.outTransactions[0].smartContract).storage.balance.coins.eq(coins)).toBeTruthy();
+        expect(res.outTransactions[0].smartContract.equals(returnTo)).toBeTruthy();
+    })
+
+    it('should get and set config gas limits', async () => {
+        const blkch = new Blockchain();
+
+        const initialGasLimits = blkch.getConfigGasPrices();
+
+        const setGasLimits: GasLimitsPrices = {
+            ...initialGasLimits,
+            flatLimit: initialGasLimits.flatLimit.subn(1),
+        };
+
+        blkch.setConfigGasPrices(setGasLimits);
+
+        const newGasLimits = blkch.getConfigGasPrices();
+
+        expect(newGasLimits.flatLimit.addn(1).eq(initialGasLimits.flatLimit)).toBeTruthy();
     })
 })

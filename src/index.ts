@@ -58,12 +58,10 @@ export {
 } from './smartContract/gas';
 
 export {
-    SmartContract,
     SendMessageResult,
     Verbosity,
     RunGetMethodParams,
     RunGetMethodResult,
-    Chain,
 } from './smartContract/SmartContract';
 
 export {
@@ -72,4 +70,6 @@ export {
     RootTransaction,
     TransactionOutput,
     ExternalOut,
+    Chain,
+    SendMessageOpts,
 } from './blockchain/Blockchain';
