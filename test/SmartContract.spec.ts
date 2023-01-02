@@ -1,18 +1,12 @@
 import BN from "bn.js";
-import { TonClient4, Address, parseTransaction, Slice, ExternalMessage, CommonMessageInfo, CellMessage, toNano, Cell, beginCell, contractAddress, InternalMessage, StackItem, StackInt, parseDictRefs, configParseGasLimitsPrices, serializeDict, GasLimitsPrices } from "ton";
+import { TonClient4, Address, parseTransaction, Slice, ExternalMessage, CommonMessageInfo, CellMessage, toNano, Cell, beginCell, contractAddress, InternalMessage, StackItem, StackInt } from "ton";
 import { SmartContract } from "../src/smartContract/SmartContract";
 import { stackCell, stackNull, stackNumber, stacksEqual, stackSlice, stackTuple } from "../src/smartContract/stack";
 import { encodeAPIAccountState } from "../src/utils/apiAccount";
 import { compileFunc } from "@ton-community/func-js";
 import { readFileSync } from "fs";
-
-const randomAddress = (wc: number = 0) => {
-    const buf = Buffer.alloc(32);
-    for (let i = 0; i < buf.length; i++) {
-        buf[i] = Math.floor(Math.random() * 256);
-    }
-    return new Address(wc, buf);
-};
+import { randomAddress } from "./utils";
+import { defaultConfig } from "../src/config/defaultConfig";
 
 describe('SmartContract', () => {
     jest.setTimeout(15000);
@@ -59,7 +53,7 @@ describe('SmartContract', () => {
                     beginCell().storeAddress(returnTo).endCell()
                 )
             })
-        }));
+        }), defaultConfig);
 
         expect(res.transaction.outMessages.length).toBe(1);
 
@@ -70,7 +64,7 @@ describe('SmartContract', () => {
         expect(res.transaction.outMessages[0].info.value.coins.eq(coins)).toBeTruthy();
         expect(smc.getAccount().storage.balance.coins.lt(initBalance)).toBeTruthy(); // contract pays for gas out of initial balance
 
-        const info = await smc.runGetMethod('get_info');
+        const info = await smc.runGetMethod('get_info', [], defaultConfig);
 
         expect(info.stackSlice.readNumber()).toBe(1); // total messages
         expect(info.stackSlice.readBigNumber().eq(coins)).toBeTruthy(); // total volume
@@ -108,7 +102,7 @@ describe('SmartContract', () => {
             balance: bal,
         });
 
-        const seqnoBefore = (await smc.runGetMethod('seqno', [])).stackSlice.readBigNumber();
+        const seqnoBefore = (await smc.runGetMethod('seqno', [], defaultConfig)).stackSlice.readBigNumber();
 
         const res = await smc.sendMessage(new ExternalMessage({
             to: addr,
@@ -117,7 +111,7 @@ describe('SmartContract', () => {
             body: new CommonMessageInfo({
                 body: new CellMessage(tx.inMessage!.body),
             })
-        }), {
+        }), defaultConfig, undefined, {
             params: {
                 unixTime: 1668781033,
             },
@@ -137,7 +131,7 @@ describe('SmartContract', () => {
 
         expect(res.actionsCell!.hash().equals(res.transaction.description.actionPhase!.actionListHash)).toBeTruthy();
 
-        const seqnoAfter = (await smc.runGetMethod('seqno')).stackSlice.readBigNumber();
+        const seqnoAfter = (await smc.runGetMethod('seqno', [], defaultConfig)).stackSlice.readBigNumber();
 
         expect(seqnoAfter.eq(seqnoBefore.addn(1))).toBeTruthy();
     })
@@ -183,7 +177,7 @@ describe('SmartContract', () => {
         const res = await smc.runGetMethod('add_and_multiply', [
             stackNumber(3),
             stackNumber(new BN(2)),
-        ]);
+        ], defaultConfig);
 
         expect(res.exitCode).toBe(0);
 
@@ -230,7 +224,7 @@ describe('SmartContract', () => {
             balance: new BN(0),
         });
 
-        const getMethodRes = await smc.runGetMethod('print_a');
+        const getMethodRes = await smc.runGetMethod('print_a', [], defaultConfig);
 
         expect(getMethodRes.debugLogs[0]).toBe('#DEBUG#: a');
 
@@ -242,7 +236,7 @@ describe('SmartContract', () => {
             body: new CommonMessageInfo({
                 body: new CellMessage(new Cell()),
             })
-        }));
+        }), defaultConfig);
 
         expect(res.debugLogs[0]).toBe('#DEBUG#: b');
     })
@@ -308,7 +302,7 @@ describe('SmartContract', () => {
             stackNumber(f),
         ];
 
-        const res = await smc.runGetMethod('test', stackIn);
+        const res = await smc.runGetMethod('test', stackIn, defaultConfig);
 
         stackIn.pop();
         (stackIn[1] as StackInt).value.isub(f);
@@ -316,23 +310,6 @@ describe('SmartContract', () => {
         res.stack.reverse();
 
         expect(stacksEqual(stackIn, res.stack)).toBeTruthy();
-    })
-
-    it('should get and set config gas limits', async () => {
-        const smc = SmartContract.empty(randomAddress());
-
-        const initialGasLimits = smc.getConfigGasPrices();
-
-        const setGasLimits: GasLimitsPrices = {
-            ...initialGasLimits,
-            flatLimit: initialGasLimits.flatLimit.subn(1),
-        };
-
-        smc.setConfigGasPrices(setGasLimits);
-
-        const newGasLimits = smc.getConfigGasPrices();
-
-        expect(newGasLimits.flatLimit.addn(1).eq(initialGasLimits.flatLimit)).toBeTruthy();
     })
 
     it('should not fail when sending messages to empty accounts', async () => {
@@ -348,7 +325,7 @@ describe('SmartContract', () => {
             value,
             bounce: false,
             body: new CommonMessageInfo({})
-        }));
+        }), defaultConfig);
 
         expect(smc.getBalance().gte(value.muln(95).divn(100))).toBeTruthy();
     })

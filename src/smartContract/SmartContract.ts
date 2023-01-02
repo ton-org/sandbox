@@ -1,6 +1,5 @@
 import BN from "bn.js";
-import { Address, Cell, configParseGasLimitsPrices, ExternalMessage, GasLimitsPrices, InternalMessage, parseDict, parseDictRefs, parseStack, parseTransaction, RawTransaction, serializeDict, serializeStack, Slice, StackItem, TupleSlice4 } from "ton";
-import { defaultConfig } from "../config/defaultConfig";
+import { Address, Cell, ExternalMessage, InternalMessage, parseStack, parseTransaction, RawTransaction, serializeStack, Slice, StackItem, TupleSlice4 } from "ton";
 import { emulateTransaction, EmulationParams, runGetMethod } from "../emulator-exec/emulatorExec";
 import { AccountState, AccountStorage, accountStorageToRaw, encodeShardAccount } from "../utils/encode";
 import { parseShardAccount, RawAccount, RawShardAccount, RawShardAccountNullable } from "../utils/parse";
@@ -8,7 +7,6 @@ import { getSelectorForMethod } from "../utils/selector";
 import { calcStorageUsed } from "../utils/storage";
 import { parseC7 } from "./c7";
 import { SmartContractError, SmartContractExternalNotAcceptedError } from "./errors";
-import { serializeGasLimitsPrices } from "./gas";
 
 export type SendMessageResult = {
     transaction: RawTransaction
@@ -49,16 +47,7 @@ export type RunGetMethodResult = {
     c7: StackItem[]
 };
 
-export type Chain = 'masterchain' | 'workchain';
-
-const chainGasLimitsPricesIds: Record<Chain, string> = {
-    'masterchain': '20',
-    'workchain': '21',
-};
-
 export class SmartContract {
-    private configBoc: string = defaultConfig;
-    private libsBoc?: string;
     private verbosity: Verbosity = 'full';
     private shardAccount: Cell;
     private rawShardAccount: RawShardAccountNullable;
@@ -115,14 +104,14 @@ export class SmartContract {
         }), address);
     }
 
-    async sendMessage(message: ExternalMessage | InternalMessage, opts?: {
+    async sendMessage(message: ExternalMessage | InternalMessage, configBoc: string, libsBoc?: string, opts?: {
         mutateAccount?: boolean
         params?: EmulationParams
     }): Promise<SendMessageResult> {
         const msgCell = new Cell();
         message.writeTo(msgCell);
-        const res = await emulateTransaction(this.configBoc, this.shardAccount, msgCell, {
-            libs: this.libsBoc,
+        const res = await emulateTransaction(configBoc, this.shardAccount, msgCell, {
+            libs: libsBoc,
             verbosity: verbosityToNum[this.verbosity],
             params: opts?.params,
         });
@@ -167,7 +156,7 @@ export class SmartContract {
         };
     }
 
-    async runGetMethod(method: string | number, stack: StackItem[] = [], params?: RunGetMethodParams): Promise<RunGetMethodResult> {
+    async runGetMethod(method: string | number, stack: StackItem[] = [], configBoc: string, libsBoc?: string, params?: RunGetMethodParams): Promise<RunGetMethodResult> {
         const acc = this.getShardAccount();
         if (acc.account.storage.state.type !== 'active') {
             throw new Error('cannot run get methods on inactive accounts');
@@ -180,10 +169,10 @@ export class SmartContract {
             acc.account.storage.state.state.data,
             typeof method === 'string' ? getSelectorForMethod(method) : method,
             serializeStack(stack),
-            this.configBoc,
+            configBoc,
             {
                 verbosity: verbosityToNum[this.verbosity],
-                libs: this.libsBoc,
+                libs: libsBoc,
                 address: acc.account.address,
                 unixTime: params?.unixTime,
                 balance: acc.account.storage.balance.coins,
@@ -266,31 +255,6 @@ export class SmartContract {
         this.checkAccount();
         this.rawShardAccount.account!.storageStat.lastPaid = unixTime;
         this.reencodeAccount();
-    }
-
-    getConfig() {
-        return Cell.fromBoc(Buffer.from(this.configBoc, 'base64'))[0]
-    }
-
-    setConfig(config: Cell) {
-        this.configBoc = config.toBoc().toString('base64');
-    }
-
-    getConfigGasPrices(chain: Chain = 'workchain'): GasLimitsPrices {
-        const c = this.getConfig()
-        const d = parseDictRefs(c.beginParse(), 32)
-        return configParseGasLimitsPrices(d.get(chainGasLimitsPricesIds[chain]));
-    }
-
-    setConfigGasPrices(gas: GasLimitsPrices, chain: Chain = 'workchain') {
-        const c = this.getConfig()
-        const d = parseDictRefs(c.beginParse(), 32)
-        d.set(chainGasLimitsPricesIds[chain], serializeGasLimitsPrices(gas).beginParse());
-        this.setConfig(serializeDict(d, 32, (src, cell) => cell.withReference(src.toCell())));
-    }
-
-    setLibs(libs?: Cell) {
-        this.libsBoc = libs === undefined ? undefined : libs.toBoc().toString('base64');
     }
 
     setVerbosity(verbosity: Verbosity) {
