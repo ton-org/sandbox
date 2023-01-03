@@ -1,6 +1,6 @@
 {
   "name": "@ton-community/tx-emulator",
-  "version": "0.0.10",
+  "version": "0.1.0",
   "description": "TON transaction emulator",
   "main": "dist/index.js",
   "license": "MIT",
