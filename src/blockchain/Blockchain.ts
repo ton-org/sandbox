@@ -91,10 +91,13 @@ export type SendMessageOpts = {
     processOutMessages?: boolean
 };
 
+const LT_ALIGN = new BN(1000000);
+
 export class Blockchain {
     private contracts: Map<string, SmartContract>;
     private configBoc: string = defaultConfig;
     private libsBoc?: string;
+    private lt = new BN(0);
 
     constructor() {
         this.contracts = new Map();
@@ -137,6 +140,16 @@ export class Blockchain {
     }
 
     async sendMessage(message: ExternalMessage | InternalMessage, opts?: SendMessageOpts): Promise<RootTransaction> {
+        if (opts?.params?.lt === undefined) {
+            this.lt.iadd(LT_ALIGN);
+            opts = {
+                ...opts,
+                params: {
+                    ...opts?.params,
+                    lt: this.lt,
+                },
+            };
+        }
         const rootOut = await this.processMessage(message, opts);
         const rootTx: RootTransaction = {
             input: message,
@@ -307,5 +320,13 @@ export class Blockchain {
 
     setVerbosity(address: Address, verbosity: Verbosity) {
         this.getSmartContract(address).setVerbosity(verbosity);
+    }
+
+    getLastBlockLt() {
+        return this.lt.clone();
+    }
+
+    setLastBlockLt(lt: BN) {
+        this.lt = lt.clone();
     }
 }
