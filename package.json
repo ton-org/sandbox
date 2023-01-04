@@ -22,7 +22,8 @@
     "typescript": "^4.9.3"
   },
   "dependencies": {
-    "bn.js": "^5.2.1"
+    "bn.js": "^5.2.1",
+    "ton-core": "^0.37.0"
   },
   "peerDependencies": {
     "ton": "^12.1.5"

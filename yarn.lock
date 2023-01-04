@@ -2156,6 +2156,13 @@ to-regex-range@^5.0.1:
   dependencies:
     is-number "^7.0.0"
 
+ton-core@^0.37.0:
+  version "0.37.0"
+  resolved "https://registry.yarnpkg.com/ton-core/-/ton-core-0.37.0.tgz#85d280473d88eaa80523aac01b74f3f8aa092ec4"
+  integrity sha512-NsEAdu7iwUEMEl3OOfKpYkYakFe52nW1huhdGe3fdxchXpO50jyOlXiATeiC8tlCvP/RxiODtOMnpYCiPOQ6Jw==
+  dependencies:
+    symbol.inspect "1.0.1"
+
 ton-crypto-primitives@2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/ton-crypto-primitives/-/ton-crypto-primitives-2.0.0.tgz#e85cd68c0d523f6bdf3f306201a76e51b7e9312e"

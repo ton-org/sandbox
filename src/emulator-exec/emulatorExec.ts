@@ -97,6 +97,7 @@ let emulator: {
     config: string
     verbosity: number
 } | null = null;
+
 const forceCreateEmulator = (mod: any, config: string, verbosity: number): any => {
     const configPtr = copyToCString(mod, config);
     const emPtr = mod._create_emulator(configPtr, verbosity);

@@ -94,17 +94,18 @@ export type SendMessageOpts = {
 const LT_ALIGN = new BN(1000000);
 
 export class Blockchain {
-    private contracts: Map<string, SmartContract>;
-    private configBoc: string = defaultConfig;
+    private contracts: Map<string, SmartContract>
+    private networkConfig: Cell
     private libsBoc?: string;
     private lt = new BN(0);
 
-    constructor() {
+    private constructor(opts?: { config?: Cell }) {
+        this.networkConfig = opts?.config ?? Cell.fromBoc(Buffer.from(defaultConfig, 'base64'))[0]
         this.contracts = new Map();
     }
 
-    private addressToString(addr: Address): string {
-        return addr.toString();
+    get config(): Cell {
+        return this.config
     }
 
     private async processMessage(msg: ExternalMessage | InternalMessage, opts?: {
@@ -257,12 +258,8 @@ export class Blockchain {
         this.contracts.set(this.addressToString(contract.getAddress()), contract);
     }
 
-    getConfig() {
-        return Cell.fromBoc(Buffer.from(this.configBoc, 'base64'))[0]
-    }
-
     setConfig(config: Cell) {
-        this.configBoc = config.toBoc().toString('base64');
+        this.networkConfig = config
     }
 
     setLibs(libs?: Cell) {
@@ -328,5 +325,9 @@ export class Blockchain {
 
     setLastBlockLt(lt: BN) {
         this.lt = lt.clone();
+    }
+
+    static create(opts?: { config?: Cell }) {
+        return new Blockchain(opts)
     }
 }
