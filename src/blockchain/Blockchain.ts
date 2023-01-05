@@ -4,7 +4,6 @@ import {Address, Cell, Message, Transaction} from "ton-core";
 import {Executor, Verbosity} from "../executor/Executor";
 import {SmartContract} from "../smartContract/SmartContract";
 
-
 export type SendMessageOpts = {
     mutateAccounts?: boolean
     params?: EmulationParams
@@ -16,7 +15,7 @@ const LT_ALIGN = 1000000n;
 export class Blockchain {
     private contracts: Map<string, SmartContract>
     private networkConfig: Cell
-    readonly lt = 0n;
+    private lt = 0n;
     readonly executor: Executor
     readonly messageQueue: Message[] = []
 
@@ -48,6 +47,7 @@ export class Blockchain {
                 continue
             }
 
+            this.lt += LT_ALIGN
             let transaction = await this.getContract(message.info.dest).receiveMessage(message)
 
             result.push(transaction)
