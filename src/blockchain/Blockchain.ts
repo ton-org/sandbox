@@ -1,10 +1,12 @@
 import BN from "bn.js";
 import { defaultConfig } from "../config/defaultConfig";
-import { Address, AddressExternal, Cell, CellMessage, CommonMessageInfo, configParseGasLimitsPrices, contractAddress, ExternalMessage, GasLimitsPrices, InternalMessage, parseDictRefs, RawMessage, serializeDict, StackItem, StateInit } from "ton";
-import { EmulationParams } from "../emulator-exec/emulatorExec";
+// import { Address, AddressExternal, Cell, CellMessage, CommonMessageInfo, configParseGasLimitsPrices, contractAddress, ExternalMessage, GasLimitsPrices, InternalMessage, parseDictRefs, RawMessage, serializeDict, StackItem, StateInit } from "ton";
+import { EmulationParams } from "../executor/emulatorExec";
 import { RunGetMethodParams, RunGetMethodResult, SendMessageResult, SmartContract, Verbosity } from "../smartContract/SmartContract";
 import { serializeGasLimitsPrices } from "../smartContract/gas";
 import { AccountState } from "../utils/encode";
+import {Cell} from "ton-core";
+import {Executor} from "../executor/Executor";
 
 export type ExternalOut = {
     from: Address;
@@ -97,7 +99,8 @@ export class Blockchain {
     private contracts: Map<string, SmartContract>
     private networkConfig: Cell
     private libsBoc?: string;
-    private lt = new BN(0);
+    readonly lt = 0n;
+    readonly executor = new Executor()
 
     private constructor(opts?: { config?: Cell }) {
         this.networkConfig = opts?.config ?? Cell.fromBoc(Buffer.from(defaultConfig, 'base64'))[0]

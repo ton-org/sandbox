@@ -11,7 +11,7 @@ export {
     GetMethodResult,
     GetMethodResultError,
     GetMethodResultSuccess,
-} from './emulator-exec/emulatorExec';
+} from './executor/emulatorExec';
 
 export {
     getConfigBoc,

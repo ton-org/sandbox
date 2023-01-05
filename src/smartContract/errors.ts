@@ -1,4 +1,4 @@
-import { VMResults } from "../emulator-exec/emulatorExec";
+import { VMResults } from "../executor/emulatorExec";
 
 export class SmartContractError extends Error {
     logs: string;
