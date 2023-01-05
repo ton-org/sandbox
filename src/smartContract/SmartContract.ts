@@ -3,7 +3,7 @@ import {
     Address,
     beginCell,
     Cell,
-    contractAddress,
+    contractAddress, loadShardAccount, loadTransaction,
     Message,
     parseTuple,
     ShardAccount,
@@ -46,22 +46,49 @@ function createShardAccount(args: { address?: Address, code: Cell, data: Cell, b
     }
 }
 
+function createEmptyShardAccount(address: Address): ShardAccount {
+    return {
+        account: {
+            addr: address,
+            storage: {
+                lastTransLt: 0n,
+                balance: { coins: 0n },
+                state: { type: 'uninit' }
+            },
+            storageStats: {
+                used: { cells: 0n, bits: 0n, publicCells: 0n },
+                lastPaid: 0,
+            }
+        },
+        lastTransactionLt: 0n,
+        lastTransactionHash: 0n
+    }
+}
+
 export class SmartContract {
     readonly address: Address;
     readonly blockchain: Blockchain
-    readonly balance: bigint
+    #balance: bigint
     private account: ShardAccount
 
     constructor(shardAccount: ShardAccount, blockchain: Blockchain) {
         this.address = shardAccount.account!.addr
         this.account = shardAccount
         this.blockchain = blockchain
-        this.balance = shardAccount.account?.storage.balance.coins!
+        this.#balance = shardAccount.account?.storage.balance.coins!
+    }
+
+    get balance() {
+        return this.#balance
     }
 
     static create(blockchain: Blockchain, args: { address: Address, code: Cell, data: Cell, balance: bigint }) {
         let account = createShardAccount(args)
         return new SmartContract(account, blockchain)
+    }
+
+    static empty(blockchain: Blockchain, address: Address) {
+        return new SmartContract(createEmptyShardAccount(address), blockchain)
     }
 
     async receiveMessage(message: Message) {
@@ -78,6 +105,16 @@ export class SmartContract {
             lt: this.blockchain.lt,
             randomSeed: Buffer.alloc(32)
         })
+
+        if (!res.result.success) {
+            console.error('Error:', res.result.error, 'VM logs', res.result.vmResults)
+            throw new Error('Error executing transaction')
+        }
+        let account = loadShardAccount(Cell.fromBase64(res.result.shardAccount).beginParse())
+        this.#balance = account.account?.storage.balance.coins!
+        this.account = account
+
+        return loadTransaction(Cell.fromBase64(res.result.transaction).beginParse())
     }
 
     async get(method: string | number, stack: TupleItem[] = []) {
