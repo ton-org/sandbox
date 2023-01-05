@@ -4,7 +4,7 @@ import {defaultConfig} from "../config/defaultConfig";
 
 describe('Executor', () => {
     it('should create executor', async () => {
-        let executor = new Executor()
+        let executor = await Executor.create()
 
         let code = Cell.fromBoc(Buffer.from('te6ccsEBAgEAEQANEQEU/wD0pBP0vPLICwEABNOgu3u26g==', 'base64'))[0];
         let data = beginCell().endCell()
