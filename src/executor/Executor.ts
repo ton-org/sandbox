@@ -45,7 +45,7 @@ export type RunTransactionArgs = {
     message: Cell
     now: number
     lt: bigint
-    randomSeed: Buffer
+    randomSeed: Buffer | null
 }
 
 type GetMethodInternalParams = {
@@ -129,6 +129,10 @@ class Pointer {
         this.rawPointer = rawPointer
     }
 
+    alloc() {
+        this.inUse = true
+    }
+
     free() {
         this.inUse = false
     }
@@ -160,7 +164,8 @@ class Heap {
         let existing = this.pointers.find(p => p.length >= length && !p.inUse)
 
         if (existing) {
-            this.module.stringToUTF8(data, existing.rawPointer, length);
+            this.module.stringToUTF8(data, existing.rawPointer, length)
+            existing.alloc()
             return existing
         }
 
@@ -232,7 +237,7 @@ export class Executor {
         let params: EmulationInternalParams = {
             utime: args.now,
             lt: args.lt.toString(),
-            rand_seed: args.randomSeed.toString('hex'),
+            rand_seed: args.randomSeed === null ? '' : args.randomSeed.toString('hex'),
             ignore_chksig: false
         }
 
