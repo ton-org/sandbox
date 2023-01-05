@@ -1,4 +1,5 @@
 import { TonClient4 } from "ton";
+import {Cell} from "ton-core";
 
 export const getConfigBoc = async (seqno?: number, client?: TonClient4): Promise<string> => {
     if (client === undefined) {
@@ -13,3 +14,15 @@ export const getConfigBoc = async (seqno?: number, client?: TonClient4): Promise
 
     return (await client.getConfig(seqno)).config.cell;
 };
+
+class NetworkConfig {
+    private configCell: Cell
+
+    constructor(configCell: Cell) {
+        this.configCell = configCell
+    }
+
+    getCell() {
+        return this.configCell
+    }
+}
