@@ -1,4 +1,4 @@
-import {Blockchain} from "../blockchain/Blockchain";
+import {Blockchain} from "./Blockchain";
 import {
     Address,
     beginCell,
@@ -8,9 +8,9 @@ import {
     parseTuple,
     ShardAccount,
     storeMessage, storeShardAccount,
-    TupleItem
+    TupleItem, TupleReader
 } from "ton-core";
-import {crc16} from "../utils/crc16";
+import {getSelectorForMethod} from "../utils/selector";
 
 function createShardAccount(args: { address?: Address, code: Cell, data: Cell, balance: bigint, workchain?: number }): ShardAccount {
     let wc = args.workchain ?? 0
@@ -65,11 +65,14 @@ function createEmptyShardAccount(address: Address): ShardAccount {
     }
 }
 
+export type Verbosity = 'none' | 'vm_logs' | 'tx_logs' | 'full'
+
 export class SmartContract {
     readonly address: Address;
     readonly blockchain: Blockchain
     #balance: bigint
     private account: ShardAccount
+    private verbosity: Verbosity = 'none'
 
     constructor(shardAccount: ShardAccount, blockchain: Blockchain) {
         this.address = shardAccount.account!.addr
@@ -114,11 +117,15 @@ export class SmartContract {
         this.#balance = account.account?.storage.balance.coins!
         this.account = account
 
+        if (this.verbosity !== 'none') {
+            console.log(res.logs)
+            console.log(res.result.vmLog)
+        }
+
         return loadTransaction(Cell.fromBase64(res.result.transaction).beginParse())
     }
 
     async get(method: string | number, stack: TupleItem[] = []) {
-
         if (this.account.account?.storage.state.type !== 'active') {
             throw new Error('Trying to run get method on non-active contract')
         }
@@ -126,7 +133,7 @@ export class SmartContract {
         let res = await this.blockchain.executor.runGetMethod({
             code: this.account.account?.storage.state.state.code!,
             data: this.account.account?.storage.state.state.data!,
-            methodId: typeof method === 'string' ? crc16(method) : method,
+            methodId: typeof method === 'string' ? getSelectorForMethod(method) : method,
             stack,
             config: this.blockchain.config,
             verbosity: 'full',
@@ -139,16 +146,25 @@ export class SmartContract {
         })
 
         if (!res.output.success) {
-            return res.output
+            throw new Error('Error invoking get method: ' + res.output.error)
         }
 
+        if (this.verbosity === 'vm_logs' || this.verbosity === 'full') {
+            console.log(res.logs)
+        }
+
+        let resStack = parseTuple(Cell.fromBase64(res.output.stack))
+
         return {
-            success: true,
-            stack: parseTuple(Cell.fromBase64(res.output.stack)),
+            stack: resStack,
+            stackReader: new TupleReader(resStack),
             exitCode: res.output.vm_exit_code,
             gasUsed: res.output.gas_used,
             logs: res.output.vm_log
         }
     }
 
+    setVerbosity(verbosity: Verbosity) {
+        this.verbosity = verbosity
+    }
 }

@@ -2,7 +2,7 @@ import { defaultConfig } from "../config/defaultConfig";
 import { EmulationParams } from "../executor/emulatorExec";
 import {Address, Cell, Message, Transaction} from "ton-core";
 import {Executor, Verbosity} from "../executor/Executor";
-import {SmartContract} from "../smartContract/SmartContract";
+import {BlockchainStorage, LocalBlockchainStorage} from "./BlockchainStorage";
 
 export type SendMessageOpts = {
     mutateAccounts?: boolean
@@ -13,20 +13,24 @@ export type SendMessageOpts = {
 const LT_ALIGN = 1000000n;
 
 export class Blockchain {
-    private contracts: Map<string, SmartContract>
+    storage: BlockchainStorage
     private networkConfig: Cell
-    private lt = 0n;
+    #lt = 0n;
     readonly executor: Executor
     readonly messageQueue: Message[] = []
 
-    private constructor(opts: { executor: Executor, config?: Cell }) {
+    get lt() {
+        return this.#lt
+    }
+
+    private constructor(opts: { executor: Executor, config?: Cell, storage: BlockchainStorage }) {
         this.networkConfig = opts.config ?? Cell.fromBoc(Buffer.from(defaultConfig, 'base64'))[0]
-        this.contracts = new Map();
         this.executor = opts?.executor
+        this.storage = opts.storage
     }
 
     get config(): Cell {
-        return this.config
+        return this.networkConfig
     }
 
     async sendMessage(message: Message) {
@@ -47,8 +51,8 @@ export class Blockchain {
                 continue
             }
 
-            this.lt += LT_ALIGN
-            let transaction = await this.getContract(message.info.dest).receiveMessage(message)
+            this.#lt += LT_ALIGN
+            let transaction = await (await this.getContract(message.info.dest)).receiveMessage(message)
 
             result.push(transaction)
 
@@ -60,14 +64,8 @@ export class Blockchain {
         return result
     }
 
-    getContract(address: Address) {
-        let existing = this.contracts.get(address.toString())
-        if (!existing) {
-            existing = SmartContract.empty(this, address)
-            this.contracts.set(address.toString(), existing)
-        }
-
-        return existing
+    async getContract(address: Address) {
+        return await this.storage.getContract(this, address)
     }
 
     setConfig(config: Cell) {
@@ -78,7 +76,11 @@ export class Blockchain {
 
     }
 
-    static async create(opts?: { config?: Cell }) {
-        return new Blockchain({ executor: await Executor.create(), ...opts })
+    static async create(opts?: { config?: Cell, storage: BlockchainStorage }) {
+        return new Blockchain({
+            executor: await Executor.create(),
+            storage: opts?.storage ?? new LocalBlockchainStorage(),
+            ...opts
+        })
     }
 }

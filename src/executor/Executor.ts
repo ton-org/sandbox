@@ -223,8 +223,9 @@ export class Executor {
 
         const resp = JSON.parse(this.extractString(result))
 
-        if ('fail' in resp && resp.fail) {
-            throw new Error('message' in resp ? resp.message : 'Unknown emulation error');
+        if (resp.fail) {
+            console.error(resp)
+            throw new Error('Unknown emulation error');
         }
 
         return {
@@ -249,13 +250,20 @@ export class Executor {
             JSON.stringify(params)
         ])));
 
-        if ('fail' in resp && resp.fail) {
-            throw new Error('message' in resp ? resp.message : 'Unknown emulation error');
+        if (resp.fail) {
+            console.error(resp)
+            throw new Error('Unknown emulation error');
         }
 
         const logs: string = resp.logs;
 
         const result: ResultSuccess | ResultError = resp.output;
+
+        // console.log(logs)
+
+        if (result.success) {
+            // console.log(result.vm_log)
+        }
 
         return {
             result: result.success ? {
