@@ -3,6 +3,7 @@ import { EmulationParams } from "../executor/emulatorExec";
 import {Address, Cell, Message, Transaction} from "ton-core";
 import {Executor, Verbosity} from "../executor/Executor";
 import {BlockchainStorage, LocalBlockchainStorage} from "./BlockchainStorage";
+import { extractEvents } from "../event/Event";
 
 export type SendMessageOpts = {
     mutateAccounts?: boolean
@@ -38,7 +39,11 @@ export class Blockchain {
             throw new Error('Cant send external out message')
         }
         this.messageQueue.push(message)
-        return await this.processQueue()
+        const txes = await this.processQueue()
+        return {
+            transactions: txes,
+            events: txes.map(tx => extractEvents(tx)).flat(),
+        }
     }
 
     async processQueue() {
