@@ -27,7 +27,7 @@
     "ton-crypto": "^3.2.0"
   },
   "peerDependencies": {
-    "ton": "^12.1.5"
+    "ton": "^13.3.0"
   },
   "scripts": {
     "wasm:pack": "node ./scripts/pack-wasm.js",
