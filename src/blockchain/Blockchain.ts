@@ -1,17 +1,28 @@
 import { defaultConfig } from "../config/defaultConfig";
-import { EmulationParams } from "../executor/emulatorExec";
-import {Address, Cell, Message, Transaction} from "ton-core";
+import {Address, Cell, Message, Transaction, ContractProvider, Contract, Sender} from "ton-core";
 import {Executor, Verbosity} from "../executor/Executor";
 import {BlockchainStorage, LocalBlockchainStorage} from "./BlockchainStorage";
-import { extractEvents } from "../event/Event";
+import { extractEvents, Event } from "../event/Event";
+import { BlockchainContractProvider } from "./BlockchainContractProvider";
+import { BlockchainSender } from "./BlockchainSender";
 
-export type SendMessageOpts = {
-    mutateAccounts?: boolean
-    params?: EmulationParams
-    processOutMessages?: boolean
-};
+const LT_ALIGN = 1000000n
 
-const LT_ALIGN = 1000000n;
+export type SendMessageResult = {
+    transactions: Transaction[],
+    events: Event[],
+}
+
+export type OpenedContract<F> = {
+    [P in keyof F]: P extends `get${string}`
+        ? (F[P] extends (x: ContractProvider, ...args: infer P) => infer R ? (...args: P) => R : never)
+        : (P extends `send${string}`
+            ? (F[P] extends (x: ContractProvider, ...args: infer P) => infer R ? (...args: P) => Promise<{
+                result: R extends Promise<infer PR> ? PR : R,
+                blockchainResult: SendMessageResult
+            }> : never)
+            : F[P]);
+}
 
 export class Blockchain {
     storage: BlockchainStorage
@@ -34,11 +45,19 @@ export class Blockchain {
         return this.networkConfig
     }
 
-    async sendMessage(message: Message) {
+    async sendMessage(message: Message): Promise<SendMessageResult> {
+        this.pushMessage(message)
+        return await this.runQueue()
+    }
+
+    pushMessage(message: Message) {
         if (message.info.type === 'external-out') {
             throw new Error('Cant send external out message')
         }
         this.messageQueue.push(message)
+    }
+
+    async runQueue(): Promise<SendMessageResult>  {
         const txes = await this.processQueue()
         return {
             transactions: txes,
@@ -67,6 +86,64 @@ export class Blockchain {
         }
 
         return result
+    }
+
+    provider(address: Address, init?: { code: Cell, data: Cell }): ContractProvider {
+        return new BlockchainContractProvider(this, address, init)
+    }
+
+    sender(address: Address): Sender {
+        return new BlockchainSender(this, address)
+    }
+
+    openContract<T extends Contract>(contract: T) {
+        let address: Address;
+        let init: { code: Cell, data: Cell } | undefined = undefined;
+
+        if (!Address.isAddress(contract.address)) {
+            throw Error('Invalid address');
+        }
+        address = contract.address;
+        if (contract.init) {
+            if (!(contract.init.code instanceof Cell)) {
+                throw Error('Invalid init.code');
+            }
+            if (!(contract.init.data instanceof Cell)) {
+                throw Error('Invalid init.data');
+            }
+            init = contract.init;
+        }
+
+        const provider = this.provider(address, init)
+        const blkch = this
+
+        return new Proxy<any>(contract as any, {
+            get(target, prop) {
+                const value = target[prop]
+                if (typeof prop === 'string' && typeof value === 'function') {
+                    if (prop.startsWith('get')) {
+                        return (...args: any[]) => value.apply(target, [provider, ...args])
+                    } else if (prop.startsWith('send')) {
+                        return async (...args: any[]) => {
+                            const ret = value.apply(target, [provider, ...args])
+                            if (ret instanceof Promise) {
+                                const r = await ret
+                                return {
+                                    result: r,
+                                    blockchainResult: await blkch.runQueue(),
+                                }
+                            } else {
+                                return {
+                                    result: ret,
+                                    blockchainResult: await blkch.runQueue(),
+                                }
+                            }
+                        }
+                    }
+                }
+                return value
+            }
+        }) as OpenedContract<T>;
     }
 
     async getContract(address: Address) {

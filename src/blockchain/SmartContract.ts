@@ -85,6 +85,18 @@ export class SmartContract {
         return this.#balance
     }
 
+    get lastTransactionHash() {
+        return this.account.lastTransactionHash
+    }
+
+    get lastTransactionLt() {
+        return this.account.lastTransactionLt
+    }
+
+    get accountState() {
+        return this.account.account?.storage.state
+    }
+
     static create(blockchain: Blockchain, args: { address: Address, code: Cell, data: Cell, balance: bigint }) {
         let account = createShardAccount(args)
         return new SmartContract(account, blockchain)
