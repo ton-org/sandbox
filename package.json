@@ -15,7 +15,9 @@
   "devDependencies": {
     "@ton-community/func-js": "^0.2.1",
     "@types/bn.js": "^5.1.1",
+    "@types/chai": "^4.3.4",
     "@types/jest": "^29.2.3",
+    "chai": "^4.3.7",
     "jest": "^29.3.1",
     "ton": "^13.3.0",
     "ts-jest": "^29.0.3",
