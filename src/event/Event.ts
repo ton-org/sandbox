@@ -28,8 +28,8 @@ type EventExtractor = (tx: Transaction) => Event[];
 
 const extractors: EventExtractor[] = [
     extractAccountCreated,
-    extractAccountDestroyed,
     extractMessageSent,
+    extractAccountDestroyed,
 ];
 
 export function extractEvents(tx: Transaction): Event[] {
@@ -37,7 +37,7 @@ export function extractEvents(tx: Transaction): Event[] {
 }
 
 function doesAccountExist(state: AccountStatus): boolean {
-    return state === 'uninitialized' || state === 'non-existing';
+    return !(state === 'uninitialized' || state === 'non-existing');
 }
 
 function extractAccountCreated(tx: Transaction): Event[] {
