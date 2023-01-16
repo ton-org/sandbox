@@ -61,8 +61,8 @@ export class TreasuryContract implements Contract {
         return await provider.external(transfer)
     }
 
-    async send(provider: ContractProvider, args: SenderArguments, sendMode?: SendMode) {
-        return await this.sendMessages(provider, [senderArgsToMessageRelaxed(args)], sendMode)
+    async send(provider: ContractProvider, args: SenderArguments) {
+        return await this.sendMessages(provider, [senderArgsToMessageRelaxed(args)], args.sendMode ?? undefined)
     }
 
     sender(provider: ContractProvider, address: Address): Treasury {
