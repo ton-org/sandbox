@@ -1,10 +1,13 @@
 import { defaultConfig } from "../config/defaultConfig";
-import {Address, Cell, Message, Transaction, ContractProvider, Contract, Sender} from "ton-core";
+import {Address, Cell, Message, Transaction, ContractProvider, Contract, Sender, toNano} from "ton-core";
 import {Executor, Verbosity} from "../executor/Executor";
 import {BlockchainStorage, LocalBlockchainStorage} from "./BlockchainStorage";
 import { extractEvents, Event } from "../event/Event";
 import { BlockchainContractProvider } from "./BlockchainContractProvider";
 import { BlockchainSender } from "./BlockchainSender";
+import { testKey } from "../utils/testKey";
+import { TreasuryContract } from "../treasury/Treasury";
+import { internal } from "../utils/message";
 
 const LT_ALIGN = 1000000n
 
@@ -96,6 +99,21 @@ export class Blockchain {
         return new BlockchainSender(this, address)
     }
 
+    async treasury(seed: string, workchain: number = 0) {
+        let key = testKey(seed)
+        let treasury = TreasuryContract.create(workchain, key)
+        let wallet = this.openContract(treasury)
+
+        await this.sendMessage(internal({
+            from: new Address(0, Buffer.alloc(32)),
+            to: treasury.address,
+            value: toNano(1000000),
+            bounce: false,
+        }))
+
+        return wallet
+    }
+
     openContract<T extends Contract>(contract: T) {
         let address: Address;
         let init: { code: Cell, data: Cell } | undefined = undefined;
@@ -158,7 +176,7 @@ export class Blockchain {
 
     }
 
-    static async create(opts?: { config?: Cell, storage: BlockchainStorage }) {
+    static async create(opts?: { config?: Cell, storage?: BlockchainStorage }) {
         return new Blockchain({
             executor: await Executor.create(),
             storage: opts?.storage ?? new LocalBlockchainStorage(),
