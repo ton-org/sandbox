@@ -9,20 +9,20 @@ async function main() {
     const blkch = await Blockchain.create()
 
     const minter = await blkch.treasury('minter')
-    const { result: minterSender } = await minter.sender(minter.address)
 
     const col = blkch.openContract(new NftCollection(0, {
         owner: minter.address,
     }))
 
-    const { blockchainResult: mintResult, result: index } = await col.sendMint(minterSender, minter.address)
-    const itemAddress = await col.getItemAddress(index)
+    const mintResult = await col.sendMint(minter.getSender(), minter.address)
+    const itemAddress = await col.getItemAddress(mintResult.result)
     const item = blkch.openContract(new NftItem(itemAddress))
 
     console.log(mintResult)
 
     const admin = await blkch.treasury('admin')
-    const { result: adminSender } = await admin.sender(admin.address)
+
+    // const { result: adminSender } = await admin.sender(admin.address)
 
     const marketplace = blkch.openContract(new NftMarketplace(0, admin.address))
 
@@ -37,19 +37,19 @@ async function main() {
         royaltyAmount: toNano('0.05'),
     }))
 
-    const { blockchainResult: deploySaleResult } = await marketplace.sendDeploy(adminSender, {
+    const { blockchainResult: deploySaleResult } = await marketplace.sendDeploy(admin.getSender(), {
         init: sale.init,
     })
 
     console.log(deploySaleResult)
 
-    const { blockchainResult: transferResult } = await item.sendTransfer(minterSender, {
+    const transferResult = await item.sendTransfer(admin.getSender(), {
         to: sale.address,
         value: toNano('0.1'),
         forwardAmount: toNano('0.03'),
     })
 
-    console.log(transferResult)
+    console.log(transferResult.blockchainResult)
 
     const buyer = await blkch.treasury('buyer')
 
