@@ -1,9 +1,6 @@
 import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Dictionary, DictionaryValue, internal, loadMessageRelaxed, MessageRelaxed, Sender, SenderArguments, SendMode, storeMessageRelaxed } from "ton-core";
 import { KeyPair, sign } from "ton-crypto";
 
-// Highload Wallet code
-const walletCode = 'te6ccgEBCAEAlwABFP8A9KQT9LzyyAsBAgEgAgMCAUgEBQC48oMI1xgg0x/TH9MfAvgju/Jj7UTQ0x/TH9P/0VEyuvKhUUS68qIE+QFUEFX5EPKj9ATR+AB/jhYhgBD0eG+lIJgC0wfUMAH7AJEy4gGz5lsBpMjLH8sfy//J7VQABNAwAgFIBgcAF7s5ztRNDTPzHXC/+AARuMl+1E0NcLH4';
-
 const DictionaryMessageValue: DictionaryValue<{ sendMode: SendMode, message: MessageRelaxed }> = {
     serialize(src, builder) {
         builder.storeUint(src.sendMode, 8);
@@ -31,6 +28,8 @@ function senderArgsToMessageRelaxed(args: SenderArguments): MessageRelaxed {
 }
 
 export class TreasuryContract implements Contract {
+    static readonly code = Cell.fromBase64('te6ccgEBCAEAlwABFP8A9KQT9LzyyAsBAgEgAgMCAUgEBQC48oMI1xgg0x/TH9MfAvgju/Jj7UTQ0x/TH9P/0VEyuvKhUUS68qIE+QFUEFX5EPKj9ATR+AB/jhYhgBD0eG+lIJgC0wfUMAH7AJEy4gGz5lsBpMjLH8sfy//J7VQABNAwAgFIBgcAF7s5ztRNDTPzHXC/+AARuMl+1E0NcLH4')
+
     static create(workchain: number, keypair: KeyPair) {
         return new TreasuryContract(workchain, keypair);
     }
@@ -41,14 +40,13 @@ export class TreasuryContract implements Contract {
     private seqno: number = 0;
 
     constructor(workchain: number, keypair: KeyPair) {
-        let code = Cell.fromBoc(Buffer.from(walletCode, 'base64'))[0];
-        let data = beginCell()
+        const data = beginCell()
             .storeUint(0, 32) // Seqno
             .storeUint(698983191, 32) // Wallet Id
             .storeBuffer(keypair.publicKey)
             .endCell();
-        this.address = contractAddress(workchain, { code, data });
-        this.init = { code, data };
+        this.init = { code: TreasuryContract.code, data };
+        this.address = contractAddress(workchain, this.init);
         this.keypair = keypair;
     }
 
@@ -58,25 +56,11 @@ export class TreasuryContract implements Contract {
             sendMode: sendMode,
             messages: messages
         })
-        return await provider.external(transfer)
+        await provider.external(transfer)
     }
 
     async send(provider: ContractProvider, args: SenderArguments) {
-        return await this.sendMessages(provider, [senderArgsToMessageRelaxed(args)], args.sendMode ?? undefined)
-    }
-
-    sender(provider: ContractProvider): Treasury {
-        return {
-            address: this.address,
-            send: async (args) => {
-                let transfer = this.createTransfer({
-                    seqno: this.seqno++,
-                    sendMode: args.sendMode ?? undefined,
-                    messages: [senderArgsToMessageRelaxed(args)]
-                });
-                await provider.external(transfer);
-            }
-        };
+        await this.sendMessages(provider, [senderArgsToMessageRelaxed(args)], args.sendMode ?? undefined)
     }
 
     getSender(provider: ContractProvider): Treasury {

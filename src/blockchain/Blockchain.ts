@@ -20,9 +20,8 @@ export type OpenedContract<F> = {
     [P in keyof F]: P extends `get${string}`
         ? (F[P] extends (x: ContractProvider, ...args: infer P) => infer R ? (...args: P) => R : never)
         : (P extends `send${string}`
-            ? (F[P] extends (x: ContractProvider, ...args: infer P) => infer R ? (...args: P) => Promise<{
-                result: R extends Promise<infer PR> ? PR : R,
-                blockchainResult: SendMessageResult
+            ? (F[P] extends (x: ContractProvider, ...args: infer P) => infer R ? (...args: P) => Promise<SendMessageResult & {
+                result: R extends Promise<infer PR> ? PR : R
             }> : never)
             : F[P]);
 }
@@ -109,6 +108,7 @@ export class Blockchain {
             to: treasury.address,
             value: toNano(1000000),
             bounce: false,
+            stateInit: treasury.init,
         }))
 
         return wallet
@@ -147,13 +147,13 @@ export class Blockchain {
                             if (ret instanceof Promise) {
                                 const r = await ret
                                 return {
+                                    ...await blkch.runQueue(),
                                     result: r,
-                                    blockchainResult: await blkch.runQueue(),
                                 }
                             } else {
                                 return {
+                                    ...await blkch.runQueue(),
                                     result: ret,
-                                    blockchainResult: await blkch.runQueue(),
                                 }
                             }
                         }
