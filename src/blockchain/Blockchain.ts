@@ -7,7 +7,6 @@ import { BlockchainContractProvider } from "./BlockchainContractProvider";
 import { BlockchainSender } from "./BlockchainSender";
 import { testKey } from "../utils/testKey";
 import { TreasuryContract } from "../treasury/Treasury";
-import { internal } from "../utils/message";
 
 const LT_ALIGN = 1000000n
 
@@ -103,13 +102,10 @@ export class Blockchain {
         let treasury = TreasuryContract.create(workchain, key)
         let wallet = this.openContract(treasury)
 
-        await this.sendMessage(internal({
-            from: new Address(0, Buffer.alloc(32)),
-            to: treasury.address,
-            value: toNano(1000000),
-            bounce: false,
-            stateInit: treasury.init,
-        }))
+        const contract = await this.getContract(treasury.address)
+        if (contract.balance === 0n) {
+            contract.balance = toNano(1_000_000)
+        }
 
         return wallet
     }

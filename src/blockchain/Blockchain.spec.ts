@@ -1,14 +1,14 @@
 import {Blockchain} from "./Blockchain";
-import {Address, beginCell, Cell, contractAddress, external, internal, Message} from "ton-core";
-import {randomAddress} from "../../test/utils";
-import {toNano, TonClient4} from "ton";
+import {Address, beginCell, Message, toNano} from "ton-core";
+import {randomAddress} from "../utils/randomAddress";
+import {TonClient4} from "ton";
 import {RemoteBlockchainStorage} from "./BlockchainStorage";
-import {TupleSlice} from "ton-core/dist/tuple/tuple";
 import {prettyLogTransactions} from "../utils/prettyLogTransaction";
 
 describe('Blockchain', () => {
-    it('should do something', async () => {
+    jest.setTimeout(30000)
 
+    it.skip('should work with remote storage', async () => {
         let client = new TonClient4({
             endpoint: 'https://mainnet-v4.tonhubapi.com'
         })
@@ -40,7 +40,7 @@ describe('Blockchain', () => {
 
         let res = await blockchain.sendMessage(message)
 
-        prettyLogTransactions(res)
+        prettyLogTransactions(res.transactions)
 
         let nft = await blockchain.getContract(Address.parse('EQDTbyyOixs9JsO8bmHjk9WJYN8deL-qJeNZvWx147pM8qeO'))
         let data = await nft.get('get_nft_data')

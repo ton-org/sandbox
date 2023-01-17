@@ -1,6 +1,6 @@
 import { AccountStatus, Address, Cell, Transaction } from "ton-core";
-import * as chai from "chai";
-import { expect as jestExpect } from "@jest/globals";
+const chai = require("chai");
+const jestGlobals = require("@jest/globals");
 import type { MatcherFunction } from "expect";
 
 export type FlatTransaction = {
@@ -19,7 +19,14 @@ export type FlatTransaction = {
     aborted?: boolean
     destroyed?: boolean
     exitCode?: number
+    success?: boolean
 }
+
+type WithFunctions<T> = {
+    [K in keyof T]: T[K] | ((x: T[K]) => boolean)
+}
+
+export type FlatTransactionComparable = Partial<WithFunctions<FlatTransaction>>
 
 function flattenTransaction(tx: Transaction): FlatTransaction {
     return {
@@ -39,19 +46,29 @@ function flattenTransaction(tx: Transaction): FlatTransaction {
             aborted: tx.description.aborted,
             destroyed: tx.description.destroyed,
             exitCode: tx.description.computePhase.type === 'vm' ? tx.description.computePhase.exitCode : undefined,
+            success: tx.description.computePhase.type === 'vm'
+                ? (tx.description.computePhase.success && tx.description.actionPhase?.success)
+                : false,
         } : {
             aborted: undefined,
             destroyed: undefined,
             exitCode: undefined,
+            success: undefined,
         }),
     }
 }
 
-function compare(tx: FlatTransaction, cmp: Partial<FlatTransaction>): boolean {
+function compare(tx: FlatTransaction, cmp: FlatTransactionComparable): boolean {
     for (const key in cmp) {
         if (!(key in tx)) throw new Error(`Unknown flat transaction object key ${key}`)
 
-        if (!compareValue((tx as any)[key], (cmp as any)[key])) return false
+        const cmpv = (cmp as any)[key]
+        const txv = (tx as any)[key]
+        if (typeof cmpv === 'function') {
+            if (!cmpv(txv)) return false
+        } else {
+            if (!compareValue(txv, cmpv)) return false
+        }
     }
 
     return true
@@ -71,7 +88,7 @@ function compareValue(a: any, b: any) {
     return a === b
 }
 
-function compareTransaction(subject: any, cmp: Partial<FlatTransaction>): {
+function compareTransaction(subject: any, cmp: FlatTransactionComparable): {
     pass: boolean
     posMessage: string
     negMessage: string
@@ -92,17 +109,27 @@ function compareTransaction(subject: any, cmp: Partial<FlatTransaction>): {
 }
 
 function chaiSupportTransaction(Assertion: Chai.AssertionStatic) {
-    Assertion.addMethod('transaction', function (this: any, cmp: Partial<FlatTransaction>) {
+    Assertion.addMethod('transaction', function (this: any, cmp: FlatTransactionComparable) {
         const result = compareTransaction(this._obj, cmp)
         this.assert(result.pass, result.posMessage, result.negMessage)
     })
 }
 
-chai.use((chai) => {
-    chaiSupportTransaction(chai.Assertion)
-})
+if (chai) {
+    chai.use((chai: any) => {
+        chaiSupportTransaction(chai.Assertion)
+    })
+}
 
-const jestTransaction: MatcherFunction<[cmp: Partial<FlatTransaction>]> = function(actual, cmp) {
+declare global {
+    export namespace Chai {
+        interface Assertion {
+            transaction(cmp: FlatTransactionComparable): void
+        }
+    }
+}
+
+const jestTransaction: MatcherFunction<[cmp: FlatTransactionComparable]> = function(actual, cmp) {
     const result = compareTransaction(actual, cmp)
     return {
         pass: result.pass,
@@ -110,14 +137,16 @@ const jestTransaction: MatcherFunction<[cmp: Partial<FlatTransaction>]> = functi
     }
 }
 
-jestExpect.extend({
-    toHaveTransaction: jestTransaction,
-})
+if (jestGlobals) {
+    jestGlobals.expect.extend({
+        toHaveTransaction: jestTransaction,
+    })
+}
 
 declare global {
-    namespace jest {
+    export namespace jest {
         interface Matchers<R> {
-            toHaveTransaction(cmp: Partial<FlatTransaction>): R
+            toHaveTransaction(cmp: FlatTransactionComparable): R
         }
     }
 }

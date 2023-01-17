@@ -259,12 +259,6 @@ export class Executor {
 
         const result: ResultSuccess | ResultError = resp.output;
 
-        // console.log(logs)
-
-        if (result.success) {
-            // console.log(result.vm_log)
-        }
-
         return {
             result: result.success ? {
                 success: true,

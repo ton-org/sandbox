@@ -1,5 +1,4 @@
-import {Transaction} from "ton-core";
-import {fromNano} from "ton";
+import {Transaction, fromNano} from "ton-core";
 
 export function prettyLogTransaction(tx: Transaction) {
     let res = `${tx.inMessage?.info.src!}  ➡️  ${tx.inMessage?.info.dest}\n`

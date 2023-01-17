@@ -1,5 +1,6 @@
 import {Blockchain} from "./Blockchain";
 import {
+    Account,
     Address,
     beginCell,
     Cell,
@@ -46,20 +47,24 @@ function createShardAccount(args: { address?: Address, code: Cell, data: Cell, b
     }
 }
 
+function createEmptyAccount(address: Address): Account {
+    return {
+        addr: address,
+        storage: {
+            lastTransLt: 0n,
+            balance: { coins: 0n },
+            state: { type: 'uninit' }
+        },
+        storageStats: {
+            used: { cells: 0n, bits: 0n, publicCells: 0n },
+            lastPaid: 0,
+        }
+    }
+}
+
 function createEmptyShardAccount(address: Address): ShardAccount {
     return {
-        account: {
-            addr: address,
-            storage: {
-                lastTransLt: 0n,
-                balance: { coins: 0n },
-                state: { type: 'uninit' }
-            },
-            storageStats: {
-                used: { cells: 0n, bits: 0n, publicCells: 0n },
-                lastPaid: 0,
-            }
-        },
+        account: createEmptyAccount(address),
         lastTransactionLt: 0n,
         lastTransactionHash: 0n
     }
@@ -70,7 +75,6 @@ export type Verbosity = 'none' | 'vm_logs' | 'tx_logs' | 'full'
 export class SmartContract {
     readonly address: Address;
     readonly blockchain: Blockchain
-    #balance: bigint
     private account: ShardAccount
     private verbosity: Verbosity = 'none'
 
@@ -78,11 +82,17 @@ export class SmartContract {
         this.address = shardAccount.account!.addr
         this.account = shardAccount
         this.blockchain = blockchain
-        this.#balance = shardAccount.account?.storage.balance.coins!
     }
 
     get balance() {
-        return this.#balance
+        return this.account.account?.storage.balance.coins ?? 0n
+    }
+
+    set balance(v: bigint) {
+        if (!this.account.account) {
+            this.account.account = createEmptyAccount(this.address)
+        }
+        this.account.account.storage.balance.coins = v
     }
 
     get lastTransactionHash() {
@@ -126,7 +136,6 @@ export class SmartContract {
             throw new Error('Error executing transaction')
         }
         let account = loadShardAccount(Cell.fromBase64(res.result.shardAccount).beginParse())
-        this.#balance = account.account?.storage.balance.coins!
         this.account = account
 
         if (this.verbosity !== 'none') {

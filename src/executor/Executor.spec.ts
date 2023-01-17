@@ -1,5 +1,5 @@
 import {Executor} from "./Executor";
-import {Address, beginCell, Cell, contractAddress, internal, loadShardAccount, storeMessage, storeMessageRelaxed, storeShardAccount} from "ton-core";
+import {Address, beginCell, Cell, contractAddress, storeMessage, storeShardAccount} from "ton-core";
 import {defaultConfig} from "../config/defaultConfig";
 
 describe('Executor', () => {

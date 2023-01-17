@@ -1,4 +1,4 @@
-import { AccountState, Address, Cell, comment, ContractProvider, ContractState, loadMessage, Sender, SendMode, toNano, TupleItem, TupleReader } from "ton-core";
+import { AccountState, Address, Cell, comment, ContractProvider, ContractState, Sender, SendMode, toNano, TupleItem, TupleReader } from "ton-core";
 import { Maybe } from "ton-core/dist/utils/maybe";
 import { Blockchain } from "./Blockchain";
 
