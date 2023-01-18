@@ -1,6 +1,6 @@
 import { defaultConfig } from "../config/defaultConfig";
 import {Address, Cell, Message, Transaction, ContractProvider, Contract, Sender, toNano} from "ton-core";
-import {Executor, Verbosity} from "../executor/Executor";
+import {Executor} from "../executor/Executor";
 import {BlockchainStorage, LocalBlockchainStorage} from "./BlockchainStorage";
 import { extractEvents, Event } from "../event/Event";
 import { BlockchainContractProvider } from "./BlockchainContractProvider";
@@ -166,10 +166,6 @@ export class Blockchain {
 
     setConfig(config: Cell) {
         this.networkConfig = config
-    }
-
-    setVerbosity(verbosity: Verbosity) {
-
     }
 
     static async create(opts?: { config?: Cell, storage?: BlockchainStorage }) {

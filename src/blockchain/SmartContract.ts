@@ -12,6 +12,7 @@ import {
     TupleItem, TupleReader
 } from "ton-core";
 import {getSelectorForMethod} from "../utils/selector";
+import { ExecutorVerbosity } from "../executor/Executor";
 
 function createShardAccount(args: { address?: Address, code: Cell, data: Cell, balance: bigint, workchain?: number }): ShardAccount {
     let wc = args.workchain ?? 0
@@ -70,7 +71,13 @@ function createEmptyShardAccount(address: Address): ShardAccount {
     }
 }
 
-export type Verbosity = 'none' | 'vm_logs' | 'tx_logs' | 'full'
+export type Verbosity = 'none' | 'vm_logs' | 'vm_logs_full'
+
+const verbosityToExecutorVerbosity: Record<Verbosity, ExecutorVerbosity> = {
+    'none': 'short',
+    'vm_logs': 'full',
+    'vm_logs_full': 'full_location_stack',
+}
 
 export class SmartContract {
     readonly address: Address;
@@ -123,7 +130,7 @@ export class SmartContract {
         let res = await this.blockchain.executor.runTransaction({
             config: this.blockchain.config,
             libs: null,
-            verbosity: 'short',
+            verbosity: verbosityToExecutorVerbosity[this.verbosity],
             shardAccount,
             message: messageCell,
             now: Math.floor(Date.now() / 1000),
@@ -157,7 +164,7 @@ export class SmartContract {
             methodId: typeof method === 'string' ? getSelectorForMethod(method) : method,
             stack,
             config: this.blockchain.config,
-            verbosity: 'full',
+            verbosity: verbosityToExecutorVerbosity[this.verbosity],
             libs: undefined,
             address: this.address,
             unixTime: Math.floor(Date.now() / 1000),
@@ -170,7 +177,7 @@ export class SmartContract {
             throw new Error('Error invoking get method: ' + res.output.error)
         }
 
-        if (this.verbosity === 'vm_logs' || this.verbosity === 'full') {
+        if (this.verbosity !== 'none') {
             console.log(res.logs)
         }
 

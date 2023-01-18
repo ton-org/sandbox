@@ -8,7 +8,7 @@ export type GetMethodArgs = {
     methodId: number,
     stack: TupleItem[],
     config: Cell,
-    verbosity: Verbosity
+    verbosity: ExecutorVerbosity
     libs?: Cell
     address: Address
     unixTime: number
@@ -40,7 +40,7 @@ export type GetMethodResult = {
 export type RunTransactionArgs = {
     config: Cell
     libs: Cell | null
-    verbosity: Verbosity
+    verbosity: ExecutorVerbosity
     shardAccount: Cell
     message: Cell
     now: number
@@ -68,7 +68,7 @@ type EmulationInternalParams = {
     ignore_chksig: boolean
 };
 
-export type Verbosity = 'short' | 'full' | 'full_location' | 'full_location_stack'
+export type ExecutorVerbosity = 'short' | 'full' | 'full_location' | 'full_location_stack'
 
 type ResultSuccess = {
     success: true
@@ -112,7 +112,7 @@ export type EmulationResult = {
     logs: string
 }
 
-const verbosityToNum: Record<Verbosity, number> = {
+const verbosityToNum: Record<ExecutorVerbosity, number> = {
     'short': 0,
     'full': 1,
     'full_location': 2,
