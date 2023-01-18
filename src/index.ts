@@ -38,9 +38,9 @@ export {
 export {
     FlatTransaction,
     FlatTransactionComparable,
+    compareTransaction,
+    compareTransactionForTest,
 } from './test/transaction';
-
-import './test/transaction'; // register helpers
 
 export {
     Treasury,
