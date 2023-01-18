@@ -92,7 +92,9 @@ Note that all of the methods of contracts that you want to "open" that start wit
 
 ## Writing tests
 
-This package also registers a custom `jest` and `chai` matcher for transactions returned from a blockchain emulation. Here is an excerpt of how it's used in the NFT collection example mentioned above:
+You can install additional `@ton-community/jest-matchers` (with `.toHaveTransaction` matcher) or `@ton-community/chai-matchers` (with `.transaction` or `.to.have.transaction` matcher) to add additional helpers for ease of testing. Don't forget to import them in your unit test files though!
+
+Here is an excerpt of how it's used in the NFT collection example mentioned above:
 ```typescript
 const buyResult = await buyer.send({
     to: sale.address,
@@ -111,7 +113,7 @@ expect(buyResult.transactions).toHaveTransaction({
     value: fee,
 })
 ```
-(`.toHaveTransaction` is the `jest` matcher; for `chai` you need to use `expect(...).transaction` or `expect(...).to.have.transaction`)
+(in that example `jest` is used)
 
 The matcher supports the following fields:
 ```typescript

@@ -1,9 +1,10 @@
 import { AccountStatus, beginCell, Cell, SendMode, toNano } from "ton-core"
-import { Blockchain, FlatTransactionComparable } from "../../src"
+import { Blockchain, FlatTransactionComparable } from "@ton-community/tx-emulator"
 import { NftCollection } from "./NftCollection"
 import { NftItem } from "./NftItem"
 import { NftMarketplace } from "./NftMarketplace"
 import { NftSale } from "./NftSale"
+import "@ton-community/jest-matchers" // register matchers
 
 describe('Collection', () => {
     it('should work', async () => {
