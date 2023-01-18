@@ -9,135 +9,137 @@ The key difference of this package from [ton-contract-executor](https://github.c
 Requires node 16.
 
 ```
-yarn add @ton-community/tx-emulator ton
+yarn add @ton-community/tx-emulator ton ton-core ton-crypto
 ```
 or
 ```
-npm i @ton-community/tx-emulator ton
+npm i @ton-community/tx-emulator ton ton-core ton-crypto
 ```
 
 ## Usage
 
-To use this package, you need to obtain an instance of the `SmartContract` class. The easiest way to do this is to invoke the static method `fromState` of that class.
-
-Here is an example:
+To use this package, you need to create an instance of the `Blockchain` class using the static method `Blockchain.create` as follows:
 ```typescript
-import { Cell, contractAddress } from "ton";
-import { SmartContract } from "ton-tx-emulator";
-import BN from "bn.js";
+import { Blockchain } from "@ton-community/tx-emulator";
 
-const createSmartContract => (code: Cell, data: Cell) => {
-  const contract = SmartContract.fromState({
-    address: contractAddress({
-      workchain: 0,
-      initialCode: code,
-      initialData: data
-    }),
-    accountState: {
-      type: 'active',
-      code,
-      data
-    },
-    balance: new BN(0)
-  });
-  
-  return contract;
-};
+const blockchain = await Blockchain.create()
 ```
 
-The `createSmartContract` function will create a smart contract using the given code and data cells and all the other parameters required for smart contract execution set to default values.
+After that, you can use the low level methods on Blockchain (such as sendMessage) to emulate any messages that you want, but the recommended way to use it is to write wrappers for your contract using the `Contract` interface from `ton-core`. Then you can use `blockchain.openContract` on instances of such contracts, and they will be wrapped in a Proxy that will supply a `ContractProvider` as a first argument to all its methods starting with either `get` or `send`. Also all `send` methods will get Promisified and will return results of running the blockchain message queue along with the original method's result in the `result` field.
 
-One could also create a smart contract with a calculated address but with `accountState: { type: 'uninit' }` and then emulate a message with a correct `StateInit` that would set the necessary code and data.
+A good example of this is the [treasury contract](/src/treasury/Treasury.ts) that is basically a built-in highload wallet meant to help you write tests for your systems of smart contracts. When `blockchain.treasury` is called, an instance of `TreasuryContract` is created and `blockchain.openContract` is called to "open" it. After that, when you call `treasury.send`, `Blockchain` automatically supplies the first `provider` argument.
 
-Another way to create a smart contract is to compile the code using a compiler package such as `@ton-community/func-js` and calculate the required data, like in this [unit test](/test/SmartContract.spec.ts#L20).
-
-Yet another way to create smart contracts is used in another [unit test](/test/SmartContract.spec.ts#L79) - here an existing transaction on a faucet wallet is queried from the testnet together with the account state at the time, and then the message is emulated locally.
-
-### Sending emulated messages
-
-Once you have an instance of `SmartContract`, you can start sending messages to it. For example:
-
+For your own contracts, you can draw inspiration from the contracts in the [NFT collection example](/examples/collection/) - all of them use the `provider.internal` method to send internal messages using the treasuries passed in from the unit test file.
+Here is an excerpt of that from [NftItem.ts](/examples/collection/NftItem.ts):
 ```typescript
-const smc = SmartContract.fromState({
-    address: contractAddress({
-        workchain: 0,
-        initialCode: code,
-        initialData: data,
-    }),
-    accountState: {
-        type: 'active',
-        code,
-        data,
-    },
-    balance: initBalance,
-});
+import { Address, beginCell, Cell, Contract, ContractProvider, Sender, toNano, Builder } from "ton-core";
 
-const result = await smc.sendMessage(new InternalMessage({
-    to: smc.getAddress(),
-    from: new Address(0, Buffer.alloc(32)),
-    value: coins,
-    bounce: true,
-    body: new CommonMessageInfo({
-        body: new CellMessage(new Cell())
-    })
-}));
+class NftItem implements Contract {
+    async sendTransfer(provider: ContractProvider, via: Sender, params: {
+        value?: bigint
+        to: Address
+        responseTo?: Address
+        forwardAmount?: bigint
+        forwardBody?: Cell | Builder
+    }) {
+        await provider.internal(via, {
+            value: params.value ?? toNano('0.05'),
+            body: beginCell()
+                .storeUint(0x5fcc3d14, 32) // op
+                .storeUint(0, 64) // query id
+                .storeAddress(params.to)
+                .storeAddress(params.responseTo)
+                .storeBit(false) // custom payload
+                .storeCoins(params.forwardAmount ?? 0n)
+                .storeMaybeRef(params.forwardBody)
+                .endCell()
+        })
+    }
+}
 ```
 
-The `result` object contains the following fields:
+When you call `nftItem.sendTransfer(treasury.getSender(), { to: recipient })` (with `nftItem` being an "opened" instance of `NftItem`), an external message to the wallet represented by `treasury` will be pushed onto the message queue, then processed, generating an internal message to the NFT contract.
+
+Here is another excerpt that shows the way to interact with get methods from wrappers:
 ```typescript
-export type SendMessageResult = {
-    transaction: RawTransaction
-    shardAccount: RawShardAccount
-    transactionCell: Cell
-    shardAccountCell: Cell
-    logs: string
-    vmLogs: string
-    actionsCell: Cell
-};
-```
-Note that the `RawTransaction` and `RawShardAccount` types are the same as in the `ton` package, but `RawShardAccount` cannot contain a `none` account.
+import { Contract, ContractProvider } from "ton-core";
 
-Here is an excerpt from a unit test that demonstrates the usage of this result:
-```typescript
-expect(res.transaction.outMessages.length).toBe(1);
+export type NftItemData = {
+    inited: boolean
+    index: number
+    collection: Address | null
+    owner: Address | null
+    content: Cell | null
+}
 
-expect(res.transaction.outMessages[0].info.type).toBe('internal');
-if (res.transaction.outMessages[0].info.type !== 'internal') return;
-
-expect(res.transaction.outMessages[0].info.dest.equals(returnTo)).toBeTruthy();
-expect(res.transaction.outMessages[0].info.value.coins.eq(coins)).toBeTruthy();
-expect(res.shardAccount.account.storage.balance.coins.lt(initBalance)).toBeTruthy();
-```
-
-### Running get methods
-
-You can run get methods on your contract with the desired stack (for example, to query the state of the contract after sending messages to it).
-
-Here is an excerpt from a [unit test](/test/SmartContract.spec.ts#L183) that demonstrates the usage of get methods:
-```typescript
-const res = await smc.runGetMethod('add_and_multiply', [
-    stackNumber(3),
-    stackNumber(new BN(2)),
-]);
-
-expect(res.exitCode).toBe(0);
-
-expect(res.stackSlice.readNumber()).toBe(5);
-expect(res.stackSlice.readNumber()).toBe(6);
+class NftItem implements Contract {
+    async getData(provider: ContractProvider): Promise<NftItemData> {
+        const { stack } = await provider.get('get_nft_data', [])
+        return {
+            inited: stack.readBoolean(),
+            index: stack.readNumber(),
+            collection: stack.readAddressOpt(),
+            owner: stack.readAddressOpt(),
+            content: stack.readCellOpt(),
+        }
+    }
+}
 ```
 
-Here are all the stack types (provided by the `ton` package) with their respective helper functions:
-- `StackCell` - `stackCell`
-- `StackSlice` - `stackSlice`
-- `StackInt` - `stackNumber`
-- `StackTuple` - `stackTuple`
-- `StackNull` - `stackNull`
-- `StackNan` - `stackNan`
-- `StackBuilder` - `stackBuilder`
+When you call `nftItem.getData()` (note that just like in the `sendTransfer` method, you don't need to supply the `provider` argument - it's done for you on "opened" instances), the `provider` will query the smart contract contained in blockchain and parse the data according to the code. Note that unlike the `send` methods, `get` methods on "opened" instances will return the original result as-is to the caller.
+
+Note that all of the methods of contracts that you want to "open" that start with `get` or `send` NEED to accept `provider: ContractProvider` as a first argument (even if not used) due to how the wrapper works.
+
+## Writing tests
+
+This package also registers a custom `jest` and `chai` matcher for transactions returned from a blockchain emulation. Here is an excerpt of how it's used in the NFT collection example mentioned above:
+```typescript
+const buyResult = await buyer.send({
+    to: sale.address,
+    value: price * 2n,
+    sendMode: SendMode.PAY_GAS_SEPARATLY,
+})
+
+expect(buyResult.transactions).toHaveTransaction({
+    from: sale.address,
+    to: marketplace.address,
+    value: fee,
+})
+expect(buyResult.transactions).toHaveTransaction({
+    from: sale.address,
+    to: collection.address,
+    value: fee,
+})
+```
+(`.toHaveTransaction` is the `jest` matcher; for `chai` you need to use `expect(...).transaction` or `expect(...).to.have.transaction`)
+
+The matcher supports the following fields:
+```typescript
+export type FlatTransaction = {
+    from?: Address
+    to: Address
+    value?: bigint
+    body: Cell
+    initData?: Cell
+    initCode?: Cell
+    lt: bigint
+    now: number
+    outMessagesCount: number
+    oldStatus: AccountStatus
+    endStatus: AccountStatus
+    totalFees?: bigint
+    aborted?: boolean
+    destroyed?: boolean
+    exitCode?: number
+    success?: boolean
+}
+```
+
+But you can omit those you're not interested in, and you can also pass in functions accepting those types returning booleans (`true` meaning good) to check for example number ranges, message opcodes, etc. Note however that if a field is optional (like `from?: Address`), then the function needs to accept the optional type, too.
 
 ### Network/Block configuration
 
-By default, this package will use its [stored network configuration](src/config/defaultConfig.ts) to emulate messages. However, you can set any configuration you want using the `SmartContract.setConfig` method. You can use the helper `getConfigBoc` function to get the BOC of the needed configuration; by default it will return the configuration of the latest block on the mainnet.
+By default, this package will use its [stored network configuration](src/config/defaultConfig.ts) to emulate messages. However, you can set any configuration you want when creating the `Blockchain` instance by passing the configuration cell in the optional `params` argument in the `config` field.
 
 ## Contributors
 
