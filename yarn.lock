@@ -569,6 +569,11 @@
   dependencies:
     "@sinonjs/commons" "^1.7.0"
 
+"@ton-community/test-utils@^0.0.1":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@ton-community/test-utils/-/test-utils-0.0.1.tgz#49e74a7b4b15a806826381b6b42f915db380dd00"
+  integrity sha512-Uhy2a85Y7uKzyfnu4R7gDfzcB1K380nAxQdTodIyGbbE7D8f2pdJV7RFh4EujvnAfo+QX3ofA702sNYl/TTT8Q==
+
 "@types/babel__core@^7.1.14":
   version "7.1.20"
   resolved "https://registry.yarnpkg.com/@types/babel__core/-/babel__core-7.1.20.tgz#e168cdd612c92a2d335029ed62ac94c95b362359"

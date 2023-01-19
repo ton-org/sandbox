@@ -36,13 +36,6 @@ export {
 } from './event/Event';
 
 export {
-    FlatTransaction,
-    FlatTransactionComparable,
-    compareTransaction,
-    compareTransactionForTest,
-} from './test/transaction';
-
-export {
     Treasury,
     TreasuryContract,
 } from './treasury/Treasury';

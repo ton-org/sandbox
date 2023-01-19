@@ -1,6 +1,6 @@
 import {Blockchain} from "./Blockchain";
 import {Address, beginCell, Message, toNano} from "ton-core";
-import {randomAddress} from "../utils/randomAddress";
+import {randomAddress} from "@ton-community/test-utils";
 import {TonClient4} from "ton";
 import {RemoteBlockchainStorage} from "./BlockchainStorage";
 import {prettyLogTransactions} from "../utils/prettyLogTransaction";
@@ -8,7 +8,7 @@ import {prettyLogTransactions} from "../utils/prettyLogTransaction";
 describe('Blockchain', () => {
     jest.setTimeout(30000)
 
-    it.skip('should work with remote storage', async () => {
+    it('should work with remote storage', async () => {
         let client = new TonClient4({
             endpoint: 'https://mainnet-v4.tonhubapi.com'
         })

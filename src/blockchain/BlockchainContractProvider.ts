@@ -1,5 +1,4 @@
 import { AccountState, Address, Cell, comment, ContractProvider, ContractState, Sender, SendMode, toNano, TupleItem, TupleReader } from "ton-core";
-import { Maybe } from "ton-core/dist/utils/maybe";
 import { Blockchain } from "./Blockchain";
 
 function bigintToBuffer(x: bigint, n = 32): Buffer {
@@ -76,7 +75,7 @@ export class BlockchainContractProvider implements ContractProvider {
             body: message,
         })
     }
-    async internal(via: Sender, args: { value: string | bigint; bounce?: Maybe<boolean>; sendMode?: SendMode | undefined; body?: Maybe<string | Cell>; }) {
+    async internal(via: Sender, args: { value: string | bigint; bounce?: boolean | null; sendMode?: SendMode; body?: string | Cell | null; }) {
         const init = ((await this.getState()).state.type !== 'active' && this.init) ? this.init : undefined
 
         const bounce = (args.bounce !== null && args.bounce !== undefined) ? args.bounce : true

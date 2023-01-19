@@ -1,10 +1,10 @@
-import { AccountStatus, beginCell, Cell, SendMode, toNano } from "ton-core"
-import { Blockchain, FlatTransactionComparable } from "@ton-community/tx-emulator"
+import { beginCell, SendMode, toNano } from "ton-core"
+import { Blockchain } from "@ton-community/sandbox"
 import { NftCollection } from "./NftCollection"
 import { NftItem } from "./NftItem"
 import { NftMarketplace } from "./NftMarketplace"
 import { NftSale } from "./NftSale"
-import "@ton-community/jest-matchers" // register matchers
+import "@ton-community/test-utils" // register matchers
 
 describe('Collection', () => {
     it('should work', async () => {
@@ -19,13 +19,6 @@ describe('Collection', () => {
         }))
         const marketplace = blkch.openContract(new NftMarketplace(0, admin.address))
 
-        const isDeploy: FlatTransactionComparable = {
-            initCode: (x?: Cell) => x !== undefined,
-            initData: (x?: Cell) => x !== undefined,
-            oldStatus: (s: AccountStatus) => s !== 'active',
-            endStatus: (s: AccountStatus) => s === 'active',
-        }
-
         const itemContent = beginCell()
             .storeUint(123, 8)
             .endCell()
@@ -37,7 +30,7 @@ describe('Collection', () => {
         expect(mintResult.transactions).toHaveTransaction({
             from: collection.address,
             to: itemAddress,
-            ...isDeploy,
+            deploy: true,
         })
         const item = blkch.openContract(new NftItem(itemAddress))
         const itemData = await item.getData()
@@ -64,7 +57,7 @@ describe('Collection', () => {
         expect(deploySaleResult.transactions).toHaveTransaction({
             from: marketplace.address,
             to: sale.address,
-            ...isDeploy,
+            deploy: true,
         })
         expect((await blkch.getContract(sale.address)).accountState?.type).toBe('active')
 

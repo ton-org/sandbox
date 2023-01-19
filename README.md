@@ -1,6 +1,6 @@
-# TON transaction emulator
+# Sandbox
 
-This package allows you to emulate arbitrary smart contracts, send messages to them and run get methods on them as if they were deployed on a real network.
+This package allows you to emulate arbitrary TON smart contracts, send messages to them and run get methods on them as if they were deployed on a real network.
 
 The key difference of this package from [ton-contract-executor](https://github.com/ton-community/ton-contract-executor) is the fact that the latter only emulates the compute phase of the contract - it does not know about any other phases and thus does not know anything about fees and balances (in a sense that it does not know whether a contract's balance will be enough to process all the out messages that it produces). On the other hand, this package emulates all the phases of a contract, and as a result, the emulation is much closer to what would happen in a real network.
 
@@ -9,18 +9,18 @@ The key difference of this package from [ton-contract-executor](https://github.c
 Requires node 16.
 
 ```
-yarn add @ton-community/tx-emulator ton ton-core ton-crypto
+yarn add @ton-community/sandbox ton ton-core ton-crypto
 ```
 or
 ```
-npm i @ton-community/tx-emulator ton ton-core ton-crypto
+npm i @ton-community/sandbox ton ton-core ton-crypto
 ```
 
 ## Usage
 
 To use this package, you need to create an instance of the `Blockchain` class using the static method `Blockchain.create` as follows:
 ```typescript
-import { Blockchain } from "@ton-community/tx-emulator";
+import { Blockchain } from "@ton-community/sandbox";
 
 const blockchain = await Blockchain.create()
 ```
@@ -92,7 +92,7 @@ Note that all of the methods of contracts that you want to "open" that start wit
 
 ## Writing tests
 
-You can install additional `@ton-community/jest-matchers` (with `.toHaveTransaction` matcher) or `@ton-community/chai-matchers` (with `.transaction` or `.to.have.transaction` matcher) to add additional helpers for ease of testing. Don't forget to import them in your unit test files though!
+You can install additional `@ton-community/test-utils` package (with `.toHaveTransaction` for jest or `.transaction` or `.to.have.transaction` for chai matcher) to add additional helpers for ease of testing. Don't forget to import them in your unit test files though!
 
 Here is an excerpt of how it's used in the NFT collection example mentioned above:
 ```typescript
@@ -124,6 +124,7 @@ export type FlatTransaction = {
     body: Cell
     initData?: Cell
     initCode?: Cell
+    deploy: boolean
     lt: bigint
     now: number
     outMessagesCount: number
