@@ -29,8 +29,8 @@ After that, you can use the low level methods on Blockchain (such as sendMessage
 
 A good example of this is the [treasury contract](/src/treasury/Treasury.ts) that is basically a built-in highload wallet meant to help you write tests for your systems of smart contracts. When `blockchain.treasury` is called, an instance of `TreasuryContract` is created and `blockchain.openContract` is called to "open" it. After that, when you call `treasury.send`, `Blockchain` automatically supplies the first `provider` argument.
 
-For your own contracts, you can draw inspiration from the contracts in the [NFT collection example](/examples/collection/) - all of them use the `provider.internal` method to send internal messages using the treasuries passed in from the unit test file.
-Here is an excerpt of that from [NftItem.ts](/examples/collection/NftItem.ts):
+For your own contracts, you can draw inspiration from the contracts in the [examples](/examples/) - all of them use the `provider.internal` method to send internal messages using the treasuries passed in from the unit test file.
+Here is an excerpt of that from [NftItem.ts](/examples/contracts/NftItem.ts):
 ```typescript
 import { Address, beginCell, Cell, Contract, ContractProvider, Sender, toNano, Builder } from "ton-core";
 
@@ -98,7 +98,7 @@ Here is an excerpt of how it's used in the NFT collection example mentioned abov
 ```typescript
 const buyResult = await buyer.send({
     to: sale.address,
-    value: price * 2n,
+    value: price + toNano('1'),
     sendMode: SendMode.PAY_GAS_SEPARATLY,
 })
 

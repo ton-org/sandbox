@@ -1,5 +1,5 @@
 {
-  "name": "@ton-community/nft-sale",
+  "name": "@ton-community/sandbox-examples",
   "version": "0.0.1",
   "license": "MIT",
   "devDependencies": {
@@ -14,6 +14,7 @@
     "typescript": "^4.9.4"
   },
   "scripts": {
-    "example": "yarn jest"
-  }
+    "examples": "yarn jest"
+  },
+  "private": true
 }

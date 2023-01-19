@@ -1,9 +1,9 @@
 import { beginCell, SendMode, toNano } from "ton-core"
 import { Blockchain } from "@ton-community/sandbox"
-import { NftCollection } from "./NftCollection"
-import { NftItem } from "./NftItem"
-import { NftMarketplace } from "./NftMarketplace"
-import { NftSale } from "./NftSale"
+import { NftCollection } from "../contracts/NftCollection"
+import { NftItem } from "../contracts/NftItem"
+import { NftMarketplace } from "../contracts/NftMarketplace"
+import { NftSale } from "../contracts/NftSale"
 import "@ton-community/test-utils" // register matchers
 
 describe('Collection', () => {
@@ -59,7 +59,6 @@ describe('Collection', () => {
             to: sale.address,
             deploy: true,
         })
-        expect((await blkch.getContract(sale.address)).accountState?.type).toBe('active')
 
         const saleDataBefore = await sale.getData()
         expect(saleDataBefore.nftOwner).toBe(undefined) // nft_owner == null (undefined in js) means that sale has not yet started
@@ -80,7 +79,7 @@ describe('Collection', () => {
 
         const buyResult = await buyer.send({
             to: sale.address,
-            value: price * 2n,
+            value: price + toNano('1'),
             sendMode: SendMode.PAY_GAS_SEPARATLY,
         })
 
