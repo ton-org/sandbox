@@ -1,5 +1,5 @@
 {
-  "name": "@ton-community/collection-example",
+  "name": "@ton-community/nft-sale",
   "version": "0.0.1",
   "license": "MIT",
   "devDependencies": {
