@@ -83,7 +83,7 @@ export class SmartContract {
     readonly address: Address;
     readonly blockchain: Blockchain
     private account: ShardAccount
-    private verbosity: Verbosity = 'none'
+    #verbosity?: Verbosity
 
     constructor(shardAccount: ShardAccount, blockchain: Blockchain) {
         this.address = shardAccount.account!.addr
@@ -192,7 +192,15 @@ export class SmartContract {
         }
     }
 
-    setVerbosity(verbosity: Verbosity) {
-        this.verbosity = verbosity
+    get verbosity() {
+        return this.#verbosity ?? this.blockchain.verbosity
+    }
+
+    set verbosity(value: Verbosity) {
+        this.#verbosity = value
+    }
+
+    resetVerbosity() {
+        this.#verbosity = undefined
     }
 }
