@@ -92,7 +92,7 @@ Note that all of the methods of contracts that you want to "open" that start wit
 
 ## Writing tests
 
-You can install additional `@ton-community/test-utils` package (with `.toHaveTransaction` for jest or `.transaction` or `.to.have.transaction` for chai matcher) to add additional helpers for ease of testing. Don't forget to import them in your unit test files though!
+You can install additional `@ton-community/test-utils` package by running `yarn add @ton-community/test-utils -D` or `npm i --save-dev @ton-community/test-utils` (with `.toHaveTransaction` for jest or `.transaction` or `.to.have.transaction` for chai matcher) to add additional helpers for ease of testing. Don't forget to import them in your unit test files though!
 
 Here is an excerpt of how it's used in the NFT collection example mentioned above:
 ```typescript
