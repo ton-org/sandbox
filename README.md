@@ -6,7 +6,7 @@ The key difference of this package from [ton-contract-executor](https://github.c
 
 ## Installation
 
-Requires node 16.
+Requires node 16 or higher.
 
 ```
 yarn add @ton-community/sandbox ton ton-core ton-crypto

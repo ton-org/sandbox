@@ -4,5 +4,9 @@ This directory contains a few examples that demonstrate how to use `@ton-communi
 
 To run all the tests, use the following:
 ```
+git clone https://github.com/ton-community/sandbox
+cd sandbox/examples
 yarn && yarn examples
 ```
+
+Notice that these examples are separate from sandbox itself and are not included in the npm package, so you need to clone the whole repo (as shown above) to use them.
