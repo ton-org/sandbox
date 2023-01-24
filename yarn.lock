@@ -569,10 +569,12 @@
   dependencies:
     "@sinonjs/commons" "^1.7.0"
 
-"@ton-community/test-utils@^0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@ton-community/test-utils/-/test-utils-0.0.1.tgz#49e74a7b4b15a806826381b6b42f915db380dd00"
-  integrity sha512-Uhy2a85Y7uKzyfnu4R7gDfzcB1K380nAxQdTodIyGbbE7D8f2pdJV7RFh4EujvnAfo+QX3ofA702sNYl/TTT8Q==
+"@ton-community/test-utils@^0.0.2":
+  version "0.0.2"
+  resolved "https://registry.yarnpkg.com/@ton-community/test-utils/-/test-utils-0.0.2.tgz#ee0ef19738f329c5111b730e40f8d6432f71f6be"
+  integrity sha512-cQikP/6nvgH7UhFMqncCY9Xrxup1iEoqzZ6u91Ji3c4Y3Yy4NAeH93FAZtM/E2QRSFM4nrNTWzHQzvbs2ntBsA==
+  dependencies:
+    node-inspect-extracted "^2.0.0"
 
 "@types/babel__core@^7.1.14":
   version "7.1.20"
@@ -1773,6 +1775,11 @@ natural-compare@^1.4.0:
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/natural-compare/-/natural-compare-1.4.0.tgz#4abebfeed7541f2c27acfb29bdbbd15c8d5ba4f7"
   integrity sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==
+
+node-inspect-extracted@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/node-inspect-extracted/-/node-inspect-extracted-2.0.0.tgz#b7082b11d330665c5f5f24d6038829769479d1c8"
+  integrity sha512-AqyYYkLvcFALwaU/5L/TPV2JOLpPqt8CW03FnFbQzXrYA9MNEjWdqZX21VXFR3ZSYcI42wdvCyNTkkfhj7oE9g==
 
 node-int64@^0.4.0:
   version "0.4.0"
