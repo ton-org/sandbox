@@ -197,10 +197,10 @@ export class SmartContract {
     }
 
     set verbosity(value: Verbosity) {
-        this.#verbosity = value
+        this.setVerbosity(value)
     }
 
-    resetVerbosity() {
-        this.#verbosity = undefined
+    setVerbosity(verbosity: Verbosity | undefined) {
+        this.#verbosity = verbosity
     }
 }

@@ -174,14 +174,9 @@ export class Blockchain {
         this.#verbosity = value
     }
 
-    async setVerbosityForAddress(address: Address, verbosity: Verbosity) {
+    async setVerbosityForAddress(address: Address, verbosity: Verbosity | undefined) {
         const contract = await this.getContract(address)
-        contract.verbosity = verbosity
-    }
-
-    async resetVerbosityForAddress(address: Address) {
-        const contract = await this.getContract(address)
-        contract.resetVerbosity()
+        contract.setVerbosity(verbosity)
     }
 
     setConfig(config: Cell) {
