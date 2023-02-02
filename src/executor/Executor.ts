@@ -195,7 +195,7 @@ export class Executor {
     static async create() {
         return new Executor(await EmulatorModule({
             wasmBinary: base64Decode(require('./emulator-emscripten.wasm.js').EmulatorEmscriptenWasm),
-            printErr: (text: string) => console.warn(text),
+            printErr: (text: string) => console.log(text),
         }));
     }
 
