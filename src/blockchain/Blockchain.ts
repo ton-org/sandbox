@@ -60,7 +60,7 @@ export class Blockchain {
     }
 
     private async pushMessage(message: Message | Cell) {
-        const msg = 'beginParse' in message ? loadMessage(message.beginParse()) : message
+        const msg = message instanceof Cell ? loadMessage(message.beginParse()) : message
         if (msg.info.type === 'external-out') {
             throw new Error('Cannot send external out message')
         }
