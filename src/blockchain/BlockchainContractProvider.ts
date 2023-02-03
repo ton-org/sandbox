@@ -1,5 +1,5 @@
-import { AccountState, Address, Cell, comment, ContractProvider, ContractState, Sender, SendMode, toNano, TupleItem, TupleReader } from "ton-core";
-import { Blockchain } from "./Blockchain";
+import { AccountState, Address, Cell, comment, ContractProvider, ContractState, Message, Sender, SendMode, toNano, TupleItem, TupleReader } from "ton-core";
+import { SmartContract } from "./SmartContract";
 
 function bigintToBuffer(x: bigint, n = 32): Buffer {
     const b = Buffer.alloc(n)
@@ -35,7 +35,10 @@ function convertState(state: AccountState | undefined): ContractState['state'] {
 
 export class BlockchainContractProvider implements ContractProvider {
     constructor(
-        private readonly blockchain: Blockchain,
+        private readonly blockchain: {
+            getContract(address: Address): Promise<SmartContract>
+            pushMessage(message: Message): Promise<void>
+        },
         private readonly address: Address,
         private readonly init?: { code: Cell, data: Cell },
     ) {}
@@ -65,7 +68,7 @@ export class BlockchainContractProvider implements ContractProvider {
     async external(message: Cell) {
         const init = ((await this.getState()).state.type !== 'active' && this.init) ? this.init : undefined
 
-        this.blockchain.pushMessage({
+        await this.blockchain.pushMessage({
             info: {
                 type: 'external-in',
                 dest: this.address,

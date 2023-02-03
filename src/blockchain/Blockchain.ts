@@ -1,5 +1,5 @@
 import { defaultConfig } from "../config/defaultConfig";
-import {Address, Cell, Message, Transaction, ContractProvider, Contract, Sender, toNano} from "ton-core";
+import {Address, Cell, Message, Transaction, ContractProvider, Contract, Sender, toNano, loadMessage} from "ton-core";
 import {Executor} from "../executor/Executor";
 import {BlockchainStorage, LocalBlockchainStorage} from "./BlockchainStorage";
 import { extractEvents, Event } from "../event/Event";
@@ -8,6 +8,7 @@ import { BlockchainSender } from "./BlockchainSender";
 import { testKey } from "../utils/testKey";
 import { TreasuryContract } from "../treasury/Treasury";
 import { Verbosity } from "./SmartContract";
+import { AsyncLock } from "../utils/AsyncLock";
 
 const LT_ALIGN = 1000000n
 
@@ -33,6 +34,7 @@ export class Blockchain {
     readonly executor: Executor
     readonly messageQueue: Message[] = []
     #verbosity: Verbosity = 'none'
+    #lock = new AsyncLock()
 
     get lt() {
         return this.#lt
@@ -49,18 +51,21 @@ export class Blockchain {
     }
 
     async sendMessage(message: Message): Promise<SendMessageResult> {
-        this.pushMessage(message)
+        await this.pushMessage(message)
         return await this.runQueue()
     }
 
-    pushMessage(message: Message) {
-        if (message.info.type === 'external-out') {
-            throw new Error('Cant send external out message')
+    private async pushMessage(message: Message | Cell) {
+        const msg = 'beginParse' in message ? loadMessage(message.beginParse()) : message
+        if (msg.info.type === 'external-out') {
+            throw new Error('Cannot send external out message')
         }
-        this.messageQueue.push(message)
+        await this.#lock.with(async () => {
+            this.messageQueue.push(msg)
+        })
     }
 
-    async runQueue(): Promise<SendMessageResult>  {
+    private async runQueue(): Promise<SendMessageResult>  {
         const txes = await this.processQueue()
         return {
             transactions: txes,
@@ -68,35 +73,42 @@ export class Blockchain {
         }
     }
 
-    async processQueue() {
-        let result: Transaction[] = []
+    private async processQueue() {
+        return await this.#lock.with(async () => {
+            let result: Transaction[] = []
 
-        while (this.messageQueue.length > 0) {
-            let message = this.messageQueue.shift()!
+            while (this.messageQueue.length > 0) {
+                let message = this.messageQueue.shift()!
 
-            if (message.info.type === 'external-out') {
-                continue
+                if (message.info.type === 'external-out') {
+                    continue
+                }
+
+                this.#lt += LT_ALIGN
+                let transaction = await (await this.getContract(message.info.dest)).receiveMessage(message)
+
+                result.push(transaction)
+
+                for (let message of transaction.outMessages.values()) {
+                    this.messageQueue.push(message)
+                }
             }
 
-            this.#lt += LT_ALIGN
-            let transaction = await (await this.getContract(message.info.dest)).receiveMessage(message)
-
-            result.push(transaction)
-
-            for (let message of transaction.outMessages.values()) {
-                this.messageQueue.push(message)
-            }
-        }
-
-        return result
+            return result
+        })
     }
 
     provider(address: Address, init?: { code: Cell, data: Cell }): ContractProvider {
-        return new BlockchainContractProvider(this, address, init)
+        return new BlockchainContractProvider({
+            getContract: (addr) => this.getContract(addr),
+            pushMessage: (msg) => this.pushMessage(msg),
+        }, address, init)
     }
 
     sender(address: Address): Sender {
-        return new BlockchainSender(this, address)
+        return new BlockchainSender({
+            pushMessage: (msg) => this.pushMessage(msg),
+        }, address)
     }
 
     async treasury(seed: string, workchain: number = 0) {

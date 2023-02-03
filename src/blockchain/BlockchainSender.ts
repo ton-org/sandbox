@@ -1,14 +1,15 @@
-import { Address, Cell, Sender, SenderArguments } from "ton-core";
-import { Blockchain } from "./Blockchain";
+import { Address, Cell, Message, Sender, SenderArguments } from "ton-core";
 
 export class BlockchainSender implements Sender {
     constructor(
-        private readonly blockchain: Blockchain,
+        private readonly blockchain: {
+            pushMessage(message: Message): Promise<void>
+        },
         readonly address: Address,
     ) {}
 
     async send(args: SenderArguments) {
-        this.blockchain.pushMessage({
+        await this.blockchain.pushMessage({
             info: {
                 type: 'internal',
                 ihrDisabled: true,
