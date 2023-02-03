@@ -50,7 +50,7 @@ export class Blockchain {
         return this.networkConfig
     }
 
-    async sendMessage(message: Message): Promise<SendMessageResult> {
+    async sendMessage(message: Message | Cell): Promise<SendMessageResult> {
         await this.pushMessage(message)
         return await this.runQueue()
     }
