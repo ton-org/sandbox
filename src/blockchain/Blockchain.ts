@@ -1,5 +1,5 @@
 import { defaultConfig } from "../config/defaultConfig";
-import {Address, Cell, Message, Transaction, ContractProvider, Contract, Sender, toNano, loadMessage} from "ton-core";
+import {Address, Cell, Message, Transaction, ContractProvider, Contract, Sender, toNano, loadMessage, ShardAccount, TupleItem} from "ton-core";
 import {Executor} from "../executor/Executor";
 import {BlockchainStorage, LocalBlockchainStorage} from "./BlockchainStorage";
 import { extractEvents, Event } from "../event/Event";
@@ -53,6 +53,10 @@ export class Blockchain {
     async sendMessage(message: Message): Promise<SendMessageResult> {
         await this.pushMessage(message)
         return await this.runQueue()
+    }
+
+    async runGetMethod(address: Address, method: number | string, stack: TupleItem[] = []) {
+        return (await this.getContract(address)).get(method, stack)
     }
 
     private async pushMessage(message: Message | Cell) {
@@ -193,6 +197,11 @@ export class Blockchain {
 
     setConfig(config: Cell) {
         this.networkConfig = config
+    }
+
+    async setShardAccount(address: Address, account: ShardAccount) {
+        const contract = await this.getContract(address)
+        contract.account = account
     }
 
     static async create(opts?: { config?: Cell, storage?: BlockchainStorage }) {

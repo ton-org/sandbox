@@ -14,7 +14,7 @@ import {
 import {getSelectorForMethod} from "../utils/selector";
 import { ExecutorVerbosity } from "../executor/Executor";
 
-function createShardAccount(args: { address?: Address, code: Cell, data: Cell, balance: bigint, workchain?: number }): ShardAccount {
+export function createShardAccount(args: { address?: Address, code: Cell, data: Cell, balance: bigint, workchain?: number }): ShardAccount {
     let wc = args.workchain ?? 0
     let address = args.address ?? contractAddress(wc, { code: args.code, data: args.data })
     let balance = args.balance ?? 0n
@@ -63,7 +63,7 @@ function createEmptyAccount(address: Address): Account {
     }
 }
 
-function createEmptyShardAccount(address: Address): ShardAccount {
+export function createEmptyShardAccount(address: Address): ShardAccount {
     return {
         account: createEmptyAccount(address),
         lastTransactionLt: 0n,
@@ -82,52 +82,59 @@ const verbosityToExecutorVerbosity: Record<Verbosity, ExecutorVerbosity> = {
 export class SmartContract {
     readonly address: Address;
     readonly blockchain: Blockchain
-    private account: ShardAccount
+    #account: ShardAccount
     #verbosity?: Verbosity
 
     constructor(shardAccount: ShardAccount, blockchain: Blockchain) {
         this.address = shardAccount.account!.addr
-        this.account = shardAccount
+        this.#account = shardAccount
         this.blockchain = blockchain
     }
 
     get balance() {
-        return this.account.account?.storage.balance.coins ?? 0n
+        return this.#account.account?.storage.balance.coins ?? 0n
     }
 
     set balance(v: bigint) {
-        if (!this.account.account) {
-            this.account.account = createEmptyAccount(this.address)
+        if (!this.#account.account) {
+            this.#account.account = createEmptyAccount(this.address)
         }
-        this.account.account.storage.balance.coins = v
+        this.#account.account.storage.balance.coins = v
     }
 
     get lastTransactionHash() {
-        return this.account.lastTransactionHash
+        return this.#account.lastTransactionHash
     }
 
     get lastTransactionLt() {
-        return this.account.lastTransactionLt
+        return this.#account.lastTransactionLt
     }
 
     get accountState() {
-        return this.account.account?.storage.state
+        return this.#account.account?.storage.state
+    }
+
+    get account() {
+        return this.#account
+    }
+
+    set account(account: ShardAccount) {
+        this.#account = account
     }
 
     static create(blockchain: Blockchain, args: { address: Address, code: Cell, data: Cell, balance: bigint }) {
-        let account = createShardAccount(args)
-        return new SmartContract(account, blockchain)
+        return new SmartContract(createShardAccount(args), blockchain)
     }
 
     static empty(blockchain: Blockchain, address: Address) {
         return new SmartContract(createEmptyShardAccount(address), blockchain)
     }
 
-    async receiveMessage(message: Message) {
-        let messageCell = beginCell().store(storeMessage(message)).endCell()
-        let shardAccount = beginCell().store(storeShardAccount(this.account)).endCell()
+    receiveMessage(message: Message) {
+        const messageCell = beginCell().store(storeMessage(message)).endCell()
+        const shardAccount = beginCell().store(storeShardAccount(this.#account)).endCell()
 
-        let res = await this.blockchain.executor.runTransaction({
+        const res = this.blockchain.executor.runTransaction({
             config: this.blockchain.config,
             libs: null,
             verbosity: verbosityToExecutorVerbosity[this.verbosity],
@@ -138,29 +145,33 @@ export class SmartContract {
             randomSeed: Buffer.alloc(32)
         })
 
+        if (this.verbosity !== 'none') {
+            if (res.logs.length > 0) console.log(res.logs)
+        }
+
         if (!res.result.success) {
             console.error('Error:', res.result.error, 'VM logs', res.result.vmResults)
             throw new Error('Error executing transaction')
         }
-        let account = loadShardAccount(Cell.fromBase64(res.result.shardAccount).beginParse())
-        this.account = account
 
         if (this.verbosity !== 'none') {
-            console.log(res.logs)
-            console.log(res.result.vmLog)
+            if (res.result.vmLog.length > 0) console.log(res.result.vmLog)
+            if (res.debugLogs.length > 0) console.log(res.debugLogs)
         }
+
+        this.#account = loadShardAccount(Cell.fromBase64(res.result.shardAccount).beginParse())
 
         return loadTransaction(Cell.fromBase64(res.result.transaction).beginParse())
     }
 
-    async get(method: string | number, stack: TupleItem[] = []) {
-        if (this.account.account?.storage.state.type !== 'active') {
+    get(method: string | number, stack: TupleItem[] = []) {
+        if (this.#account.account?.storage.state.type !== 'active') {
             throw new Error('Trying to run get method on non-active contract')
         }
 
-        let res = await this.blockchain.executor.runGetMethod({
-            code: this.account.account?.storage.state.state.code!,
-            data: this.account.account?.storage.state.state.data!,
+        const res = this.blockchain.executor.runGetMethod({
+            code: this.#account.account?.storage.state.state.code!,
+            data: this.#account.account?.storage.state.state.data!,
             methodId: typeof method === 'string' ? getSelectorForMethod(method) : method,
             stack,
             config: this.blockchain.config,
@@ -173,15 +184,20 @@ export class SmartContract {
             gasLimit: 10_000_000n
         })
 
+        if (this.verbosity !== 'none') {
+            if (res.logs.length > 0) console.log(res.logs)
+        }
+
         if (!res.output.success) {
             throw new Error('Error invoking get method: ' + res.output.error)
         }
 
         if (this.verbosity !== 'none') {
-            console.log(res.logs)
+            if (res.output.vm_log.length > 0) console.log(res.output.vm_log)
+            if (res.debugLogs.length > 0) console.log(res.debugLogs)
         }
 
-        let resStack = parseTuple(Cell.fromBase64(res.output.stack))
+        const resStack = parseTuple(Cell.fromBase64(res.output.stack))
 
         return {
             stack: resStack,

@@ -26,6 +26,8 @@ export {
 export {
     Verbosity,
     SmartContract,
+    createEmptyShardAccount,
+    createShardAccount,
 } from './blockchain/SmartContract';
 
 export {

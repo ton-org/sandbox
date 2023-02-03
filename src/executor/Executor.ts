@@ -35,6 +35,7 @@ export type GetMethodResultError = {
 export type GetMethodResult = {
     output: GetMethodResultSuccess | GetMethodResultError
     logs: string
+    debugLogs: string
 };
 
 export type RunTransactionArgs = {
@@ -110,6 +111,7 @@ export type EmulationResultError = {
 export type EmulationResult = {
     result: EmulationResultSuccess | EmulationResultError
     logs: string
+    debugLogs: string
 }
 
 const verbosityToNum: Record<ExecutorVerbosity, number> = {
@@ -186,6 +188,7 @@ export class Executor {
         configHash: Buffer
         verbosity: number
     }
+    private debugLogs: string[] = []
 
     private constructor(module: any) {
         this.module = module
@@ -193,10 +196,11 @@ export class Executor {
     }
 
     static async create() {
-        return new Executor(await EmulatorModule({
+        const ex = new Executor(await EmulatorModule({
             wasmBinary: base64Decode(require('./emulator-emscripten.wasm.js').EmulatorEmscriptenWasm),
-            printErr: (text: string) => console.log(text),
-        }));
+            printErr: (text: string) => ex.debugLogs.push(text),
+        }))
+        return ex
     }
 
     runGetMethod(args: GetMethodArgs): GetMethodResult {
@@ -215,13 +219,13 @@ export class Executor {
 
         let stack = serializeTuple(args.stack)
 
-        let result = this.invoke('_run_get_method', [
+        this.debugLogs = []
+        const resp = JSON.parse(this.extractString(this.invoke('_run_get_method', [
             JSON.stringify(params),
             stack.toBoc().toString('base64'),
             args.config.toBoc().toString('base64')
-        ])
-
-        const resp = JSON.parse(this.extractString(result))
+        ])))
+        const debugLogs = this.debugLogs.join('\n')
 
         if (resp.fail) {
             console.error(resp)
@@ -229,8 +233,9 @@ export class Executor {
         }
 
         return {
-            logs: resp.logs,
             output: resp.output,
+            logs: resp.logs,
+            debugLogs,
         };
     }
 
@@ -242,13 +247,15 @@ export class Executor {
             ignore_chksig: false
         }
 
+        this.debugLogs = []
         const resp = JSON.parse(this.extractString(this.invoke('_emulate', [
             this.getEmulatorPointer(args.config, verbosityToNum[args.verbosity]),
             args.libs?.toBoc().toString('base64') ?? 0,
             args.shardAccount.toBoc().toString('base64'),
             args.message.toBoc().toString('base64'),
             JSON.stringify(params)
-        ])));
+        ])))
+        const debugLogs = this.debugLogs.join('\n')
 
         if (resp.fail) {
             console.error(resp)
@@ -276,6 +283,7 @@ export class Executor {
                 } : undefined,
             },
             logs,
+            debugLogs,
         };
     }
 
