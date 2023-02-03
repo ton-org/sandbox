@@ -140,6 +140,21 @@ export type FlatTransaction = {
 
 But you can omit those you're not interested in, and you can also pass in functions accepting those types returning booleans (`true` meaning good) to check for example number ranges, message opcodes, etc. Note however that if a field is optional (like `from?: Address`), then the function needs to accept the optional type, too.
 
+### Viewing debug logs
+
+You can see the debug logs (emitted by TVM debug primitives, such as `DUMP` and `STRDUMP` and their respective FunC functions `~dump()` and `~strdump()`) as well as other logs useful for debugging by setting the verbosity level of a `SmartContract` or of a whole `Blockchain` instance to something other than `none`, which is the default. To do that, do:
+```typescript
+await blockchain.setVerbosityForAddress(targetAddress, 'vm_logs') // set verbosity for one contract
+```
+or
+```typescript
+blockchain.verbosity = 'vm_logs' // set verbosity for all contracts
+```
+
+Setting verbosity on `SmartContract`s works like an override with respect to what is set on `Blockchain`.
+
+Currently, the only verbosity level other than `none` and `vm_logs` is `vm_logs_full`, which makes TVM logs even more verbose (includes code cell location and stack information).
+
 ### Network/Block configuration
 
 By default, this package will use its [stored network configuration](src/config/defaultConfig.ts) to emulate messages. However, you can set any configuration you want when creating the `Blockchain` instance by passing the configuration cell in the optional `params` argument in the `config` field.
