@@ -25,6 +25,7 @@ export {
 
 export {
     Verbosity,
+    LogsVerbosity,
     SmartContract,
     createEmptyShardAccount,
     createShardAccount,

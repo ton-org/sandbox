@@ -7,7 +7,7 @@ import { BlockchainContractProvider } from "./BlockchainContractProvider";
 import { BlockchainSender } from "./BlockchainSender";
 import { testKey } from "../utils/testKey";
 import { TreasuryContract } from "../treasury/Treasury";
-import { Verbosity } from "./SmartContract";
+import { LogsVerbosity, Verbosity } from "./SmartContract";
 import { AsyncLock } from "../utils/AsyncLock";
 
 const LT_ALIGN = 1000000n
@@ -33,7 +33,11 @@ export class Blockchain {
     #lt = 0n;
     readonly executor: Executor
     readonly messageQueue: Message[] = []
-    #verbosity: Verbosity = 'none'
+    #verbosity: LogsVerbosity = {
+        blockchainLogs: false,
+        vmLogs: 'none',
+        debugLogs: true,
+    }
     #lock = new AsyncLock()
 
     get lt() {
@@ -186,11 +190,11 @@ export class Blockchain {
         return this.#verbosity
     }
 
-    set verbosity(value: Verbosity) {
+    set verbosity(value: LogsVerbosity) {
         this.#verbosity = value
     }
 
-    async setVerbosityForAddress(address: Address, verbosity: Verbosity | undefined) {
+    async setVerbosityForAddress(address: Address, verbosity: Partial<LogsVerbosity> | Verbosity | undefined) {
         const contract = await this.getContract(address)
         contract.setVerbosity(verbosity)
     }

@@ -63,8 +63,6 @@ describe('Blockchain', () => {
             balance: toNano('1'),
         }))
 
-        await blockchain.setVerbosityForAddress(testAddress, 'vm_logs')
-
         console.log('transaction')
 
         await blockchain.sendMessage({
