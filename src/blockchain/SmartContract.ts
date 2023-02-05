@@ -231,7 +231,15 @@ export class SmartContract {
         this.setVerbosity(value)
     }
 
-    setVerbosity(verbosity: Partial<LogsVerbosity> | undefined) {
-        this.#verbosity = verbosity
+    setVerbosity(verbosity: Partial<LogsVerbosity> | Verbosity | undefined) {
+        if (typeof verbosity === 'string') {
+            this.#verbosity = {
+                ...this.#verbosity,
+                vmLogs: verbosity,
+                blockchainLogs: verbosity !== 'none',
+            }
+        } else {
+            this.#verbosity = verbosity
+        }
     }
 }

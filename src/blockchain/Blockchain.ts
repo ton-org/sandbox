@@ -194,7 +194,7 @@ export class Blockchain {
         this.#verbosity = value
     }
 
-    async setVerbosityForAddress(address: Address, verbosity: Partial<LogsVerbosity> | undefined) {
+    async setVerbosityForAddress(address: Address, verbosity: Partial<LogsVerbosity> | Verbosity | undefined) {
         const contract = await this.getContract(address)
         contract.setVerbosity(verbosity)
     }
