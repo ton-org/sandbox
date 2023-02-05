@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2023-02-05
+
+### Changed
+
+- `Blockchain` and `SmartContract` now use `LogsVerbosity` (see below for definition) as the verbosity type, which allows for more control over what kinds of logs are printed. Logs from TVM debug primitives are now enabled by default, again. (You can disable them globally by setting verbosity with `debugLogs: false` on the `Blockchain` instance)
+
+Definition of `LogsVerbosity`:
+```typescript
+type LogsVerbosity = {
+    blockchainLogs: boolean
+    vmLogs: Verbosity
+    debugLogs: boolean
+}
+```
+
 ## [0.2.2] - 2023-02-03
 
 ### Added 

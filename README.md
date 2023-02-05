@@ -140,20 +140,43 @@ export type FlatTransaction = {
 
 But you can omit those you're not interested in, and you can also pass in functions accepting those types returning booleans (`true` meaning good) to check for example number ranges, message opcodes, etc. Note however that if a field is optional (like `from?: Address`), then the function needs to accept the optional type, too.
 
-### Viewing debug logs
+### Viewing logs
 
-You can see the debug logs (emitted by TVM debug primitives, such as `DUMP` and `STRDUMP` and their respective FunC functions `~dump()` and `~strdump()`) as well as other logs useful for debugging by setting the verbosity level of a `SmartContract` or of a whole `Blockchain` instance to something other than `none`, which is the default. To do that, do:
+`Blockchain` and `SmartContract` use `LogsVerbosity` to determine what kinds of logs to print. Here is the definition:
 ```typescript
-await blockchain.setVerbosityForAddress(targetAddress, 'vm_logs') // set verbosity for one contract
-```
-or
-```typescript
-blockchain.verbosity = 'vm_logs' // set verbosity for all contracts
+type LogsVerbosity = {
+    blockchainLogs: boolean
+    vmLogs: Verbosity
+    debugLogs: boolean
+}
+
+type Verbosity = 'none' | 'vm_logs' | 'vm_logs_full'
 ```
 
 Setting verbosity on `SmartContract`s works like an override with respect to what is set on `Blockchain`.
 
-Currently, the only verbosity level other than `none` and `vm_logs` is `vm_logs_full`, which makes TVM logs even more verbose (includes code cell location and stack information).
+`debugLogs` is enabled by default on the `Blockchain` instance (so every `SmartContract` that does not have `debugLogs` overridden will print debug logs), other kinds of logs are turned off.
+
+`'vm_logs'` prints the log of every instruction that was executed, `'vm_logs_full'` also includes code cell hashes, locations, and stack information for every instruction executed.
+
+To override verbosity on a specific contract, use `await blockchain.setVerbosityForAddress(targetAddress, verbosity)`, for example:
+```typescript
+await blockchain.setVerbosityForAddress(targetAddress, {
+    blockchainLogs: true,
+    vmLogs: 'vm_logs',
+})
+```
+After that, the target contract will be using `debugLogs` from the `Blockchain` instance to determine whether to print debug logs, but will always print VM logs and blockchain logs.
+
+To set global verbosity, use the `blockchain.verbosity` setter, for example:
+```typescript
+blockchain.verbosity = {
+    blockchainLogs: true,
+    vmLogs: 'none',
+    debugLogs: false,
+}
+```
+Note that unlike with `setVerbosityForAddress`, with this setter you have to specify all the values from `LogsVerbosity`.
 
 ### Network/Block configuration
 
