@@ -79,11 +79,17 @@ const verbosityToExecutorVerbosity: Record<Verbosity, ExecutorVerbosity> = {
     'vm_logs_full': 'full_location_stack',
 }
 
+export type LogsVerbosity = {
+    blockchainLogs: boolean
+    vmLogs: Verbosity
+    debugLogs: boolean
+}
+
 export class SmartContract {
     readonly address: Address;
     readonly blockchain: Blockchain
     #account: ShardAccount
-    #verbosity?: Verbosity
+    #verbosity?: Partial<LogsVerbosity>
 
     constructor(shardAccount: ShardAccount, blockchain: Blockchain) {
         this.address = shardAccount.account!.addr
@@ -137,7 +143,7 @@ export class SmartContract {
         const res = this.blockchain.executor.runTransaction({
             config: this.blockchain.config,
             libs: null,
-            verbosity: verbosityToExecutorVerbosity[this.verbosity],
+            verbosity: verbosityToExecutorVerbosity[this.verbosity.vmLogs],
             shardAccount,
             message: messageCell,
             now: Math.floor(Date.now() / 1000),
@@ -145,8 +151,8 @@ export class SmartContract {
             randomSeed: Buffer.alloc(32)
         })
 
-        if (this.verbosity !== 'none') {
-            if (res.logs.length > 0) console.log(res.logs)
+        if (this.verbosity.blockchainLogs && res.logs.length > 0) {
+            console.log(res.logs)
         }
 
         if (!res.result.success) {
@@ -154,9 +160,12 @@ export class SmartContract {
             throw new Error('Error executing transaction')
         }
 
-        if (this.verbosity !== 'none') {
-            if (res.result.vmLog.length > 0) console.log(res.result.vmLog)
-            if (res.debugLogs.length > 0) console.log(res.debugLogs)
+        if (this.verbosity.vmLogs !== 'none' && res.result.vmLog.length > 0) {
+            console.log(res.result.vmLog)
+        }
+
+        if (this.verbosity.debugLogs && res.debugLogs.length > 0) {
+            console.log(res.debugLogs)
         }
 
         this.#account = loadShardAccount(Cell.fromBase64(res.result.shardAccount).beginParse())
@@ -175,7 +184,7 @@ export class SmartContract {
             methodId: typeof method === 'string' ? getSelectorForMethod(method) : method,
             stack,
             config: this.blockchain.config,
-            verbosity: verbosityToExecutorVerbosity[this.verbosity],
+            verbosity: verbosityToExecutorVerbosity[this.verbosity.vmLogs],
             libs: undefined,
             address: this.address,
             unixTime: Math.floor(Date.now() / 1000),
@@ -184,17 +193,20 @@ export class SmartContract {
             gasLimit: 10_000_000n
         })
 
-        if (this.verbosity !== 'none') {
-            if (res.logs.length > 0) console.log(res.logs)
+        if (this.verbosity.blockchainLogs && res.logs.length > 0) {
+            console.log(res.logs)
         }
 
         if (!res.output.success) {
             throw new Error('Error invoking get method: ' + res.output.error)
         }
 
-        if (this.verbosity !== 'none') {
-            if (res.output.vm_log.length > 0) console.log(res.output.vm_log)
-            if (res.debugLogs.length > 0) console.log(res.debugLogs)
+        if (this.verbosity.vmLogs !== 'none' && res.output.vm_log.length > 0) {
+            console.log(res.output.vm_log)
+        }
+
+        if (this.verbosity.debugLogs && res.debugLogs.length > 0) {
+            console.log(res.debugLogs)
         }
 
         const resStack = parseTuple(Cell.fromBase64(res.output.stack))
@@ -209,14 +221,17 @@ export class SmartContract {
     }
 
     get verbosity() {
-        return this.#verbosity ?? this.blockchain.verbosity
+        return {
+            ...this.blockchain.verbosity,
+            ...this.#verbosity,
+        }
     }
 
-    set verbosity(value: Verbosity) {
+    set verbosity(value: LogsVerbosity) {
         this.setVerbosity(value)
     }
 
-    setVerbosity(verbosity: Verbosity | undefined) {
+    setVerbosity(verbosity: Partial<LogsVerbosity> | undefined) {
         this.#verbosity = verbosity
     }
 }
