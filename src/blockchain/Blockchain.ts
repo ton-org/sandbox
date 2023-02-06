@@ -7,7 +7,7 @@ import { BlockchainContractProvider } from "./BlockchainContractProvider";
 import { BlockchainSender } from "./BlockchainSender";
 import { testKey } from "../utils/testKey";
 import { TreasuryContract } from "../treasury/Treasury";
-import { LogsVerbosity, Verbosity } from "./SmartContract";
+import { LogsVerbosity, SmartContract, Verbosity } from "./SmartContract";
 import { AsyncLock } from "../utils/AsyncLock";
 import { internal } from "../utils/message";
 
@@ -40,6 +40,7 @@ export class Blockchain {
         debugLogs: true,
     }
     #lock = new AsyncLock()
+    #contractFetches = new Map<string, Promise<SmartContract>>()
 
     get lt() {
         return this.#lt
@@ -100,6 +101,10 @@ export class Blockchain {
 
                 for (let message of transaction.outMessages.values()) {
                     this.messageQueue.push(message)
+
+                    if (message.info.type === 'internal') {
+                        this.startFetchingContract(message.info.dest)
+                    }
                 }
             }
 
@@ -191,8 +196,21 @@ export class Blockchain {
         }) as OpenedContract<T>;
     }
 
+    private startFetchingContract(address: Address) {
+        const addrString = address.toRawString()
+        let promise = this.#contractFetches.get(addrString)
+        if (promise !== undefined) {
+            return promise
+        }
+        promise = this.storage.getContract(this, address)
+        this.#contractFetches.set(addrString, promise)
+        return promise
+    }
+
     async getContract(address: Address) {
-        return await this.storage.getContract(this, address)
+        const contract = await this.startFetchingContract(address)
+        this.#contractFetches.delete(address.toRawString())
+        return contract
     }
 
     get verbosity() {
