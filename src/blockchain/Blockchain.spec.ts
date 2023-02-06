@@ -86,4 +86,12 @@ describe('Blockchain', () => {
 
         await blockchain.runGetMethod(testAddress, 'test_dump', [{ type: 'int', value: 3n }, { type: 'int', value: 5n }])
     })
+
+    it('should preinitialize treasury', async () => {
+        const blockchain = await Blockchain.create()
+
+        const treasury = await blockchain.treasury('')
+
+        expect((await blockchain.getContract(treasury.address)).accountState?.type).toBe('active')
+    })
 })
