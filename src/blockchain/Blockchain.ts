@@ -9,6 +9,7 @@ import { testKey } from "../utils/testKey";
 import { TreasuryContract } from "../treasury/Treasury";
 import { LogsVerbosity, Verbosity } from "./SmartContract";
 import { AsyncLock } from "../utils/AsyncLock";
+import { internal } from "../utils/message";
 
 const LT_ALIGN = 1000000n
 
@@ -120,12 +121,20 @@ export class Blockchain {
     }
 
     async treasury(seed: string, workchain: number = 0) {
-        let key = testKey(seed)
-        let treasury = TreasuryContract.create(workchain, key)
-        let wallet = this.openContract(treasury)
+        const key = testKey(seed)
+        const treasury = TreasuryContract.create(workchain, key)
+        const wallet = this.openContract(treasury)
 
         const contract = await this.getContract(treasury.address)
-        if (contract.balance === 0n) {
+        if (contract.accountState === undefined || contract.accountState.type === 'uninit') {
+            await this.sendMessage(internal({
+                from: new Address(0, Buffer.alloc(32)),
+                to: wallet.address,
+                value: toNano(1),
+                stateInit: wallet.init,
+            }))
+            contract.balance = toNano(1_000_000)
+        } else if (contract.balance === 0n) {
             contract.balance = toNano(1_000_000)
         }
 
