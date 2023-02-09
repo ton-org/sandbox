@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2023-02-09
+
+### Changed
+
+- Treasuries obtained by `blockchain.treasury` calls are now initialized during this call and will no longer produce an extra transaction when first sending a message
+- Transaction processing loop now prefetches contracts, which should provide a performance boost in some scenarios
+
 ## [0.3.0] - 2023-02-05
 
 ### Changed
