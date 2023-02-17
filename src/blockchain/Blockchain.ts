@@ -29,35 +29,32 @@ export type OpenedContract<F> = {
 }
 
 export class Blockchain {
-    protected _storage: BlockchainStorage
-    protected _networkConfig: Cell
-    protected _lt = 0n;
-    protected _executor: Executor
-    protected _messageQueue: Message[] = []
-    protected _verbosity: LogsVerbosity = {
+    protected storage: BlockchainStorage
+    protected networkConfig: Cell
+    protected currentLt = 0n;
+    protected messageQueue: Message[] = []
+    protected logsVerbosity: LogsVerbosity = {
         blockchainLogs: false,
         vmLogs: 'none',
         debugLogs: true,
     }
-    protected _lock = new AsyncLock()
-    protected _contractFetches = new Map<string, Promise<SmartContract>>()
+    protected lock = new AsyncLock()
+    protected contractFetches = new Map<string, Promise<SmartContract>>()
+
+    readonly executor: Executor
 
     get lt() {
-        return this._lt
-    }
-
-    get executor() {
-        return this._executor
+        return this.currentLt
     }
 
     protected constructor(opts: { executor: Executor, config?: Cell, storage: BlockchainStorage }) {
-        this._networkConfig = opts.config ?? Cell.fromBase64(defaultConfig)
-        this._executor = opts.executor
-        this._storage = opts.storage
+        this.networkConfig = opts.config ?? Cell.fromBase64(defaultConfig)
+        this.executor = opts.executor
+        this.storage = opts.storage
     }
 
     get config(): Cell {
-        return this._networkConfig
+        return this.networkConfig
     }
 
     async sendMessage(message: Message | Cell): Promise<SendMessageResult> {
@@ -74,8 +71,8 @@ export class Blockchain {
         if (msg.info.type === 'external-out') {
             throw new Error('Cannot send external out message')
         }
-        await this._lock.with(async () => {
-            this._messageQueue.push(msg)
+        await this.lock.with(async () => {
+            this.messageQueue.push(msg)
         })
     }
 
@@ -88,23 +85,23 @@ export class Blockchain {
     }
 
     protected async processQueue() {
-        return await this._lock.with(async () => {
+        return await this.lock.with(async () => {
             let result: Transaction[] = []
 
-            while (this._messageQueue.length > 0) {
-                let message = this._messageQueue.shift()!
+            while (this.messageQueue.length > 0) {
+                let message = this.messageQueue.shift()!
 
                 if (message.info.type === 'external-out') {
                     continue
                 }
 
-                this._lt += LT_ALIGN
+                this.currentLt += LT_ALIGN
                 let transaction = await (await this.getContract(message.info.dest)).receiveMessage(message)
 
                 result.push(transaction)
 
                 for (let message of transaction.outMessages.values()) {
-                    this._messageQueue.push(message)
+                    this.messageQueue.push(message)
 
                     if (message.info.type === 'internal') {
                         this.startFetchingContract(message.info.dest)
@@ -202,27 +199,27 @@ export class Blockchain {
 
     protected startFetchingContract(address: Address) {
         const addrString = address.toRawString()
-        let promise = this._contractFetches.get(addrString)
+        let promise = this.contractFetches.get(addrString)
         if (promise !== undefined) {
             return promise
         }
-        promise = this._storage.getContract(this, address)
-        this._contractFetches.set(addrString, promise)
+        promise = this.storage.getContract(this, address)
+        this.contractFetches.set(addrString, promise)
         return promise
     }
 
     async getContract(address: Address) {
         const contract = await this.startFetchingContract(address)
-        this._contractFetches.delete(address.toRawString())
+        this.contractFetches.delete(address.toRawString())
         return contract
     }
 
     get verbosity() {
-        return this._verbosity
+        return this.logsVerbosity
     }
 
     set verbosity(value: LogsVerbosity) {
-        this._verbosity = value
+        this.logsVerbosity = value
     }
 
     async setVerbosityForAddress(address: Address, verbosity: Partial<LogsVerbosity> | Verbosity | undefined) {
@@ -231,7 +228,7 @@ export class Blockchain {
     }
 
     setConfig(config: Cell) {
-        this._networkConfig = config
+        this.networkConfig = config
     }
 
     async setShardAccount(address: Address, account: ShardAccount) {
