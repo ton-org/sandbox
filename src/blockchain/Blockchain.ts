@@ -7,7 +7,7 @@ import { BlockchainContractProvider } from "./BlockchainContractProvider";
 import { BlockchainSender } from "./BlockchainSender";
 import { testKey } from "../utils/testKey";
 import { TreasuryContract } from "../treasury/Treasury";
-import { LogsVerbosity, SmartContract, Verbosity } from "./SmartContract";
+import { GetMethodParams, LogsVerbosity, MessageParams, SmartContract, Verbosity } from "./SmartContract";
 import { AsyncLock } from "../utils/AsyncLock";
 import { internal } from "../utils/message";
 
@@ -56,13 +56,13 @@ export class Blockchain {
         return this.networkConfig
     }
 
-    async sendMessage(message: Message | Cell): Promise<SendMessageResult> {
+    async sendMessage(message: Message | Cell, params?: MessageParams): Promise<SendMessageResult> {
         await this.pushMessage(message)
-        return await this.runQueue()
+        return await this.runQueue(params)
     }
 
-    async runGetMethod(address: Address, method: number | string, stack: TupleItem[] = []) {
-        return (await this.getContract(address)).get(method, stack)
+    async runGetMethod(address: Address, method: number | string, stack: TupleItem[] = [], params?: GetMethodParams) {
+        return (await this.getContract(address)).get(method, stack, params)
     }
 
     private async pushMessage(message: Message | Cell) {
@@ -75,15 +75,15 @@ export class Blockchain {
         })
     }
 
-    private async runQueue(): Promise<SendMessageResult>  {
-        const txes = await this.processQueue()
+    private async runQueue(params?: MessageParams): Promise<SendMessageResult>  {
+        const txes = await this.processQueue(params)
         return {
             transactions: txes,
             events: txes.map(tx => extractEvents(tx)).flat(),
         }
     }
 
-    private async processQueue() {
+    private async processQueue(params?: MessageParams) {
         return await this.#lock.with(async () => {
             let result: Transaction[] = []
 
@@ -95,7 +95,7 @@ export class Blockchain {
                 }
 
                 this.#lt += LT_ALIGN
-                let transaction = await (await this.getContract(message.info.dest)).receiveMessage(message)
+                let transaction = await (await this.getContract(message.info.dest)).receiveMessage(message, params)
 
                 result.push(transaction)
 

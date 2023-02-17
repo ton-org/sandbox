@@ -47,6 +47,7 @@ export type RunTransactionArgs = {
     now: number
     lt: bigint
     randomSeed: Buffer | null
+    ignoreChksig: boolean
 }
 
 type GetMethodInternalParams = {
@@ -244,7 +245,7 @@ export class Executor {
             utime: args.now,
             lt: args.lt.toString(),
             rand_seed: args.randomSeed === null ? '' : args.randomSeed.toString('hex'),
-            ignore_chksig: false
+            ignore_chksig: args.ignoreChksig
         }
 
         this.debugLogs = []

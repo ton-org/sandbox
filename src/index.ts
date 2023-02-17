@@ -27,6 +27,8 @@ export {
     Verbosity,
     LogsVerbosity,
     SmartContract,
+    MessageParams,
+    GetMethodParams,
     createEmptyShardAccount,
     createShardAccount,
 } from './blockchain/SmartContract';
