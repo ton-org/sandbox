@@ -86,7 +86,7 @@ export type LogsVerbosity = {
 }
 
 export class SmartContract {
-    readonly address: Address;
+    readonly address: Address
     readonly blockchain: Blockchain
     #account: ShardAccount
     #verbosity?: Partial<LogsVerbosity>

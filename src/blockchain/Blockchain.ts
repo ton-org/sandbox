@@ -29,31 +29,35 @@ export type OpenedContract<F> = {
 }
 
 export class Blockchain {
-    storage: BlockchainStorage
-    private networkConfig: Cell
-    #lt = 0n;
-    readonly executor: Executor
-    readonly messageQueue: Message[] = []
-    #verbosity: LogsVerbosity = {
+    protected _storage: BlockchainStorage
+    protected _networkConfig: Cell
+    protected _lt = 0n;
+    protected _executor: Executor
+    protected _messageQueue: Message[] = []
+    protected _verbosity: LogsVerbosity = {
         blockchainLogs: false,
         vmLogs: 'none',
         debugLogs: true,
     }
-    #lock = new AsyncLock()
-    #contractFetches = new Map<string, Promise<SmartContract>>()
+    protected _lock = new AsyncLock()
+    protected _contractFetches = new Map<string, Promise<SmartContract>>()
 
     get lt() {
-        return this.#lt
+        return this._lt
     }
 
-    private constructor(opts: { executor: Executor, config?: Cell, storage: BlockchainStorage }) {
-        this.networkConfig = opts.config ?? Cell.fromBoc(Buffer.from(defaultConfig, 'base64'))[0]
-        this.executor = opts?.executor
-        this.storage = opts.storage
+    get executor() {
+        return this._executor
+    }
+
+    protected constructor(opts: { executor: Executor, config?: Cell, storage: BlockchainStorage }) {
+        this._networkConfig = opts.config ?? Cell.fromBase64(defaultConfig)
+        this._executor = opts.executor
+        this._storage = opts.storage
     }
 
     get config(): Cell {
-        return this.networkConfig
+        return this._networkConfig
     }
 
     async sendMessage(message: Message | Cell): Promise<SendMessageResult> {
@@ -65,17 +69,17 @@ export class Blockchain {
         return (await this.getContract(address)).get(method, stack)
     }
 
-    private async pushMessage(message: Message | Cell) {
+    protected async pushMessage(message: Message | Cell) {
         const msg = message instanceof Cell ? loadMessage(message.beginParse()) : message
         if (msg.info.type === 'external-out') {
             throw new Error('Cannot send external out message')
         }
-        await this.#lock.with(async () => {
-            this.messageQueue.push(msg)
+        await this._lock.with(async () => {
+            this._messageQueue.push(msg)
         })
     }
 
-    private async runQueue(): Promise<SendMessageResult>  {
+    protected async runQueue(): Promise<SendMessageResult>  {
         const txes = await this.processQueue()
         return {
             transactions: txes,
@@ -83,24 +87,24 @@ export class Blockchain {
         }
     }
 
-    private async processQueue() {
-        return await this.#lock.with(async () => {
+    protected async processQueue() {
+        return await this._lock.with(async () => {
             let result: Transaction[] = []
 
-            while (this.messageQueue.length > 0) {
-                let message = this.messageQueue.shift()!
+            while (this._messageQueue.length > 0) {
+                let message = this._messageQueue.shift()!
 
                 if (message.info.type === 'external-out') {
                     continue
                 }
 
-                this.#lt += LT_ALIGN
+                this._lt += LT_ALIGN
                 let transaction = await (await this.getContract(message.info.dest)).receiveMessage(message)
 
                 result.push(transaction)
 
                 for (let message of transaction.outMessages.values()) {
-                    this.messageQueue.push(message)
+                    this._messageQueue.push(message)
 
                     if (message.info.type === 'internal') {
                         this.startFetchingContract(message.info.dest)
@@ -196,29 +200,29 @@ export class Blockchain {
         }) as OpenedContract<T>;
     }
 
-    private startFetchingContract(address: Address) {
+    protected startFetchingContract(address: Address) {
         const addrString = address.toRawString()
-        let promise = this.#contractFetches.get(addrString)
+        let promise = this._contractFetches.get(addrString)
         if (promise !== undefined) {
             return promise
         }
-        promise = this.storage.getContract(this, address)
-        this.#contractFetches.set(addrString, promise)
+        promise = this._storage.getContract(this, address)
+        this._contractFetches.set(addrString, promise)
         return promise
     }
 
     async getContract(address: Address) {
         const contract = await this.startFetchingContract(address)
-        this.#contractFetches.delete(address.toRawString())
+        this._contractFetches.delete(address.toRawString())
         return contract
     }
 
     get verbosity() {
-        return this.#verbosity
+        return this._verbosity
     }
 
     set verbosity(value: LogsVerbosity) {
-        this.#verbosity = value
+        this._verbosity = value
     }
 
     async setVerbosityForAddress(address: Address, verbosity: Partial<LogsVerbosity> | Verbosity | undefined) {
@@ -227,7 +231,7 @@ export class Blockchain {
     }
 
     setConfig(config: Cell) {
-        this.networkConfig = config
+        this._networkConfig = config
     }
 
     async setShardAccount(address: Address, account: ShardAccount) {
