@@ -28,6 +28,15 @@ export type OpenedContract<F> = {
             : F[P]);
 }
 
+export type TreasuryParams = Partial<{
+    workchain: number,
+    predeploy: boolean,
+    balance: bigint,
+    resetBalanceIfZero: boolean,
+}>
+
+const TREASURY_INIT_BALANCE_TONS = 1_000_000
+
 export class Blockchain {
     storage: BlockchainStorage
     private networkConfig: Cell
@@ -125,22 +134,22 @@ export class Blockchain {
         }, address)
     }
 
-    async treasury(seed: string, workchain: number = 0) {
+    async treasury(seed: string, params?: TreasuryParams) {
         const key = testKey(seed)
-        const treasury = TreasuryContract.create(workchain, key)
+        const treasury = TreasuryContract.create(params?.workchain ?? 0, key)
         const wallet = this.openContract(treasury)
 
         const contract = await this.getContract(treasury.address)
-        if (contract.accountState === undefined || contract.accountState.type === 'uninit') {
+        if ((params?.predeploy ?? true) && (contract.accountState === undefined || contract.accountState.type === 'uninit')) {
             await this.sendMessage(internal({
                 from: new Address(0, Buffer.alloc(32)),
                 to: wallet.address,
                 value: toNano(1),
                 stateInit: wallet.init,
             }))
-            contract.balance = toNano(1_000_000)
-        } else if (contract.balance === 0n) {
-            contract.balance = toNano(1_000_000)
+            contract.balance = params?.balance ?? toNano(TREASURY_INIT_BALANCE_TONS)
+        } else if ((params?.resetBalanceIfZero ?? true) && contract.balance === 0n) {
+            contract.balance = params?.balance ?? toNano(TREASURY_INIT_BALANCE_TONS)
         }
 
         return wallet
