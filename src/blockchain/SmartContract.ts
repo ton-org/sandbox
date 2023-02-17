@@ -88,7 +88,6 @@ export type LogsVerbosity = {
 export type MessageParams = Partial<{
     now: number,
     randomSeed: Buffer,
-    libs: Cell,
     ignoreChksig: boolean,
 }>
 
@@ -96,7 +95,6 @@ export type GetMethodParams = Partial<{
     now: number,
     randomSeed: Buffer,
     gasLimit: bigint,
-    libs: Cell,
 }>
 
 export class SmartContract {
@@ -156,7 +154,7 @@ export class SmartContract {
 
         const res = this.blockchain.executor.runTransaction({
             config: this.blockchain.config,
-            libs: params?.libs ?? null,
+            libs: this.blockchain.libs ?? null,
             verbosity: verbosityToExecutorVerbosity[this.verbosity.vmLogs],
             shardAccount,
             message: messageCell,
@@ -200,7 +198,7 @@ export class SmartContract {
             stack,
             config: this.blockchain.config,
             verbosity: verbosityToExecutorVerbosity[this.verbosity.vmLogs],
-            libs: params?.libs,
+            libs: this.blockchain.libs,
             address: this.address,
             unixTime: params?.now ?? Math.floor(Date.now() / 1000),
             balance: this.balance,

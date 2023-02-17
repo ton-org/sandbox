@@ -41,6 +41,7 @@ export class Blockchain {
     }
     #lock = new AsyncLock()
     #contractFetches = new Map<string, Promise<SmartContract>>()
+    protected globalLibs?: Cell
 
     get lt() {
         return this.#lt
@@ -233,6 +234,14 @@ export class Blockchain {
     async setShardAccount(address: Address, account: ShardAccount) {
         const contract = await this.getContract(address)
         contract.account = account
+    }
+
+    get libs() {
+        return this.globalLibs
+    }
+
+    set libs(value: Cell | undefined) {
+        this.globalLibs = value
     }
 
     static async create(opts?: { config?: Cell, storage?: BlockchainStorage }) {
