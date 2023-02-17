@@ -6,7 +6,7 @@ export {
 export {
     Blockchain,
     SendMessageResult,
-    OpenedContract,
+    SandboxContract,
 } from './blockchain/Blockchain';
 
 export {
