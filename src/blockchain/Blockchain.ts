@@ -13,8 +13,17 @@ import { internal } from "../utils/message";
 
 const LT_ALIGN = 1000000n
 
+export type BlockchainTransaction = Transaction & {
+    blockchainLogs: string,
+    vmLogs: string,
+    debugLogs: string,
+    events: Event[],
+    parent?: BlockchainTransaction,
+    children: BlockchainTransaction[],
+}
+
 export type SendMessageResult = {
-    transactions: Transaction[],
+    transactions: BlockchainTransaction[],
     events: Event[],
 }
 
@@ -28,13 +37,18 @@ export type OpenedContract<F> = {
             : F[P]);
 }
 
+export type PendingMessage = Message & {
+    parentTransaction?: BlockchainTransaction,
+}
+
 export class Blockchain {
     storage: BlockchainStorage
     private networkConfig: Cell
     #lt = 0n;
     readonly executor: Executor
-    readonly messageQueue: Message[] = []
+    readonly messageQueue: PendingMessage[] = []
     #verbosity: LogsVerbosity = {
+        print: true,
         blockchainLogs: false,
         vmLogs: 'none',
         debugLogs: true,
@@ -79,28 +93,38 @@ export class Blockchain {
         const txes = await this.processQueue()
         return {
             transactions: txes,
-            events: txes.map(tx => extractEvents(tx)).flat(),
+            events: txes.map(tx => tx.events).flat(),
         }
     }
 
     private async processQueue() {
         return await this.#lock.with(async () => {
-            let result: Transaction[] = []
+            const result: BlockchainTransaction[] = []
 
             while (this.messageQueue.length > 0) {
-                let message = this.messageQueue.shift()!
+                const message = this.messageQueue.shift()!
 
                 if (message.info.type === 'external-out') {
                     continue
                 }
 
                 this.#lt += LT_ALIGN
-                let transaction = await (await this.getContract(message.info.dest)).receiveMessage(message)
+                const smcTx = await (await this.getContract(message.info.dest)).receiveMessage(message)
+                const transaction: BlockchainTransaction = {
+                    ...smcTx,
+                    events: extractEvents(smcTx),
+                    parent: message.parentTransaction,
+                    children: [],
+                }
+                transaction.parent?.children.push(transaction)
 
                 result.push(transaction)
 
                 for (let message of transaction.outMessages.values()) {
-                    this.messageQueue.push(message)
+                    this.messageQueue.push({
+                        ...message,
+                        parentTransaction: transaction,
+                    })
 
                     if (message.info.type === 'internal') {
                         this.startFetchingContract(message.info.dest)

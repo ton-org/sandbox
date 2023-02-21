@@ -9,6 +9,7 @@ import {
     parseTuple,
     ShardAccount,
     storeMessage, storeShardAccount,
+    Transaction,
     TupleItem, TupleReader
 } from "ton-core";
 import {getSelectorForMethod} from "../utils/selector";
@@ -80,9 +81,16 @@ const verbosityToExecutorVerbosity: Record<Verbosity, ExecutorVerbosity> = {
 }
 
 export type LogsVerbosity = {
+    print: boolean
     blockchainLogs: boolean
     vmLogs: Verbosity
     debugLogs: boolean
+}
+
+export type SmartContractTransaction = Transaction & {
+    blockchainLogs: string
+    vmLogs: string
+    debugLogs: string
 }
 
 export class SmartContract {
@@ -136,7 +144,7 @@ export class SmartContract {
         return new SmartContract(createEmptyShardAccount(address), blockchain)
     }
 
-    receiveMessage(message: Message) {
+    receiveMessage(message: Message): SmartContractTransaction {
         const messageCell = beginCell().store(storeMessage(message)).endCell()
         const shardAccount = beginCell().store(storeShardAccount(this.#account)).endCell()
 
@@ -151,7 +159,7 @@ export class SmartContract {
             randomSeed: Buffer.alloc(32)
         })
 
-        if (this.verbosity.blockchainLogs && res.logs.length > 0) {
+        if (this.verbosity.print && this.verbosity.blockchainLogs && res.logs.length > 0) {
             console.log(res.logs)
         }
 
@@ -160,17 +168,22 @@ export class SmartContract {
             throw new Error('Error executing transaction')
         }
 
-        if (this.verbosity.vmLogs !== 'none' && res.result.vmLog.length > 0) {
+        if (this.verbosity.print && this.verbosity.vmLogs !== 'none' && res.result.vmLog.length > 0) {
             console.log(res.result.vmLog)
         }
 
-        if (this.verbosity.debugLogs && res.debugLogs.length > 0) {
+        if (this.verbosity.print && this.verbosity.debugLogs && res.debugLogs.length > 0) {
             console.log(res.debugLogs)
         }
 
         this.#account = loadShardAccount(Cell.fromBase64(res.result.shardAccount).beginParse())
 
-        return loadTransaction(Cell.fromBase64(res.result.transaction).beginParse())
+        return {
+            ...loadTransaction(Cell.fromBase64(res.result.transaction).beginParse()),
+            blockchainLogs: res.logs,
+            vmLogs: res.result.vmLog,
+            debugLogs: res.debugLogs,
+        }
     }
 
     get(method: string | number, stack: TupleItem[] = []) {
