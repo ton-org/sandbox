@@ -5,6 +5,7 @@ import {TonClient4} from "ton";
 import {RemoteBlockchainStorage} from "./BlockchainStorage";
 import {prettyLogTransactions} from "../utils/prettyLogTransaction";
 import { createShardAccount } from "./SmartContract";
+import { internal } from "../utils/message";
 
 describe('Blockchain', () => {
     jest.setTimeout(30000)
@@ -93,5 +94,38 @@ describe('Blockchain', () => {
         const treasury = await blockchain.treasury('')
 
         expect((await blockchain.getContract(treasury.address)).accountState?.type).toBe('active')
+    })
+
+    it('should have non-empty bounce bodies', async () => {
+        const blockchain = await Blockchain.create()
+
+        const address = randomAddress()
+
+        await blockchain.setShardAccount(address, createShardAccount({
+            address,
+            code: Cell.fromBase64('te6ccgEBAgEAGAABFP8A9KQT9LzyyAsBABLTXwSCAN6t8vA='),
+            data: new Cell(),
+            balance: toNano('1'),
+        }))
+
+        const body = beginCell()
+            .storeUint(0xdeadbeef, 32)
+            .endCell()
+
+        const res = await blockchain.sendMessage(internal({
+            from: new Address(0, Buffer.alloc(32)),
+            to: address,
+            value: toNano('1'),
+            bounce: true,
+            body,
+        }))
+
+        expect(res.transactions).toHaveTransaction({
+            from: address,
+            body: beginCell()
+                .storeUint(0xffffffff, 32)
+                .storeSlice(body.beginParse())
+                .endCell(),
+        })
     })
 })
