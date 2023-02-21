@@ -7,6 +7,8 @@ export {
     Blockchain,
     SendMessageResult,
     OpenedContract,
+    BlockchainTransaction,
+    PendingMessage,
 } from './blockchain/Blockchain';
 
 export {
@@ -27,6 +29,7 @@ export {
     Verbosity,
     LogsVerbosity,
     SmartContract,
+    SmartContractTransaction,
     createEmptyShardAccount,
     createShardAccount,
 } from './blockchain/SmartContract';
