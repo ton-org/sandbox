@@ -104,6 +104,16 @@ export type GetMethodParams = Partial<{
     gasLimit: bigint,
 }>
 
+export type GetMethodResult = {
+    stack: TupleItem[],
+    stackReader: TupleReader,
+    exitCode: number,
+    gasUsed: bigint,
+    blockchainLogs: string,
+    vmLogs: string,
+    debugLogs: string,
+}
+
 export class SmartContract {
     readonly address: Address
     readonly blockchain: Blockchain
@@ -198,7 +208,7 @@ export class SmartContract {
         }
     }
 
-    get(method: string | number, stack: TupleItem[] = [], params?: GetMethodParams) {
+    get(method: string | number, stack: TupleItem[] = [], params?: GetMethodParams): GetMethodResult {
         if (this.#account.account?.storage.state.type !== 'active') {
             throw new Error('Trying to run get method on non-active contract')
         }
@@ -218,7 +228,7 @@ export class SmartContract {
             gasLimit: params?.gasLimit ?? 10_000_000n,
         })
 
-        if (this.verbosity.blockchainLogs && res.logs.length > 0) {
+        if (this.verbosity.print && this.verbosity.blockchainLogs && res.logs.length > 0) {
             console.log(res.logs)
         }
 
@@ -226,11 +236,11 @@ export class SmartContract {
             throw new Error('Error invoking get method: ' + res.output.error)
         }
 
-        if (this.verbosity.vmLogs !== 'none' && res.output.vm_log.length > 0) {
+        if (this.verbosity.print && this.verbosity.vmLogs !== 'none' && res.output.vm_log.length > 0) {
             console.log(res.output.vm_log)
         }
 
-        if (this.verbosity.debugLogs && res.debugLogs.length > 0) {
+        if (this.verbosity.print && this.verbosity.debugLogs && res.debugLogs.length > 0) {
             console.log(res.debugLogs)
         }
 
@@ -240,8 +250,10 @@ export class SmartContract {
             stack: resStack,
             stackReader: new TupleReader(resStack),
             exitCode: res.output.vm_exit_code,
-            gasUsed: res.output.gas_used,
-            logs: res.output.vm_log
+            gasUsed: BigInt(res.output.gas_used),
+            blockchainLogs: res.logs,
+            vmLogs: res.output.vm_log,
+            debugLogs: res.debugLogs,
         }
     }
 

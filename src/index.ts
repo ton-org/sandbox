@@ -32,6 +32,7 @@ export {
     SmartContractTransaction,
     MessageParams,
     GetMethodParams,
+    GetMethodResult,
     createEmptyShardAccount,
     createShardAccount,
 } from './blockchain/SmartContract';
