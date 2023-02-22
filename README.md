@@ -88,7 +88,11 @@ class NftItem implements Contract {
 
 When you call `nftItem.getData()` (note that just like in the `sendTransfer` method, you don't need to supply the `provider` argument - it's done for you on "opened" instances), the `provider` will query the smart contract contained in blockchain and parse the data according to the code. Note that unlike the `send` methods, `get` methods on "opened" instances will return the original result as-is to the caller.
 
-Note that all of the methods of contracts that you want to "open" that start with `get` or `send` NEED to accept `provider: ContractProvider` as a first argument (even if not used) due to how the wrapper works.
+Notes:
+- All of the methods of contracts that you want to "open" that start with `get` or `send` **NEED** to accept `provider: ContractProvider` as a first argument (even if not used) due to how the wrapper works.
+- You can open any contract at any address, even if it is not yet deployed or was deployed by a "parent" opened contract. The only requirement is that the `address` field (required by the `Contract` interface) is the address of the contract that you want to open, and that `init` is present if you want to deploy using methods on the opened instance (in other cases, `init` is not necessary).
+- Ideally, at most one call to **either** `provider.internal` or `provider.external` should be made within a `send` method. Otherwise, you may get hard to interpret (but generally speaking correct) results.
+- No calls to `provider.external` or `provider.internal` should be made within `get` methods. Otherwise, you will get weird and wrong results in the following `send` methods of any contract.
 
 ## Writing tests
 
@@ -145,6 +149,7 @@ But you can omit those you're not interested in, and you can also pass in functi
 `Blockchain` and `SmartContract` use `LogsVerbosity` to determine what kinds of logs to print. Here is the definition:
 ```typescript
 type LogsVerbosity = {
+    print: boolean
     blockchainLogs: boolean
     vmLogs: Verbosity
     debugLogs: boolean
@@ -156,6 +161,8 @@ type Verbosity = 'none' | 'vm_logs' | 'vm_logs_full'
 Setting verbosity on `SmartContract`s works like an override with respect to what is set on `Blockchain`.
 
 `debugLogs` is enabled by default on the `Blockchain` instance (so every `SmartContract` that does not have `debugLogs` overridden will print debug logs), other kinds of logs are turned off.
+
+`print` determines whether to `console.log` all the non-empty logs (if set to `false`, logs will be collected but will only be exposed in the return values of methods on `Blockchain` and `SmartContract`, and not printed to console), defaults to `true` on the `Blockchain` instance.
 
 `'vm_logs'` prints the log of every instruction that was executed, `'vm_logs_full'` also includes code cell hashes, locations, and stack information for every instruction executed.
 
@@ -177,6 +184,16 @@ blockchain.verbosity = {
 }
 ```
 Note that unlike with `setVerbosityForAddress`, with this setter you have to specify all the values from `LogsVerbosity`.
+
+### Setting smart contract state directly
+
+If you want to test some behavior on a contract if it had specific code, data, and other state fields, but do not want to execute all the required transactions for that, you can directly set the full state of the contract as it is stored in sandbox by using this method on the `Blockchain` instance:
+```
+async setShardAccount(address: Address, account: ShardAccount)
+```
+There are 2 helpers exported from sandbox that can help you create the `ShardAccount` from the common properties: `createEmptyShardAccount` and `createShardAccount`.
+
+Note that this is a low-level function and does not check any invariants, such as that the address passed as the argument matches the one that is present in the `ShardAccount`, meaning it is possible to break stuff if you're not careful when using it.
 
 ### Network/Block configuration
 
