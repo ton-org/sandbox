@@ -27,7 +27,7 @@ export type SendMessageResult = {
     events: Event[],
 }
 
-export type OpenedContract<F> = {
+export type SandboxContract<F> = {
     [P in keyof F]: P extends `get${string}`
         ? (F[P] extends (x: ContractProvider, ...args: infer P) => infer R ? (...args: P) => R : never)
         : (P extends `send${string}`
@@ -217,7 +217,7 @@ export class Blockchain {
                 }
                 return value
             }
-        }) as OpenedContract<T>;
+        }) as SandboxContract<T>;
     }
 
     private startFetchingContract(address: Address) {
