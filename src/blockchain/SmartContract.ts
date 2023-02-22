@@ -92,6 +92,17 @@ export type SmartContractTransaction = Transaction & {
     vmLogs: string
     debugLogs: string
 }
+export type MessageParams = Partial<{
+    now: number,
+    randomSeed: Buffer,
+    ignoreChksig: boolean,
+}>
+
+export type GetMethodParams = Partial<{
+    now: number,
+    randomSeed: Buffer,
+    gasLimit: bigint,
+}>
 
 export class SmartContract {
     readonly address: Address;
@@ -144,19 +155,20 @@ export class SmartContract {
         return new SmartContract(createEmptyShardAccount(address), blockchain)
     }
 
-    receiveMessage(message: Message): SmartContractTransaction {
+    receiveMessage(message: Message, params?: MessageParams) {
         const messageCell = beginCell().store(storeMessage(message)).endCell()
         const shardAccount = beginCell().store(storeShardAccount(this.#account)).endCell()
 
         const res = this.blockchain.executor.runTransaction({
             config: this.blockchain.config,
-            libs: null,
+            libs: this.blockchain.libs ?? null,
             verbosity: verbosityToExecutorVerbosity[this.verbosity.vmLogs],
             shardAccount,
             message: messageCell,
-            now: Math.floor(Date.now() / 1000),
+            now: params?.now ?? Math.floor(Date.now() / 1000),
             lt: this.blockchain.lt,
-            randomSeed: Buffer.alloc(32)
+            randomSeed: params?.randomSeed ?? Buffer.alloc(32),
+            ignoreChksig: params?.ignoreChksig ?? false,
         })
 
         if (this.verbosity.print && this.verbosity.blockchainLogs && res.logs.length > 0) {
@@ -186,7 +198,7 @@ export class SmartContract {
         }
     }
 
-    get(method: string | number, stack: TupleItem[] = []) {
+    get(method: string | number, stack: TupleItem[] = [], params?: GetMethodParams) {
         if (this.#account.account?.storage.state.type !== 'active') {
             throw new Error('Trying to run get method on non-active contract')
         }
@@ -198,12 +210,12 @@ export class SmartContract {
             stack,
             config: this.blockchain.config,
             verbosity: verbosityToExecutorVerbosity[this.verbosity.vmLogs],
-            libs: undefined,
+            libs: this.blockchain.libs,
             address: this.address,
-            unixTime: Math.floor(Date.now() / 1000),
+            unixTime: params?.now ?? Math.floor(Date.now() / 1000),
             balance: this.balance,
-            randomSeed: Buffer.alloc(32),
-            gasLimit: 10_000_000n
+            randomSeed: params?.randomSeed ?? Buffer.alloc(32),
+            gasLimit: params?.gasLimit ?? 10_000_000n,
         })
 
         if (this.verbosity.blockchainLogs && res.logs.length > 0) {

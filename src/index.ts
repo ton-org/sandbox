@@ -30,6 +30,8 @@ export {
     LogsVerbosity,
     SmartContract,
     SmartContractTransaction,
+    MessageParams,
+    GetMethodParams,
     createEmptyShardAccount,
     createShardAccount,
 } from './blockchain/SmartContract';

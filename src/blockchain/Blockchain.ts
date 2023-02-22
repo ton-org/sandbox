@@ -7,7 +7,7 @@ import { BlockchainContractProvider } from "./BlockchainContractProvider";
 import { BlockchainSender } from "./BlockchainSender";
 import { testKey } from "../utils/testKey";
 import { TreasuryContract } from "../treasury/Treasury";
-import { LogsVerbosity, SmartContract, Verbosity } from "./SmartContract";
+import { GetMethodParams, LogsVerbosity, MessageParams, SmartContract, Verbosity } from "./SmartContract";
 import { AsyncLock } from "../utils/AsyncLock";
 import { internal } from "../utils/message";
 
@@ -63,6 +63,7 @@ export class Blockchain {
     }
     #lock = new AsyncLock()
     #contractFetches = new Map<string, Promise<SmartContract>>()
+    protected globalLibs?: Cell
 
     get lt() {
         return this.#lt
@@ -78,13 +79,13 @@ export class Blockchain {
         return this.networkConfig
     }
 
-    async sendMessage(message: Message | Cell): Promise<SendMessageResult> {
+    async sendMessage(message: Message | Cell, params?: MessageParams): Promise<SendMessageResult> {
         await this.pushMessage(message)
-        return await this.runQueue()
+        return await this.runQueue(params)
     }
 
-    async runGetMethod(address: Address, method: number | string, stack: TupleItem[] = []) {
-        return (await this.getContract(address)).get(method, stack)
+    async runGetMethod(address: Address, method: number | string, stack: TupleItem[] = [], params?: GetMethodParams) {
+        return (await this.getContract(address)).get(method, stack, params)
     }
 
     private async pushMessage(message: Message | Cell) {
@@ -97,15 +98,15 @@ export class Blockchain {
         })
     }
 
-    private async runQueue(): Promise<SendMessageResult>  {
-        const txes = await this.processQueue()
+    private async runQueue(params?: MessageParams): Promise<SendMessageResult>  {
+        const txes = await this.processQueue(params)
         return {
             transactions: txes,
             events: txes.map(tx => tx.events).flat(),
         }
     }
 
-    private async processQueue() {
+    private async processQueue(params?: MessageParams) {
         return await this.#lock.with(async () => {
             const result: BlockchainTransaction[] = []
 
@@ -117,7 +118,7 @@ export class Blockchain {
                 }
 
                 this.#lt += LT_ALIGN
-                const smcTx = await (await this.getContract(message.info.dest)).receiveMessage(message)
+                const smcTx = await (await this.getContract(message.info.dest)).receiveMessage(message, params)
                 const transaction: BlockchainTransaction = {
                     ...smcTx,
                     events: extractEvents(smcTx),
@@ -265,6 +266,14 @@ export class Blockchain {
     async setShardAccount(address: Address, account: ShardAccount) {
         const contract = await this.getContract(address)
         contract.account = account
+    }
+
+    get libs() {
+        return this.globalLibs
+    }
+
+    set libs(value: Cell | undefined) {
+        this.globalLibs = value
     }
 
     static async create(opts?: { config?: Cell, storage?: BlockchainStorage }) {
