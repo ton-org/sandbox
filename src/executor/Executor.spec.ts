@@ -57,6 +57,7 @@ describe('Executor', () => {
             now: 0,
             lt: 0n,
             randomSeed: Buffer.alloc(32),
+            ignoreChksig: false,
         })
         expect(res.result.success).toBe(true)
     })
