@@ -5,6 +5,85 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2023-02-22
+
+This release contains multiple breaking changes.
+
+### Added
+
+- Added `blockchain.libs: Cell | undefined` getter and setter for global libraries dictionary (as a `Cell`)
+
+### Changed
+
+- `blockchain.treasury` now accepts an optional `TreasuryParams` argument (see below for definition) instead of the old optional `workchain?: number` argument. This is a breaking change
+```typescript
+export type TreasuryParams = Partial<{
+    workchain: number
+    predeploy: boolean
+    balance: bigint
+    resetBalanceIfZero: boolean
+}>
+```
+- `OpenedContract` was renamed to `SandboxContract`. This is a breaking change
+- `LogsVerbosity` now has a new field, `print: boolean` (defaults to `true` on the `Blockchain` instance), which controls whether to `console.log` any logs at all (both from transactions and get methods). This is a breaking change
+- `smartContract.get` and `blockchain.runGetMethod` now return `GetMethodResult` (see below for definition). The differences from the previous return type are as follows:
+    - `logs` renamed to `vmLogs`. This is a breaking change
+    - `gasUsed` is now of type `bigint`. This is a breaking change
+    - `blockchainLogs: string` and `debugLogs: string` were added
+```typescript
+export type GetMethodResult = {
+    stack: TupleItem[]
+    stackReader: TupleReader
+    exitCode: number
+    gasUsed: bigint
+    blockchainLogs: string
+    vmLogs: string
+    debugLogs: string
+}
+```
+- Properties `storage` and `messageQueue` on `Blockchain` are now protected. This is a breaking change
+- All properties and methods of `Blockchain` that were private are now protected to improve extensibility. Note that any invariants expected by `Blockchain` must be upheld
+- `blockchain.sendMessage` and `smartContract.receiveMessage` now accept an optional `MessageParams` argument (see below for definition). These parameters are used for every transaction in the chain in case of `blockchain.sendMessage`
+```typescript
+export type MessageParams = Partial<{
+    now: number
+    randomSeed: Buffer
+    ignoreChksig: boolean
+}>
+```
+- `blockchain.runGetMethod` and `smartContract.get` now accept an optional `GetMethodParams` argument (see below for definition)
+```typescript
+export type GetMethodParams = Partial<{
+    now: number
+    randomSeed: Buffer
+    gasLimit: bigint
+}>
+```
+- `SendMessageResult` now has `transactions: BlockchainTransaction[]` instead of `transactions: Transaction[]`. Definition of `BlockchainTransaction`:
+```typescript
+export type BlockchainTransaction = Transaction & {
+    blockchainLogs: string
+    vmLogs: string
+    debugLogs: string
+    events: Event[]
+    parent?: BlockchainTransaction
+    children: BlockchainTransaction[]
+}
+```
+- `smartContract.receiveMessage` now returns `SmartContractTransaction` (see below for definition)
+```typescript
+export type SmartContractTransaction = Transaction & {
+    blockchainLogs: string
+    vmLogs: string
+    debugLogs: string
+}
+```
+- Emulator WASM binary has been updated
+
+### Fixed
+
+- Fixed empty message bodies in bounced messages. This fix is contained in the emulator WASM binary
+
 ## [0.4.0] - 2023-02-09
 
 ### Changed
