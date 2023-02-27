@@ -13,6 +13,7 @@ describe('RemoteStorage', () => {
                 endpoint: 'https://mainnet-v4.tonhubapi.com',
             }))
         })
+        
         const saleAddress = Address.parse('EQCvEM2Q7GOmQIx9WVFTF9I1AtpTa1oqZUo3Hz7wo79AZICl')
         const sale = blkch.openContract(new NftSaleV3(saleAddress))
 
