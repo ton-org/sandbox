@@ -87,7 +87,7 @@ export class TreasuryContract implements Contract {
     }) {
 
         // Resolve send mode
-        let sendMode = SendMode.PAY_GAS_SEPARATLY;
+        let sendMode = SendMode.PAY_GAS_SEPARATELY;
         if (args.sendMode !== null && args.sendMode !== undefined) {
             sendMode = args.sendMode;
         }

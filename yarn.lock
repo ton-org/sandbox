@@ -2113,10 +2113,10 @@ to-regex-range@^5.0.1:
   dependencies:
     is-number "^7.0.0"
 
-ton-core@^0.36.1:
-  version "0.36.1"
-  resolved "https://registry.yarnpkg.com/ton-core/-/ton-core-0.36.1.tgz#8a47edfa8a1196073e853cb8a8ac1f1ed94f8f7b"
-  integrity sha512-hr6LsaTC6f4Y/J3hFDYKRcQ1FbRPO2z7tODMp+777X0jiew1cAsresk0i2vqptqHZNgYZVEe6VenNzxi2hZHIQ==
+ton-core@^0.48.0:
+  version "0.48.0"
+  resolved "https://registry.yarnpkg.com/ton-core/-/ton-core-0.48.0.tgz#df744c9b13b3193cb7eb8a9cbb715bcf0437e467"
+  integrity sha512-v3QL0CC8iQQ0cjUN0lI9hK7wEpLW2Wnm+N5Ukm+NSbtQ0vq36LGQR/BRywoOQZJm59XzmW4ATbtCWeas9ePrRA==
   dependencies:
     symbol.inspect "1.0.1"
 
@@ -2136,10 +2136,10 @@ ton-crypto@3.2.0:
     ton-crypto-primitives "2.0.0"
     tweetnacl "1.0.3"
 
-ton@^13.3.0:
-  version "13.3.0"
-  resolved "https://registry.yarnpkg.com/ton/-/ton-13.3.0.tgz#855425fe368d12cea6c784c156ede70d28639cf7"
-  integrity sha512-ygNZ3a8xgDcftudgmq2lNzFNrQtNhUdmBneLJI8C2iBuD9RAfpnjae4eIpjPLfCsLKH8Nmvh2JOESfM7lvsCSw==
+ton@^13.4.1:
+  version "13.4.1"
+  resolved "https://registry.yarnpkg.com/ton/-/ton-13.4.1.tgz#8808370785498a8762848d4cdd8a781964df6a74"
+  integrity sha512-VCHmGE8o1EJBp5JdKNiqjHW5hmUqSfSYYIsMfCje8/GA6sLzhhtMmznuGsrAQhM+MeEAUSt72SeI41z/wnu9MQ==
   dependencies:
     axios "^0.25.0"
     dataloader "^2.0.0"

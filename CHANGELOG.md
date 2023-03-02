@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2023-03-02
+
+### Changed
+
+- Changed ton and ton-core dev and peer dependencies to versions 13.4.1 and 0.48.0 respectively
+
+### Fixed
+
+- Fixed typos in `SendMode.PAY_GAS_SEPARATLY` (missing E) from ton-core
+
 ## [0.5.0] - 2023-02-22
 
 This release contains multiple breaking changes.

@@ -103,7 +103,7 @@ Here is an excerpt of how it's used in the NFT collection example mentioned abov
 const buyResult = await buyer.send({
     to: sale.address,
     value: price + toNano('1'),
-    sendMode: SendMode.PAY_GAS_SEPARATLY,
+    sendMode: SendMode.PAY_GAS_SEPARATELY,
 })
 
 expect(buyResult.transactions).toHaveTransaction({
