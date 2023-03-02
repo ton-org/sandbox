@@ -27,7 +27,7 @@ describe('RemoteStorage', () => {
         await buyer.send({
             to: sale.address,
             value: saleData.price + toNano('1'),
-            sendMode: SendMode.PAY_GAS_SEPARATLY,
+            sendMode: SendMode.PAY_GAS_SEPARATELY,
         })
 
         const item = blkch.openContract(new NftItem(saleData.nft))

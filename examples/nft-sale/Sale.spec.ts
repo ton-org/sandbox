@@ -80,7 +80,7 @@ describe('Collection', () => {
         const buyResult = await buyer.send({
             to: sale.address,
             value: price + toNano('1'),
-            sendMode: SendMode.PAY_GAS_SEPARATLY,
+            sendMode: SendMode.PAY_GAS_SEPARATELY,
         })
 
         expect((await item.getData()).owner?.equals(buyer.address)).toBeTruthy()
