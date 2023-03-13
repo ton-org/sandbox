@@ -24,16 +24,22 @@ export class LocalBlockchainStorage implements BlockchainStorage {
 export class RemoteBlockchainStorage implements BlockchainStorage {
     private contracts: Map<string, SmartContract> = new Map()
     private client: TonClient4
+    private blockSeqno?: number
 
-    constructor(client: TonClient4) {
+    constructor(client: TonClient4, blockSeqno?: number) {
         this.client = client
+        this.blockSeqno = blockSeqno
+    }
+
+    private async getLastBlockSeqno() {
+        return this.blockSeqno ?? (await this.client.getLastBlock()).last.seqno
     }
 
     async getContract(blockchain: Blockchain, address: Address) {
         let existing = this.contracts.get(address.toString())
         if (!existing) {
-            let lastBlock = await this.client.getLastBlock()
-            let account = await this.client.getAccount(lastBlock.last.seqno, address)
+            let blockSeqno = await this.getLastBlockSeqno()
+            let account = await this.client.getAccount(blockSeqno, address)
 
             if (account.account.state.type !== 'active') {
                 existing = SmartContract.empty(blockchain, address)
