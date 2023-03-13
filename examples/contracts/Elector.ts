@@ -1,4 +1,4 @@
-import { Address, Contract, ContractProvider } from "ton-core"
+import { Address, Contract, ContractProvider } from "ton-core";
 
 export class Elector implements Contract {
     constructor(readonly address: Address) {}
@@ -11,9 +11,11 @@ export class Elector implements Contract {
     }
 
     async getStake(provider: ContractProvider, address: Address) {
-        const { stack } = await provider.get('compute_returned_stake', [{ type: 'int', value: BigInt("0x"+address.hash.toString("hex")) }])
+        const { stack } = await provider.get('compute_returned_stake', [
+            { type: 'int', value: BigInt('0x'+address.hash.toString('hex')) }
+        ])
         return {
-            value : stack.readBigNumber()
+            value: stack.readBigNumber()
         }
     }
 }
