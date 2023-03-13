@@ -77,6 +77,10 @@ export class TreasuryContract implements Contract {
         };
     }
 
+    async getBalance(provider: ContractProvider): Promise<bigint> {
+        return (await provider.getState()).balance
+    }
+
     /**
      * Create signed transfer
      */

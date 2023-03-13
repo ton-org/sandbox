@@ -151,4 +151,20 @@ describe('Blockchain', () => {
         })
         expect(res2.stackReader.readNumber()).toBe(2)
     })
+
+    it('should correctly return treasury balance', async () => {
+        const blockchain = await Blockchain.create()
+
+        const treasury = await blockchain.treasury('treasury')
+
+        expect((await blockchain.getContract(treasury.address)).balance).toBe(await treasury.getBalance())
+
+        await treasury.send({
+            to: randomAddress(),
+            value: toNano('1'),
+            bounce: false,
+        })
+
+        expect((await blockchain.getContract(treasury.address)).balance).toBe(await treasury.getBalance())
+    })
 })
