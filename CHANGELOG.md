@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2023-03-13
+
+### Added
+
+- Added `treasury.getBalance` method
+- Added `blockchain.now` getter and setter to override current unix time as seen during contract execution (both transactions and get methods). Note that this is unix timestamp, not JS timestamp, so you need to use `Math.floor(Date.now() / 1000)` instead of `Date.now()` to set current time
+
+### Changed
+
+- `RemoteBlockchainStorage` constructor now accepts a second optional parameter, `blockSeqno?: number`. If passed, all accounts will be pulled from that block number instead of the latest one
+
 ## [0.5.1] - 2023-03-02
 
 ### Changed
