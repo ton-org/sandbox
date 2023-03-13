@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "license": "MIT",
   "devDependencies": {
-    "@ton-community/sandbox": "^0.5.1",
+    "@ton-community/sandbox": "^0.6.0",
     "@ton-community/test-utils": "^0.0.2",
     "@types/jest": "^29.4.0",
     "jest": "^29.4.3",

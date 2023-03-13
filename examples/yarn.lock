@@ -571,10 +571,10 @@
   dependencies:
     "@sinonjs/commons" "^2.0.0"
 
-"@ton-community/sandbox@^0.5.1":
-  version "0.5.1"
-  resolved "https://registry.yarnpkg.com/@ton-community/sandbox/-/sandbox-0.5.1.tgz#bfd731ff3e21a2eb207b21f20d1a8261a758734d"
-  integrity sha512-l5Ac0kn7uUSLxQAOzvnP+7gfnGv6vFtp45/j8LWv5pCgQ7cRqAAq1LX0xXSgL0E0ksmXrUxKHcgonIgSI3wCSA==
+"@ton-community/sandbox@^0.6.0":
+  version "0.6.0"
+  resolved "https://registry.yarnpkg.com/@ton-community/sandbox/-/sandbox-0.6.0.tgz#f5d6d4ab14bd0124ca0b9110e1cdcf10074f4834"
+  integrity sha512-sONTYpPugH5c4O4bL1sLf/hpkqJi/1nYv3Fi+K/RqMvmOlu2c3Zx87ucswmlUaA03fy0UNPeyXLw0rjzq7VxPA==
 
 "@ton-community/test-utils@^0.0.2":
   version "0.0.2"
