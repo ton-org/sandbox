@@ -53,7 +53,8 @@ const TREASURY_INIT_BALANCE_TONS = 1_000_000
 export class Blockchain {
     protected storage: BlockchainStorage
     protected networkConfig: Cell
-    protected currentLt = 0n;
+    protected currentLt = 0n
+    protected currentTime?: number
     protected messageQueue: PendingMessage[] = []
     protected logsVerbosity: LogsVerbosity = {
         print: true,
@@ -66,6 +67,14 @@ export class Blockchain {
     protected contractFetches = new Map<string, Promise<SmartContract>>()
 
     readonly executor: Executor
+
+    get now() {
+        return this.currentTime
+    }
+
+    set now(now: number | undefined) {
+        this.currentTime = now
+    }
 
     get lt() {
         return this.currentLt
@@ -87,7 +96,10 @@ export class Blockchain {
     }
 
     async runGetMethod(address: Address, method: number | string, stack: TupleItem[] = [], params?: GetMethodParams) {
-        return (await this.getContract(address)).get(method, stack, params)
+        return (await this.getContract(address)).get(method, stack, {
+            now: this.now,
+            ...params,
+        })
     }
 
     protected async pushMessage(message: Message | Cell) {
@@ -109,6 +121,10 @@ export class Blockchain {
     }
 
     protected async processQueue(params?: MessageParams) {
+        params = {
+            now: this.now,
+            ...params,
+        }
         return await this.lock.with(async () => {
             const result: BlockchainTransaction[] = []
 

@@ -128,4 +128,27 @@ describe('Blockchain', () => {
                 .endCell(),
         })
     })
+
+    it('should correctly override now', async () => {
+        const blockchain = await Blockchain.create()
+
+        const address = randomAddress()
+
+        await blockchain.setShardAccount(address, createShardAccount({
+            address,
+            code: Cell.fromBase64('te6ccgEBBAEAHgABFP8A9KQT9LzyyAsBAgFiAgMABtBfBAAJoCw58Ec='),
+            data: new Cell(),
+            balance: toNano('1'),
+        }))
+
+        blockchain.now = 1
+
+        const res1 = await blockchain.runGetMethod(address, 'get_now')
+        expect(res1.stackReader.readNumber()).toBe(1)
+
+        const res2 = await blockchain.runGetMethod(address, 'get_now', [], {
+            now: 2,
+        })
+        expect(res2.stackReader.readNumber()).toBe(2)
+    })
 })
