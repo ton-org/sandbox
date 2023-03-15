@@ -1,5 +1,5 @@
 import {Blockchain} from "./Blockchain";
-import {Address, beginCell, Cell, Message, toNano} from "ton-core";
+import {Address, beginCell, Cell, Contract, ContractProvider, Message, Sender, toNano} from "ton-core";
 import {randomAddress} from "@ton-community/test-utils";
 import {TonClient4} from "ton";
 import {RemoteBlockchainStorage} from "./BlockchainStorage";
@@ -136,7 +136,7 @@ describe('Blockchain', () => {
 
         await blockchain.setShardAccount(address, createShardAccount({
             address,
-            code: Cell.fromBase64('te6ccgEBBAEAHgABFP8A9KQT9LzyyAsBAgFiAgMABtBfBAAJoCw58Ec='),
+            code: Cell.fromBase64('te6ccgEBBAEARgABFP8A9KQT9LzyyAsBAgFiAgMAVtBsMdMfMfpAMPgjghD////+cIAYyMsFUATPFiP6AhPLahLLH8sfyYBA+wAACaAsOfBH'),
             data: new Cell(),
             balance: toNano('1'),
         }))
@@ -146,10 +146,81 @@ describe('Blockchain', () => {
         const res1 = await blockchain.runGetMethod(address, 'get_now')
         expect(res1.stackReader.readNumber()).toBe(1)
 
+        const sender = await blockchain.treasury('sender')
+
+        const tx1 = await blockchain.sendMessage(internal({
+            from: sender.address,
+            to: address,
+            value: toNano('1'),
+            body: beginCell().storeUint(0, 32).storeAddress(sender.address).endCell(),
+        }))
+
+        expect(tx1.transactions).toHaveTransaction({
+            from: address,
+            body: (x: Cell) => {
+                const s = x.beginParse()
+                const op = s.loadUint(32)
+                const now = s.loadUint(32)
+                return op === 0xfffffffe && now === 1
+            }
+        })
+
         const res2 = await blockchain.runGetMethod(address, 'get_now', [], {
             now: 2,
         })
         expect(res2.stackReader.readNumber()).toBe(2)
+
+        const tx2 = await blockchain.sendMessage(internal({
+            from: sender.address,
+            to: address,
+            value: toNano('1'),
+            body: beginCell().storeUint(0, 32).storeAddress(sender.address).endCell(),
+        }), {
+            now: 2,
+        })
+
+        expect(tx2.transactions).toHaveTransaction({
+            from: address,
+            body: (x: Cell) => {
+                const s = x.beginParse()
+                const op = s.loadUint(32)
+                const now = s.loadUint(32)
+                return op === 0xfffffffe && now === 2
+            }
+        })
+
+        class NowTest implements Contract {
+            constructor(readonly address: Address) {}
+
+            async sendTest(provider: ContractProvider, sender: Sender, answerTo: Address) {
+                await provider.internal(sender, {
+                    value: toNano('1'),
+                    body: beginCell().storeUint(0, 32).storeAddress(answerTo).endCell(),
+                })
+            }
+
+            async getNow(provider: ContractProvider) {
+                return (await provider.get('get_now', [])).stack.readNumber()
+            }
+        }
+
+        const contract = blockchain.openContract(new NowTest(address))
+
+        blockchain.now = 3
+
+        expect(await contract.getNow()).toBe(3)
+
+        const txc = await contract.sendTest(sender.getSender(), sender.address)
+
+        expect(txc.transactions).toHaveTransaction({
+            from: address,
+            body: (x: Cell) => {
+                const s = x.beginParse()
+                const op = s.loadUint(32)
+                const now = s.loadUint(32)
+                return op === 0xfffffffe && now === 3
+            }
+        })
     })
 
     it('should correctly return treasury balance', async () => {

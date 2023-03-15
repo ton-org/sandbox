@@ -167,6 +167,7 @@ export class Blockchain {
         return new BlockchainContractProvider({
             getContract: (addr) => this.getContract(addr),
             pushMessage: (msg) => this.pushMessage(msg),
+            runGetMethod: (addr, method, args) => this.runGetMethod(addr, method, args),
         }, address, init)
     }
 
