@@ -1,7 +1,11 @@
-import { Address, Contract, ContractProvider } from "ton-core";
+import { Address, Cell, Contract, ContractProvider } from "ton-core";
 
 export class Elector implements Contract {
-    constructor(readonly address: Address) {}
+    constructor(readonly address: Address, readonly init?: { code: Cell; data: Cell }) {}
+
+    static createFromAddress(address: Address) {
+        return new Elector(address);
+    }
 
     async getActiveElectionId(provider: ContractProvider) {
         const { stack } = await provider.get('active_election_id', [])

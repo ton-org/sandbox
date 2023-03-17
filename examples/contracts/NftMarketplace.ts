@@ -1,17 +1,28 @@
 import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Sender, storeStateInit, toNano } from "ton-core";
 
+export type NftMarketplaceConfig = {
+    owner: Address
+};
+
+function nftMarketplaceConfigToCell(config: NftMarketplaceConfig): Cell {
+    return beginCell()
+        .storeAddress(config.owner)
+        .endCell();
+}
+
 export class NftMarketplace implements Contract {
     static readonly code = Cell.fromBase64('te6ccgEBBAEAagABFP8A9KQT9LzyyAsBAgEgAgMApNIyIccAkVvg0NMDAXGwkVvg+kAw7UTQ+kAwxwXy4ZHTHwHAAY4p+gDU1DAh+QBwyMoHy//J0Hd0gBjIywXLAljPFlAE+gITy2vMzMlx+wCRMOIABPIw')
 
-    readonly address: Address;
-    readonly init: { code: Cell; data: Cell; };
+    constructor(readonly address: Address, readonly init?: { code: Cell; data: Cell }) {}
 
-    constructor(workchain: number, owner: Address) {
-        const data = beginCell()
-            .storeAddress(owner)
-            .endCell()
-        this.init = { code: NftMarketplace.code, data }
-        this.address = contractAddress(workchain, this.init)
+    static createFromAddress(address: Address) {
+        return new NftMarketplace(address);
+    }
+
+    static createFromConfig(config: NftMarketplaceConfig, code: Cell, workchain = 0) {
+        const data = nftMarketplaceConfigToCell(config);
+        const init = { code, data };
+        return new NftMarketplace(contractAddress(workchain, init), init);
     }
 
     async sendDeploy(provider: ContractProvider, via: Sender, params: {

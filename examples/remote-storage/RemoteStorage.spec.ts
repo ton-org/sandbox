@@ -15,7 +15,7 @@ describe('RemoteStorage', () => {
         })
 
         const saleAddress = Address.parse('EQCvEM2Q7GOmQIx9WVFTF9I1AtpTa1oqZUo3Hz7wo79AZICl')
-        const sale = blkch.openContract(new NftSaleV3(saleAddress))
+        const sale = blkch.openContract(NftSaleV3.createFromAddress(saleAddress))
 
         const saleData = await sale.getData()
 
@@ -47,7 +47,7 @@ describe('RemoteStorage', () => {
             )
         })
         const electorAddress = Address.parse('Ef8zMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzM0vF')
-        const elector = blkch.openContract(new Elector(electorAddress))
+        const elector = blkch.openContract(Elector.createFromAddress(electorAddress))
 
         let { electionId } = await elector.getActiveElectionId()
         expect(electionId).toBe(0n) // Elections are currently closed

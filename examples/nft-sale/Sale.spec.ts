@@ -14,10 +14,12 @@ describe('Collection', () => {
         const admin = await blkch.treasury('admin')
         const buyer = await blkch.treasury('buyer')
 
-        const collection = blkch.openContract(new NftCollection(0, {
+        const collection = blkch.openContract(NftCollection.createFromConfig({
             owner: minter.address,
-        }))
-        const marketplace = blkch.openContract(new NftMarketplace(0, admin.address))
+        }, NftCollection.code))
+        const marketplace = blkch.openContract(NftMarketplace.createFromConfig({
+            owner: admin.address,
+        }, NftMarketplace.code))
 
         const itemContent = beginCell()
             .storeUint(123, 8)
@@ -32,7 +34,7 @@ describe('Collection', () => {
             to: itemAddress,
             deploy: true,
         })
-        const item = blkch.openContract(new NftItem(itemAddress))
+        const item = blkch.openContract(NftItem.createFromAddress(itemAddress))
         const itemData = await item.getData()
         expect(itemData.content?.equals(itemContent)).toBeTruthy()
         expect(itemData.owner?.equals(minter.address)).toBeTruthy()
@@ -41,17 +43,17 @@ describe('Collection', () => {
 
         const fee = toNano('0.05')
 
-        const sale = blkch.openContract(new NftSale(0, {
+        const sale = blkch.openContract(NftSale.createFromConfig({
             marketplace: marketplace.address,
             nft: itemAddress,
             price,
             marketplaceFee: fee,
             royaltyAddress: collection.address,
             royaltyAmount: fee,
-        }))
+        }, NftSale.code))
 
         const deploySaleResult = await marketplace.sendDeploy(admin.getSender(), {
-            init: sale.init,
+            init: sale.init!,
         })
 
         expect(deploySaleResult.transactions).toHaveTransaction({

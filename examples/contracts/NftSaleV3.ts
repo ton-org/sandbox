@@ -1,10 +1,14 @@
-import { Address, Contract, ContractProvider } from "ton-core";
-import { NftSaleData } from "./NftSale";
+import { Address, Cell, Contract, ContractProvider } from "ton-core";
+import { NftSaleConfig } from "./NftSale";
 
 export class NftSaleV3 implements Contract {
-    constructor(readonly address: Address) {}
+    constructor(readonly address: Address, readonly init?: { code: Cell; data: Cell }) {}
 
-    async getData(provider: ContractProvider): Promise<NftSaleData> {
+    static createFromAddress(address: Address) {
+        return new NftSaleV3(address);
+    }
+
+    async getData(provider: ContractProvider): Promise<NftSaleConfig> {
         const { stack } = await provider.get('get_sale_data', [])
         const [, , , marketplace, nft, nftOwner, price, , marketplaceFee, royaltyAddress, royaltyAmount] = [
             stack.pop(),
