@@ -114,6 +114,18 @@ export type GetMethodResult = {
     debugLogs: string,
 }
 
+export class GetMethodError extends Error {
+    constructor(
+        public exitCode: number,
+        public gasUsed: bigint,
+        public blockchainLogs: string,
+        public vmLogs: string,
+        public debugLogs: string,
+    ) {
+        super(`Unable to execute get method. Got exit_code: ${exitCode}`);
+    }
+}
+
 export class SmartContract {
     readonly address: Address
     readonly blockchain: Blockchain
@@ -242,6 +254,16 @@ export class SmartContract {
 
         if (this.verbosity.print && this.verbosity.debugLogs && res.debugLogs.length > 0) {
             console.log(res.debugLogs)
+        }
+
+        if (res.output.vm_exit_code !== 0) {
+            throw new GetMethodError(
+                res.output.vm_exit_code,
+                BigInt(res.output.gas_used),
+                res.logs,
+                res.output.vm_log,
+                res.debugLogs,
+            );
         }
 
         const resStack = parseTuple(Cell.fromBase64(res.output.stack))

@@ -4,7 +4,7 @@ import {randomAddress} from "@ton-community/test-utils";
 import {TonClient4} from "ton";
 import {RemoteBlockchainStorage} from "./BlockchainStorage";
 import {prettyLogTransactions} from "../utils/prettyLogTransaction";
-import { createShardAccount } from "./SmartContract";
+import { createShardAccount, GetMethodError } from "./SmartContract";
 import { internal } from "../utils/message";
 
 describe('Blockchain', () => {
@@ -157,12 +157,8 @@ describe('Blockchain', () => {
 
         expect(tx1.transactions).toHaveTransaction({
             from: address,
-            body: (x: Cell) => {
-                const s = x.beginParse()
-                const op = s.loadUint(32)
-                const now = s.loadUint(32)
-                return op === 0xfffffffe && now === 1
-            }
+            op: 0xfffffffe,
+            body: (x: Cell) => x.beginParse().skip(32).loadUint(32) === 1,
         })
 
         const res2 = await blockchain.runGetMethod(address, 'get_now', [], {
@@ -181,12 +177,8 @@ describe('Blockchain', () => {
 
         expect(tx2.transactions).toHaveTransaction({
             from: address,
-            body: (x: Cell) => {
-                const s = x.beginParse()
-                const op = s.loadUint(32)
-                const now = s.loadUint(32)
-                return op === 0xfffffffe && now === 2
-            }
+            op: 0xfffffffe,
+            body: (x: Cell) => x.beginParse().skip(32).loadUint(32) === 2,
         })
 
         class NowTest implements Contract {
@@ -214,12 +206,8 @@ describe('Blockchain', () => {
 
         expect(txc.transactions).toHaveTransaction({
             from: address,
-            body: (x: Cell) => {
-                const s = x.beginParse()
-                const op = s.loadUint(32)
-                const now = s.loadUint(32)
-                return op === 0xfffffffe && now === 3
-            }
+            op: 0xfffffffe,
+            body: (x: Cell) => x.beginParse().skip(32).loadUint(32) === 3,
         })
     })
 
@@ -237,5 +225,29 @@ describe('Blockchain', () => {
         })
 
         expect((await blockchain.getContract(treasury.address)).balance).toBe(await treasury.getBalance())
+    })
+
+    it('should throw on failed get methods', async () => {
+        const blockchain = await Blockchain.create()
+
+        const address = randomAddress()
+
+        await blockchain.setShardAccount(address, createShardAccount({
+            address,
+            code: Cell.fromBoc(Buffer.from('b5ee9c72410104010024000114ff00f4a413f4bcf2c80b0102016203020015a0fac70401bd5be5e0e2e50006d05f0419d6b6da', 'hex'))[0],
+            data: new Cell(),
+            balance: toNano('1'),
+        }))
+
+        expect.assertions(1)
+        try {
+            await blockchain.runGetMethod(address, 'get_fail')
+        } catch (e) {
+            if (e instanceof GetMethodError) {
+                expect(e.exitCode).toBe(0xdead)
+            } else {
+                throw new Error('`e` is not of type GetMethodError')
+            }
+        }
     })
 })

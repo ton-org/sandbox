@@ -1,4 +1,4 @@
-import { AccountState, Address, Cell, comment, ContractProvider, ContractState, Message, Sender, SendMode, toNano, TupleItem, TupleReader } from "ton-core";
+import { AccountState, Address, Cell, comment, ContractGetMethodResult, ContractProvider, ContractState, Message, Sender, SendMode, toNano, TupleItem, TupleReader } from "ton-core";
 import { GetMethodResult, SmartContract } from "./SmartContract";
 
 function bigintToBuffer(x: bigint, n = 32): Buffer {
@@ -55,10 +55,12 @@ export class BlockchainContractProvider implements ContractProvider {
             state: convertState(contract.accountState),
         }
     }
-    async get(name: string, args: TupleItem[]): Promise<{ stack: TupleReader; }> {
+    async get(name: string, args: TupleItem[]): Promise<ContractGetMethodResult> {
         const result = await this.blockchain.runGetMethod(this.address, name, args)
         return {
             stack: result.stackReader,
+            gasUsed: result.gasUsed,
+            logs: result.vmLogs,
         }
     }
     async external(message: Cell) {
