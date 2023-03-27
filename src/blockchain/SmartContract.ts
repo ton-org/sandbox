@@ -129,44 +129,52 @@ export class GetMethodError extends Error {
 export class SmartContract {
     readonly address: Address
     readonly blockchain: Blockchain
-    #account: ShardAccount
+    #account: string
+    #parsedAccount?: ShardAccount
     #verbosity?: Partial<LogsVerbosity>
 
     constructor(shardAccount: ShardAccount, blockchain: Blockchain) {
         this.address = shardAccount.account!.addr
-        this.#account = shardAccount
+        this.#account = beginCell().store(storeShardAccount(shardAccount)).endCell().toBoc().toString('base64')
+        this.#parsedAccount = shardAccount
         this.blockchain = blockchain
     }
 
     get balance() {
-        return this.#account.account?.storage.balance.coins ?? 0n
+        return this.account.account?.storage.balance.coins ?? 0n
     }
 
     set balance(v: bigint) {
-        if (!this.#account.account) {
-            this.#account.account = createEmptyAccount(this.address)
+        const acc = this.account
+        if (acc.account === undefined) {
+            acc.account = createEmptyAccount(this.address)
         }
-        this.#account.account.storage.balance.coins = v
+        acc.account!.storage.balance.coins = v
+        this.account = acc
     }
 
     get lastTransactionHash() {
-        return this.#account.lastTransactionHash
+        return this.account.lastTransactionHash
     }
 
     get lastTransactionLt() {
-        return this.#account.lastTransactionLt
+        return this.account.lastTransactionLt
     }
 
     get accountState() {
-        return this.#account.account?.storage.state
+        return this.account.account?.storage.state
     }
 
     get account() {
-        return this.#account
+        if (this.#parsedAccount === undefined) {
+            this.#parsedAccount = loadShardAccount(Cell.fromBase64(this.#account).beginParse())
+        }
+        return this.#parsedAccount
     }
 
     set account(account: ShardAccount) {
-        this.#account = account
+        this.#account = beginCell().store(storeShardAccount(account)).endCell().toBoc().toString('base64')
+        this.#parsedAccount = account
     }
 
     static create(blockchain: Blockchain, args: { address: Address, code: Cell, data: Cell, balance: bigint }) {
@@ -179,13 +187,12 @@ export class SmartContract {
 
     receiveMessage(message: Message, params?: MessageParams) {
         const messageCell = beginCell().store(storeMessage(message)).endCell()
-        const shardAccount = beginCell().store(storeShardAccount(this.#account)).endCell()
 
         const res = this.blockchain.executor.runTransaction({
             config: this.blockchain.config,
             libs: this.blockchain.libs ?? null,
             verbosity: verbosityToExecutorVerbosity[this.verbosity.vmLogs],
-            shardAccount,
+            shardAccount: this.#account,
             message: messageCell,
             now: params?.now ?? Math.floor(Date.now() / 1000),
             lt: this.blockchain.lt,
@@ -210,7 +217,8 @@ export class SmartContract {
             console.log(res.debugLogs)
         }
 
-        this.#account = loadShardAccount(Cell.fromBase64(res.result.shardAccount).beginParse())
+        this.#account = res.result.shardAccount
+        this.#parsedAccount = undefined
 
         return {
             ...loadTransaction(Cell.fromBase64(res.result.transaction).beginParse()),
@@ -221,13 +229,13 @@ export class SmartContract {
     }
 
     get(method: string | number, stack: TupleItem[] = [], params?: GetMethodParams): GetMethodResult {
-        if (this.#account.account?.storage.state.type !== 'active') {
+        if (this.account.account?.storage.state.type !== 'active') {
             throw new Error('Trying to run get method on non-active contract')
         }
 
         const res = this.blockchain.executor.runGetMethod({
-            code: this.#account.account?.storage.state.state.code!,
-            data: this.#account.account?.storage.state.state.data!,
+            code: this.account.account?.storage.state.state.code!,
+            data: this.account.account?.storage.state.state.data!,
             methodId: typeof method === 'string' ? getSelectorForMethod(method) : method,
             stack,
             config: this.blockchain.config,

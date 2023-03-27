@@ -37,7 +37,7 @@ describe('Executor', () => {
                 account: null,
                 lastTransactionHash: 0n,
                 lastTransactionLt: 0n,
-            })).endCell(),
+            })).endCell().toBoc().toString('base64'),
             message: beginCell().store(storeMessage({
                 info: {
                     type: 'internal',
