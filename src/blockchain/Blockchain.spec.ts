@@ -250,4 +250,28 @@ describe('Blockchain', () => {
             }
         }
     })
+
+    it('should return externals', async () => {
+        const blockchain = await Blockchain.create()
+
+        const address = randomAddress()
+
+        await blockchain.setShardAccount(address, createShardAccount({
+            address,
+            code: Cell.fromBoc(Buffer.from('te6ccgEBAgEAJgABFP8A9KQT9LzyyAsBAC7TXwRwVHAAc8jLAcsBywHLYcsfyXD7AA==', 'base64'))[0],
+            data: new Cell(),
+            balance: toNano('1'),
+        }))
+
+        const result = await blockchain.sendMessage(internal({
+            from: randomAddress(),
+            to: address,
+            value: toNano('1'),
+        }))
+
+        expect(result.externals.length).toBe(1)
+        const ext = result.externals[0]
+        expect(ext.info.src).toEqualAddress(address)
+        expect(ext.body).toEqualCell(beginCell().storeUint(0, 32).endCell())
+    })
 })

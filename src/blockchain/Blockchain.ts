@@ -1,5 +1,5 @@
 import { defaultConfig } from "../config/defaultConfig";
-import {Address, Cell, Message, Transaction, ContractProvider, Contract, Sender, toNano, loadMessage, ShardAccount, TupleItem} from "ton-core";
+import {Address, Cell, Message, Transaction, ContractProvider, Contract, Sender, toNano, loadMessage, ShardAccount, TupleItem, ExternalAddress, StateInit} from "ton-core";
 import {Executor} from "../executor/Executor";
 import {BlockchainStorage, LocalBlockchainStorage} from "./BlockchainStorage";
 import { extractEvents, Event } from "../event/Event";
@@ -13,6 +13,20 @@ import { internal } from "../utils/message";
 
 const LT_ALIGN = 1000000n
 
+export type ExternalOutInfo = {
+    type: 'external-out'
+    src: Address
+    dest?: ExternalAddress
+    createdAt: number
+    createdLt: bigint
+}
+
+export type ExternalOut = {
+    info: ExternalOutInfo
+    init?: StateInit
+    body: Cell
+}
+
 export type BlockchainTransaction = Transaction & {
     blockchainLogs: string,
     vmLogs: string,
@@ -20,11 +34,13 @@ export type BlockchainTransaction = Transaction & {
     events: Event[],
     parent?: BlockchainTransaction,
     children: BlockchainTransaction[],
+    externals: ExternalOut[],
 }
 
 export type SendMessageResult = {
     transactions: BlockchainTransaction[],
     events: Event[],
+    externals: ExternalOut[],
 }
 
 export type SandboxContract<F> = {
@@ -117,6 +133,7 @@ export class Blockchain {
         return {
             transactions: txes,
             events: txes.map(tx => tx.events).flat(),
+            externals: txes.map(tx => tx.externals).flat(),
         }
     }
 
@@ -142,12 +159,28 @@ export class Blockchain {
                     events: extractEvents(smcTx),
                     parent: message.parentTransaction,
                     children: [],
+                    externals: [],
                 }
                 transaction.parent?.children.push(transaction)
 
                 result.push(transaction)
 
-                for (let message of transaction.outMessages.values()) {
+                for (const message of transaction.outMessages.values()) {
+                    if (message.info.type === 'external-out') {
+                        transaction.externals.push({
+                            info: {
+                                type: 'external-out',
+                                src: message.info.src,
+                                dest: message.info.dest ?? undefined,
+                                createdAt: message.info.createdAt,
+                                createdLt: message.info.createdLt,
+                            },
+                            init: message.init ?? undefined,
+                            body: message.body,
+                        })
+                        continue
+                    }
+
                     this.messageQueue.push({
                         ...message,
                         parentTransaction: transaction,

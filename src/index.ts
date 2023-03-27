@@ -9,6 +9,8 @@ export {
     BlockchainTransaction,
     PendingMessage,
     SandboxContract,
+    ExternalOut,
+    ExternalOutInfo,
 } from './blockchain/Blockchain';
 
 export {
