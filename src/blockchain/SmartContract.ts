@@ -126,17 +126,29 @@ export class GetMethodError extends Error {
     }
 }
 
+export class TimeError extends Error {
+    constructor(
+        public address: Address,
+        public previousTxTime: number,
+        public currentTime: number,
+    ) {
+        super(`Cannot run a transaction on account ${address} at unix timestamp ${currentTime} because it already had a transaction executed on it at unix timestamp ${previousTxTime}`)
+    }
+}
+
 export class SmartContract {
     readonly address: Address
     readonly blockchain: Blockchain
     #account: string
     #parsedAccount?: ShardAccount
+    #lastTxTime: number
     #verbosity?: Partial<LogsVerbosity>
 
     constructor(shardAccount: ShardAccount, blockchain: Blockchain) {
         this.address = shardAccount.account!.addr
         this.#account = beginCell().store(storeShardAccount(shardAccount)).endCell().toBoc().toString('base64')
         this.#parsedAccount = shardAccount
+        this.#lastTxTime = shardAccount.account?.storageStats.lastPaid ?? 0
         this.blockchain = blockchain
     }
 
@@ -175,6 +187,7 @@ export class SmartContract {
     set account(account: ShardAccount) {
         this.#account = beginCell().store(storeShardAccount(account)).endCell().toBoc().toString('base64')
         this.#parsedAccount = account
+        this.#lastTxTime = account.account?.storageStats.lastPaid ?? 0
     }
 
     static create(blockchain: Blockchain, args: { address: Address, code: Cell, data: Cell, balance: bigint }) {
@@ -186,6 +199,12 @@ export class SmartContract {
     }
 
     receiveMessage(message: Message, params?: MessageParams) {
+        const now = params?.now ?? Math.floor(Date.now() / 1000)
+
+        if (now < this.#lastTxTime) {
+            throw new TimeError(this.address, this.#lastTxTime, now)
+        }
+
         const messageCell = beginCell().store(storeMessage(message)).endCell()
 
         const res = this.blockchain.executor.runTransaction({
@@ -194,7 +213,7 @@ export class SmartContract {
             verbosity: verbosityToExecutorVerbosity[this.verbosity.vmLogs],
             shardAccount: this.#account,
             message: messageCell,
-            now: params?.now ?? Math.floor(Date.now() / 1000),
+            now,
             lt: this.blockchain.lt,
             randomSeed: params?.randomSeed ?? Buffer.alloc(32),
             ignoreChksig: params?.ignoreChksig ?? false,
@@ -219,6 +238,7 @@ export class SmartContract {
 
         this.#account = res.result.shardAccount
         this.#parsedAccount = undefined
+        this.#lastTxTime = now
 
         return {
             ...loadTransaction(Cell.fromBase64(res.result.transaction).beginParse()),

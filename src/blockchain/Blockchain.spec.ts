@@ -4,7 +4,7 @@ import {randomAddress} from "@ton-community/test-utils";
 import {TonClient4} from "ton";
 import {RemoteBlockchainStorage} from "./BlockchainStorage";
 import {prettyLogTransactions} from "../utils/prettyLogTransaction";
-import { createShardAccount, GetMethodError } from "./SmartContract";
+import { createShardAccount, GetMethodError, TimeError } from "./SmartContract";
 import { internal } from "../utils/message";
 
 describe('Blockchain', () => {
@@ -273,5 +273,45 @@ describe('Blockchain', () => {
         const ext = result.externals[0]
         expect(ext.info.src).toEqualAddress(address)
         expect(ext.body).toEqualCell(beginCell().storeUint(0, 32).endCell())
+    })
+
+    it('should throw a special exception when running a tx in the past', async () => {
+        const blockchain = await Blockchain.create()
+
+        const address = randomAddress()
+
+        await blockchain.setShardAccount(address, createShardAccount({
+            address,
+            code: Cell.fromBoc(Buffer.from('te6ccgEBAgEAEgABFP8A9KQT9LzyyAsBAAbTXwQ=', 'base64'))[0],
+            data: new Cell(),
+            balance: toNano('1'),
+        }))
+
+        blockchain.now = 100
+
+        await blockchain.sendMessage(internal({
+            from: randomAddress(),
+            to: address,
+            value: toNano('1'),
+        }))
+
+        blockchain.now = 99
+
+        expect.assertions(3)
+        try {
+            await blockchain.sendMessage(internal({
+                from: randomAddress(),
+                to: address,
+                value: toNano('1'),
+            }))
+        } catch (e) {
+            if (e instanceof TimeError) {
+                expect(e.address).toEqualAddress(address)
+                expect(e.previousTxTime).toBe(100)
+                expect(e.currentTime).toBe(99)
+            } else {
+                throw new Error('`e` is not of type TimeError')
+            }
+        }
     })
 })

@@ -38,6 +38,7 @@ export {
     createEmptyShardAccount,
     createShardAccount,
     GetMethodError,
+    TimeError,
 } from './blockchain/SmartContract';
 
 export {
