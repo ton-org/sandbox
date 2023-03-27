@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2023-03-27
+
+### Added
+
+- Added `externals: ExternalOut[]` field to `BlockchainTransaction` and `SendMessageResult`. `ExternalOut` is a specialized type for external out messages compatible with `Message` from ton-core
+
+### Changed
+
+- Get methods now throw a specialized error type `GetMethodError` when exit code is not 0
+- Smart contracts now throw a specialized error type `TimeError` when trying to run a transaction at a unix timestamp that is less than the unix timestamp of the last transaction
+- Get methods now return `gasUsed` and `logs` from the `ContractProvider` on opened contracts
+
+### Other
+
+- Consecutive transaction emulations have been optimized
+
 ## [0.6.1] - 2023-03-16
 
 ### Fixed
