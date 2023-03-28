@@ -11,6 +11,12 @@ import { GetMethodParams, LogsVerbosity, MessageParams, SmartContract, Verbosity
 import { AsyncLock } from "../utils/AsyncLock";
 import { internal } from "../utils/message";
 
+const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS'
+
+function createWalletsSeed(idx: number) {
+    return `${CREATE_WALLETS_PREFIX}${idx}`
+}
+
 const LT_ALIGN = 1000000n
 
 export type ExternalOutInfo = {
@@ -81,6 +87,8 @@ export class Blockchain {
     protected globalLibs?: Cell
     protected lock = new AsyncLock()
     protected contractFetches = new Map<string, Promise<SmartContract>>()
+    protected treasuries = new Map<string, SandboxContract<TreasuryContract>>()
+    protected nextCreateWalletIndex = 0
 
     readonly executor: Executor
 
@@ -210,12 +218,22 @@ export class Blockchain {
         }, address)
     }
 
-    async treasury(seed: string, params?: TreasuryParams) {
-        const key = testKey(seed)
-        const treasury = TreasuryContract.create(params?.workchain ?? 0, key)
-        const wallet = this.openContract(treasury)
+    protected treasuryParamsToMapKey(workchain: number, seed: string) {
+        return `${workchain}:${seed}`
+    }
 
-        const contract = await this.getContract(treasury.address)
+    async treasury(seed: string, params?: TreasuryParams) {
+        const workchain = params?.workchain ?? 0
+        const mapKey = this.treasuryParamsToMapKey(workchain, seed)
+        let wallet = this.treasuries.get(mapKey)
+        if (wallet === undefined) {
+            const key = testKey(seed)
+            const treasury = TreasuryContract.create(params?.workchain ?? 0, key)
+            wallet = this.openContract(treasury)
+            this.treasuries.set(mapKey, wallet)
+        }
+
+        const contract = await this.getContract(wallet.address)
         if ((params?.predeploy ?? true) && (contract.accountState === undefined || contract.accountState.type === 'uninit')) {
             await this.sendMessage(internal({
                 from: new Address(0, Buffer.alloc(32)),
@@ -229,6 +247,15 @@ export class Blockchain {
         }
 
         return wallet
+    }
+
+    async createWallets(n: number, params?: TreasuryParams) {
+        const wallets: SandboxContract<TreasuryContract>[] = []
+        for (let i = 0; i < n; i++) {
+            const seed = createWalletsSeed(this.nextCreateWalletIndex++)
+            wallets.push(await this.treasury(seed, params))
+        }
+        return wallets
     }
 
     openContract<T extends Contract>(contract: T) {

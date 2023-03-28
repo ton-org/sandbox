@@ -314,4 +314,47 @@ describe('Blockchain', () => {
             }
         }
     })
+
+    it('should create wallets', async () => {
+        const blockchain = await Blockchain.create()
+
+        const [wallet1, wallet2, wallet3] = await blockchain.createWallets(3)
+
+        expect(wallet1.address).not.toEqualAddress(wallet2.address)
+        expect(wallet2.address).not.toEqualAddress(wallet3.address)
+        expect(wallet3.address).not.toEqualAddress(wallet1.address)
+
+        const res1 = await wallet1.send({
+            to: wallet2.address,
+            value: toNano('1'),
+        })
+
+        expect(res1.transactions).toHaveTransaction({
+            from: wallet1.address,
+            to: wallet2.address,
+            success: true,
+        })
+
+        const res2 = await wallet2.send({
+            to: wallet3.address,
+            value: toNano('1'),
+        })
+
+        expect(res2.transactions).toHaveTransaction({
+            from: wallet2.address,
+            to: wallet3.address,
+            success: true,
+        })
+
+        const res3 = await wallet3.send({
+            to: wallet1.address,
+            value: toNano('1'),
+        })
+
+        expect(res3.transactions).toHaveTransaction({
+            from: wallet3.address,
+            to: wallet1.address,
+            success: true,
+        })
+    })
 })
