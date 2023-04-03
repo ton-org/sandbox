@@ -25,6 +25,8 @@ export {
     BlockchainStorage,
     LocalBlockchainStorage,
     RemoteBlockchainStorage,
+    RemoteBlockchainStorageClient,
+    wrapTonClient4ForRemote,
 } from './blockchain/BlockchainStorage';
 
 export {

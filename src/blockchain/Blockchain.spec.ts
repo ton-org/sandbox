@@ -2,7 +2,7 @@ import {Blockchain} from "./Blockchain";
 import {Address, beginCell, Cell, Contract, ContractProvider, Message, Sender, toNano} from "ton-core";
 import {randomAddress} from "@ton-community/test-utils";
 import {TonClient4} from "ton";
-import {RemoteBlockchainStorage} from "./BlockchainStorage";
+import {RemoteBlockchainStorage, wrapTonClient4ForRemote} from "./BlockchainStorage";
 import {prettyLogTransactions} from "../utils/prettyLogTransaction";
 import { createShardAccount, GetMethodError, TimeError } from "./SmartContract";
 import { internal } from "../utils/message";
@@ -16,7 +16,7 @@ describe('Blockchain', () => {
         })
 
         let blockchain = await Blockchain.create({
-            storage: new RemoteBlockchainStorage(client)
+            storage: new RemoteBlockchainStorage(wrapTonClient4ForRemote(client))
         })
 
         let buyer = randomAddress()
