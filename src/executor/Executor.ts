@@ -7,7 +7,7 @@ export type GetMethodArgs = {
     data: Cell,
     methodId: number,
     stack: TupleItem[],
-    config: Cell,
+    config: string,
     verbosity: ExecutorVerbosity
     libs?: Cell
     address: Address
@@ -39,7 +39,7 @@ export type GetMethodResult = {
 };
 
 export type RunTransactionArgs = {
-    config: Cell
+    config: string
     libs: Cell | null
     verbosity: ExecutorVerbosity
     shardAccount: string
@@ -186,7 +186,7 @@ export class Executor {
     private heap: Heap
     private emulator?: {
         ptr: number
-        configHash: Buffer
+        config: string
         verbosity: number
     }
     private debugLogs: string[] = []
@@ -224,7 +224,7 @@ export class Executor {
         const resp = JSON.parse(this.extractString(this.invoke('_run_get_method', [
             JSON.stringify(params),
             stack.toBoc().toString('base64'),
-            args.config.toBoc().toString('base64')
+            args.config,
         ])))
         const debugLogs = this.debugLogs.join('\n')
 
@@ -288,20 +288,20 @@ export class Executor {
         };
     }
 
-    private createEmulator(config: Cell, verbosity: number) {
+    private createEmulator(config: string, verbosity: number) {
         if (this.emulator !== undefined) {
             this.invoke('_destroy_emulator', [this.emulator.ptr]);
         }
-        const ptr = this.invoke('_create_emulator', [config.toBoc().toString('base64'), verbosity]);
+        const ptr = this.invoke('_create_emulator', [config, verbosity]);
         this.emulator = {
             ptr,
-            configHash: config.hash(),
+            config,
             verbosity,
         };
     }
 
-    private getEmulatorPointer(config: Cell, verbosity: number) {
-        if (this.emulator === undefined || verbosity !== this.emulator.verbosity || !config.hash().equals(this.emulator.configHash)) {
+    private getEmulatorPointer(config: string, verbosity: number) {
+        if (this.emulator === undefined || verbosity !== this.emulator.verbosity || config !== this.emulator.config) {
             this.createEmulator(config, verbosity);
         }
 

@@ -208,7 +208,7 @@ export class SmartContract {
         const messageCell = beginCell().store(storeMessage(message)).endCell()
 
         const res = this.blockchain.executor.runTransaction({
-            config: this.blockchain.config,
+            config: this.blockchain.configBase64,
             libs: this.blockchain.libs ?? null,
             verbosity: verbosityToExecutorVerbosity[this.verbosity.vmLogs],
             shardAccount: this.#account,
@@ -258,7 +258,7 @@ export class SmartContract {
             data: this.account.account?.storage.state.state.data!,
             methodId: typeof method === 'string' ? getSelectorForMethod(method) : method,
             stack,
-            config: this.blockchain.config,
+            config: this.blockchain.configBase64,
             verbosity: verbosityToExecutorVerbosity[this.verbosity.vmLogs],
             libs: this.blockchain.libs,
             address: this.address,

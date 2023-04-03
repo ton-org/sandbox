@@ -17,7 +17,7 @@ describe('Executor', () => {
             code,
             data,
             address: contractAddress(0, { code, data }),
-            config: Cell.fromBase64(defaultConfig),
+            config: defaultConfig,
             methodId: 0,
             stack: [{ type: 'int', value: 1n }, { type: 'int', value: 2n }],
             balance: 0n,
@@ -30,7 +30,7 @@ describe('Executor', () => {
 
     it('should run transaction', async () => {
         let res = executor.runTransaction({
-            config: Cell.fromBase64(defaultConfig),
+            config: defaultConfig,
             libs: null,
             verbosity: 'full_location',
             shardAccount: beginCell().store(storeShardAccount({

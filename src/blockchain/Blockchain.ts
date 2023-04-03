@@ -10,6 +10,7 @@ import { TreasuryContract } from "../treasury/Treasury";
 import { GetMethodParams, LogsVerbosity, MessageParams, SmartContract, Verbosity } from "./SmartContract";
 import { AsyncLock } from "../utils/AsyncLock";
 import { internal } from "../utils/message";
+import { slimConfig } from "../config/slimConfig";
 
 const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS'
 
@@ -72,9 +73,22 @@ export type TreasuryParams = Partial<{
 
 const TREASURY_INIT_BALANCE_TONS = 1_000_000
 
+export type BlockchainConfig = Cell | 'default' | 'slim'
+
+function blockchainConfigToBase64(config: BlockchainConfig | undefined): string {
+    switch (config) {
+        case 'default':
+            return defaultConfig
+        case 'slim':
+            return slimConfig
+        default:
+            return config?.toBoc({ idx: false }).toString('base64') ?? defaultConfig
+    }
+}
+
 export class Blockchain {
     protected storage: BlockchainStorage
-    protected networkConfig: Cell
+    protected networkConfig: string
     protected currentLt = 0n
     protected currentTime?: number
     protected messageQueue: PendingMessage[] = []
@@ -104,13 +118,17 @@ export class Blockchain {
         return this.currentLt
     }
 
-    protected constructor(opts: { executor: Executor, config?: Cell, storage: BlockchainStorage }) {
-        this.networkConfig = opts.config ?? Cell.fromBase64(defaultConfig)
+    protected constructor(opts: { executor: Executor, config?: BlockchainConfig, storage: BlockchainStorage }) {
+        this.networkConfig = blockchainConfigToBase64(opts.config)
         this.executor = opts.executor
         this.storage = opts.storage
     }
 
     get config(): Cell {
+        return Cell.fromBase64(this.networkConfig)
+    }
+
+    get configBase64(): string {
         return this.networkConfig
     }
 
@@ -338,8 +356,8 @@ export class Blockchain {
         contract.setVerbosity(verbosity)
     }
 
-    setConfig(config: Cell) {
-        this.networkConfig = config
+    setConfig(config: BlockchainConfig) {
+        this.networkConfig = blockchainConfigToBase64(config)
     }
 
     async setShardAccount(address: Address, account: ShardAccount) {
@@ -355,7 +373,7 @@ export class Blockchain {
         this.globalLibs = value
     }
 
-    static async create(opts?: { config?: Cell, storage?: BlockchainStorage }) {
+    static async create(opts?: { config?: BlockchainConfig, storage?: BlockchainStorage }) {
         return new Blockchain({
             executor: await Executor.create(),
             storage: opts?.storage ?? new LocalBlockchainStorage(),

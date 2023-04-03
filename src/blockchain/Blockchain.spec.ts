@@ -1,5 +1,5 @@
 import {Blockchain} from "./Blockchain";
-import {Address, beginCell, Cell, Contract, ContractProvider, Message, Sender, toNano} from "ton-core";
+import {Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Message, Sender, toNano} from "ton-core";
 import {randomAddress} from "@ton-community/test-utils";
 import {TonClient4} from "ton";
 import {RemoteBlockchainStorage, wrapTonClient4ForRemote} from "./BlockchainStorage";
@@ -354,6 +354,35 @@ describe('Blockchain', () => {
         expect(res3.transactions).toHaveTransaction({
             from: wallet3.address,
             to: wallet1.address,
+            success: true,
+        })
+    })
+
+    it('should work with slim config', async () => {
+        const blockchain = await Blockchain.create({ config: 'slim' })
+
+        const code = Cell.fromBase64('te6ccgEBAgEALQABFP8A9KQT9LzyyAsBADzTE18D0NMDMfpAMHCAGMjLBVjPFiH6AstqyYBA+wA=')
+        const data = new Cell()
+
+        const addr = contractAddress(-1, { code, data })
+
+        await blockchain.setShardAccount(addr, createShardAccount({
+            address: addr,
+            code,
+            data,
+            balance: toNano('10'),
+        }))
+
+        const [sender] = await blockchain.createWallets(1)
+
+        const res = await sender.send({
+            to: addr,
+            value: toNano('10'),
+        })
+
+        expect(res.transactions).toHaveTransaction({
+            from: sender.address,
+            to: addr,
             success: true,
         })
     })

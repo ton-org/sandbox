@@ -11,6 +11,7 @@ export {
     SandboxContract,
     ExternalOut,
     ExternalOutInfo,
+    BlockchainConfig,
 } from './blockchain/Blockchain';
 
 export {
