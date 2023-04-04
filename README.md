@@ -203,6 +203,8 @@ By default, this package will use its [stored network configuration](src/config/
 
 Special thanks to [@dungeon-master-666](https://github.com/dungeon-master-666) for their C++ code of the emulator.
 
+Special thanks to [@TrueCarry](https://github.com/truecarry) for their help with performance and other suggestions.
+
 ## License
 
 This package is released under the [MIT License](LICENSE).
