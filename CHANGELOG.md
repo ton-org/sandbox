@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2023-04-07
+
+This release contains a breaking change.
+
+### Added
+
+- Added `blockchain.createWallets` method which accepts a number `n` and optional `TreasuryParams`. It creates `n` treasuries and returns them as an array
+
+### Changed
+
+- `RemoteBlockchainStorage` now requires a `RemoteBlockchainStorageClient` instead of `TonClient4`. There is a helper function, `wrapTonClient4ForRemote`, to wrap a `TonClient4` into `RemoteBlockchainStorageClient`. This is a breaking change
+- Updated default config
+- `Blockchain.create` now accepts an optional `BlockchainConfig = Cell | 'default' | 'slim'` as the config. If nothing or `'default'` is specified, the default config is used, if `'slim'` is specified, the slim config is used (it is much smaller than the default config, which improves performance), if a `Cell` is passed, then it is used as the config
+
+### Removed
+
+- Removed ton as a peer dependency
+
 ## [0.7.0] - 2023-03-27
 
 ### Added
