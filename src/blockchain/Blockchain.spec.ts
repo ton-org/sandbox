@@ -4,6 +4,7 @@ import {randomAddress} from "@ton-community/test-utils";
 import {TonClient4} from "ton";
 import {RemoteBlockchainStorage, wrapTonClient4ForRemote} from "./BlockchainStorage";
 import {prettyLogTransactions} from "../utils/prettyLogTransaction";
+import {printTransactionFees} from "../utils/printTransactionFees";
 import { createShardAccount, GetMethodError, TimeError } from "./SmartContract";
 import { internal } from "../utils/message";
 
@@ -43,6 +44,8 @@ describe('Blockchain', () => {
         let res = await blockchain.sendMessage(message)
 
         prettyLogTransactions(res.transactions)
+
+        printTransactionFees(res.transactions)
 
         let nft = await blockchain.getContract(Address.parse('EQDTbyyOixs9JsO8bmHjk9WJYN8deL-qJeNZvWx147pM8qeO'))
         let data = await nft.get('get_nft_data')

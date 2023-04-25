@@ -62,5 +62,9 @@ export {
 } from './utils/prettyLogTransaction';
 
 export {
+    printTransactionFees,
+} from './utils/printTransactionFees';
+
+export {
     internal,
 } from './utils/message';
