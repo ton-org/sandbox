@@ -136,6 +136,13 @@ export class TimeError extends Error {
     }
 }
 
+export type SmartContractSnapshot = {
+    address: Address
+    account: ShardAccount
+    lastTxTime: number
+    verbosity?: Partial<LogsVerbosity>
+}
+
 export class SmartContract {
     readonly address: Address
     readonly blockchain: Blockchain
@@ -150,6 +157,25 @@ export class SmartContract {
         this.#parsedAccount = shardAccount
         this.#lastTxTime = shardAccount.account?.storageStats.lastPaid ?? 0
         this.blockchain = blockchain
+    }
+
+    snapshot(): SmartContractSnapshot {
+        return {
+            address: this.address,
+            account: this.account,
+            lastTxTime: this.#lastTxTime,
+            verbosity: this.#verbosity === undefined ? undefined : { ...this.#verbosity },
+        }
+    }
+
+    loadFrom(snapshot: SmartContractSnapshot) {
+        if (snapshot.address !== this.address) {
+            throw new Error('Wrong snapshot address')
+        }
+
+        this.account = snapshot.account
+        this.#lastTxTime = snapshot.lastTxTime
+        this.#verbosity = snapshot.verbosity === undefined ? undefined : { ...snapshot.verbosity }
     }
 
     get balance() {

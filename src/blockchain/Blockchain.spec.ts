@@ -1,5 +1,5 @@
 import {Blockchain} from "./Blockchain";
-import {Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Message, Sender, toNano} from "ton-core";
+import {Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Message, Sender, storeTransaction, toNano} from "ton-core";
 import {randomAddress} from "@ton-community/test-utils";
 import {TonClient4} from "ton";
 import {RemoteBlockchainStorage, wrapTonClient4ForRemote} from "./BlockchainStorage";
@@ -388,5 +388,53 @@ describe('Blockchain', () => {
             to: addr,
             success: true,
         })
+    })
+
+    it('should give same transactions after restoring from snapshot', async () => {
+        const blockchain = await Blockchain.create()
+
+        blockchain.now = 1000
+
+        let wallet1 = await blockchain.treasury('sender')
+
+        const now = 2000
+
+        const snapshot = blockchain.snapshot()
+
+        blockchain.now = now
+
+        wallet1 = await blockchain.treasury('sender')
+
+        const wallet2 = await blockchain.treasury('receiver')
+
+        const result1 = await wallet1.send({
+            to: wallet2.address,
+            value: toNano('1'),
+        })
+
+        await blockchain.loadFrom(snapshot)
+
+        blockchain.now = now
+
+        const wallet1New = await blockchain.treasury('sender')
+
+        const wallet2New = await blockchain.treasury('receiver')
+
+        const result2 = await wallet1New.send({
+            to: wallet2New.address,
+            value: toNano('1'),
+        })
+
+        expect(result1.transactions.length).toBe(result2.transactions.length)
+        for (let i = 0; i < result1.transactions.length; i++) {
+            // temporary fix for an emulator bug
+            result1.transactions[i].now = now
+            result2.transactions[i].now = now
+            result2.transactions[i].prevTransactionHash = result1.transactions[i].prevTransactionHash
+
+            const tx1Cell = beginCell().storeWritable(storeTransaction(result1.transactions[i])).endCell()
+            const tx2Cell = beginCell().storeWritable(storeTransaction(result2.transactions[i])).endCell()
+            expect(tx1Cell).toEqualCell(tx2Cell)
+        }
     })
 })

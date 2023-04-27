@@ -7,10 +7,11 @@ import { BlockchainContractProvider } from "./BlockchainContractProvider";
 import { BlockchainSender } from "./BlockchainSender";
 import { testKey } from "../utils/testKey";
 import { TreasuryContract } from "../treasury/Treasury";
-import { GetMethodParams, LogsVerbosity, MessageParams, SmartContract, Verbosity } from "./SmartContract";
+import { GetMethodParams, LogsVerbosity, MessageParams, SmartContract, SmartContractSnapshot, Verbosity } from "./SmartContract";
 import { AsyncLock } from "../utils/AsyncLock";
 import { internal } from "../utils/message";
 import { slimConfig } from "../config/slimConfig";
+import { KeyPair } from "ton-crypto";
 
 const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS'
 
@@ -86,6 +87,22 @@ function blockchainConfigToBase64(config: BlockchainConfig | undefined): string 
     }
 }
 
+export type BlockchainSnapshot = {
+    contracts: SmartContractSnapshot[]
+    networkConfig: string
+    lt: bigint
+    time?: number
+    verbosity: LogsVerbosity
+    libs?: Cell
+    treasuryStates: {
+        mapKey: string
+        workchain: number
+        keypair: KeyPair
+        seqno: number
+    }[]
+    nextCreateWalletIndex: number
+}
+
 export class Blockchain {
     protected storage: BlockchainStorage
     protected networkConfig: string
@@ -105,6 +122,40 @@ export class Blockchain {
     protected nextCreateWalletIndex = 0
 
     readonly executor: Executor
+
+    snapshot(): BlockchainSnapshot {
+        return {
+            contracts: this.storage.knownContracts().map(s => s.snapshot()),
+            networkConfig: this.networkConfig,
+            lt: this.currentLt,
+            time: this.currentTime,
+            verbosity: { ...this.logsVerbosity },
+            libs: this.globalLibs,
+            treasuryStates: Array.from(this.treasuries.entries()).map(t => ({ mapKey: t[0], workchain: t[1].address.workChain, keypair: t[1].keypair, seqno: t[1].seqno })),
+            nextCreateWalletIndex: this.nextCreateWalletIndex,
+        }
+    }
+
+    async loadFrom(snapshot: BlockchainSnapshot) {
+        this.storage.clearKnownContracts()
+        for (const contract of snapshot.contracts) {
+            const storageContract = await this.getContract(contract.address)
+            storageContract.loadFrom(contract)
+        }
+
+        this.networkConfig = snapshot.networkConfig
+        this.currentLt = snapshot.lt
+        this.currentTime = snapshot.time
+        this.logsVerbosity = { ...snapshot.verbosity }
+        this.globalLibs = snapshot.libs
+        this.treasuries.clear()
+        for (const ts of snapshot.treasuryStates) {
+            const tc = TreasuryContract.create(ts.workchain, ts.keypair)
+            tc.seqno = ts.seqno
+            this.treasuries.set(ts.mapKey, this.openContract(tc))
+        }
+        this.nextCreateWalletIndex = snapshot.nextCreateWalletIndex
+    }
 
     get now() {
         return this.currentTime

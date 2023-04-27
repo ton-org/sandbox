@@ -37,7 +37,7 @@ export class TreasuryContract implements Contract {
     readonly address: Address;
     readonly init: { code: Cell, data: Cell };
     readonly keypair: KeyPair;
-    private seqno: number = 0;
+    seqno: number = 0;
 
     constructor(workchain: number, keypair: KeyPair) {
         const data = beginCell()

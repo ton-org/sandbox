@@ -12,6 +12,7 @@ export {
     ExternalOut,
     ExternalOutInfo,
     BlockchainConfig,
+    BlockchainSnapshot,
 } from './blockchain/Blockchain';
 
 export {
@@ -42,6 +43,7 @@ export {
     createShardAccount,
     GetMethodError,
     TimeError,
+    SmartContractSnapshot,
 } from './blockchain/SmartContract';
 
 export {

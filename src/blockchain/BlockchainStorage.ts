@@ -4,6 +4,8 @@ import {Blockchain} from "./Blockchain";
 
 export interface BlockchainStorage {
     getContract(blockchain: Blockchain, address: Address): Promise<SmartContract>
+    knownContracts(): SmartContract[]
+    clearKnownContracts(): void
 }
 
 export class LocalBlockchainStorage implements BlockchainStorage {
@@ -17,6 +19,14 @@ export class LocalBlockchainStorage implements BlockchainStorage {
         }
 
         return existing
+    }
+
+    knownContracts() {
+        return Array.from(this.contracts.values())
+    }
+
+    clearKnownContracts() {
+        this.contracts.clear()
     }
 }
 
@@ -146,5 +156,13 @@ export class RemoteBlockchainStorage implements BlockchainStorage {
         }
 
         return existing
+    }
+
+    knownContracts() {
+        return Array.from(this.contracts.values())
+    }
+
+    clearKnownContracts() {
+        this.contracts.clear()
     }
 }
