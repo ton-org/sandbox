@@ -15,6 +15,7 @@ export type GetMethodArgs = {
     balance: bigint
     randomSeed: Buffer
     gasLimit: bigint
+    debug_enabled?: boolean
 }
 
 export type GetMethodResultSuccess = {
@@ -48,6 +49,9 @@ export type RunTransactionArgs = {
     lt: bigint
     randomSeed: Buffer | null
     ignoreChksig: boolean
+    isTickTock?: boolean
+    isTock?: boolean
+    debug_enabled?: boolean
 }
 
 type GetMethodInternalParams = {
@@ -61,6 +65,7 @@ type GetMethodInternalParams = {
     rand_seed: string
     gas_limit: string
     method_id: number
+    debug_enabled: boolean
 };
 
 type EmulationInternalParams = {
@@ -68,6 +73,9 @@ type EmulationInternalParams = {
     lt: string
     rand_seed: string
     ignore_chksig: boolean
+    is_tick_tock?: boolean
+    is_tock?: boolean
+    debug_enabled: boolean
 };
 
 export type ExecutorVerbosity = 'short' | 'full' | 'full_location' | 'full_location_stack'
@@ -216,6 +224,7 @@ export class Executor {
             rand_seed: args.randomSeed.toString('hex'),
             gas_limit: args.gasLimit.toString(),
             method_id: args.methodId,
+            debug_enabled: args.debug_enabled ?? true
         };
 
         let stack = serializeTuple(args.stack)
@@ -245,13 +254,18 @@ export class Executor {
             utime: args.now,
             lt: args.lt.toString(),
             rand_seed: args.randomSeed === null ? '' : args.randomSeed.toString('hex'),
-            ignore_chksig: args.ignoreChksig
+            ignore_chksig: args.ignoreChksig,
+            debug_enabled: args.debug_enabled ?? true,
+            is_tick_tock: args.isTickTock ?? false,
+            is_tock: args.isTickTock ? args.isTock : false
         }
 
         this.debugLogs = []
         const resp = JSON.parse(this.extractString(this.invoke('_emulate', [
-            this.getEmulatorPointer(args.config, verbosityToNum[args.verbosity]),
+            // this.getEmulatorPointer(args.config, verbosityToNum[args.verbosity]),
+            args.config,
             args.libs?.toBoc().toString('base64') ?? 0,
+            verbosityToNum[args.verbosity],
             args.shardAccount,
             args.message.toBoc().toString('base64'),
             JSON.stringify(params)
