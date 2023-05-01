@@ -97,6 +97,12 @@ export type MessageParams = Partial<{
     randomSeed: Buffer,
     ignoreChksig: boolean,
 }>
+export type TickTockParams = Partial<{
+    isTickTock: boolean,
+    isTock: boolean
+}>
+
+export type TransactionOpts = {message?: Message} & MessageParams & TickTockParams;
 
 export type GetMethodParams = Partial<{
     now: number,
@@ -224,14 +230,13 @@ export class SmartContract {
         return new SmartContract(createEmptyShardAccount(address), blockchain)
     }
 
-    receiveMessage(message: Message, params?: MessageParams) {
-        const now = params?.now ?? Math.floor(Date.now() / 1000)
-
+    protected runTransaction(params: TransactionOpts) {
+        const now = params.now ?? Math.floor(Date.now() / 1000)
         if (now < this.#lastTxTime) {
             throw new TimeError(this.address, this.#lastTxTime, now)
         }
 
-        const messageCell = beginCell().store(storeMessage(message)).endCell()
+        const messageCell = params.message ?  beginCell().store(storeMessage(params.message)).endCell() :  beginCell().endCell();
 
         const res = this.blockchain.executor.runTransaction({
             config: this.blockchain.configBase64,
@@ -241,8 +246,10 @@ export class SmartContract {
             message: messageCell,
             now,
             lt: this.blockchain.lt,
-            randomSeed: params?.randomSeed ?? Buffer.alloc(32),
-            ignoreChksig: params?.ignoreChksig ?? false,
+            randomSeed: params.randomSeed ?? Buffer.alloc(32),
+            ignoreChksig: params.ignoreChksig ?? false,
+            isTickTock: params.isTickTock ?? false,
+            isTock: params.isTickTock ? params.isTock : false
         })
 
         if (this.verbosity.print && this.verbosity.blockchainLogs && res.logs.length > 0) {
@@ -272,6 +279,31 @@ export class SmartContract {
             vmLogs: res.result.vmLog,
             debugLogs: res.debugLogs,
         }
+    }
+
+    receiveMessage(message: Message, params?: MessageParams) {
+        const now = params?.now ?? Math.floor(Date.now() / 1000)
+
+        return this.runTransaction({
+            message: message,
+            now,
+            randomSeed: params?.randomSeed ?? Buffer.alloc(32),
+            ignoreChksig: params?.ignoreChksig ?? false,
+        })
+    }
+
+    runTickTock(isTock: boolean, params?: MessageParams) {
+        if (this.account.account?.storage.state.type !== 'active') {
+            throw new Error('Trying to run tick_tock on non-active contract')
+        }
+        const now = params?.now ?? Math.floor(Date.now() / 1000)
+        return this.runTransaction({
+            now,
+            randomSeed: params?.randomSeed ?? Buffer.alloc(32),
+            ignoreChksig: params?.ignoreChksig ?? false,
+            isTickTock: true,
+            isTock,
+        });
     }
 
     get(method: string | number, stack: TupleItem[] = [], params?: GetMethodParams): GetMethodResult {
