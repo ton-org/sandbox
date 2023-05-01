@@ -437,4 +437,38 @@ describe('Blockchain', () => {
             expect(tx1Cell).toEqualCell(tx2Cell)
         }
     })
+
+    it('Should trigger tick tock transaction', async() => {
+        /*
+         * Test contract code
+         *
+         *#include "stdlib.fc";
+
+        () recv_internal() {
+        }
+        () run_ticktock(int is_tock) {
+        	is_tock~dump();
+        }
+        */
+        const bc   = await Blockchain.create();
+        const code = Cell.fromBase64("te6ccgEBBAEAHgABFP8A9KQT9LzyyAsBAgEgAgMAAtIADaX//38QGEA=");
+        const data = beginCell().storeUint(0, 32).endCell();
+        const testAddr = contractAddress(-1, {code, data});
+        await bc.setShardAccount(testAddr, createShardAccount({
+            address: testAddr,
+            code,
+            data,
+            balance: toNano('1')
+        }));
+
+        const smc = await bc.getContract(testAddr);
+        let res = await smc.runTickTock(true);
+        if(res.description.type !== 'tick-tock')
+            throw("Tick tock transaction expected");
+        expect(res.description.isTock).toBe(true);
+        res = await smc.runTickTock(false);
+        if(res.description.type !== 'tick-tock')
+            throw("Tick tock transaction expected");
+        expect(res.description.isTock).toBe(false);
+    });
 })
