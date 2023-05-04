@@ -437,4 +437,46 @@ describe('Blockchain', () => {
             expect(tx1Cell).toEqualCell(tx2Cell)
         }
     })
+
+    it('should send coins from treasury after snapshot restore', async () => {
+        const blockchain = await Blockchain.create()
+
+        const sender = await blockchain.treasury('sender')
+
+        const receiver = randomAddress()
+
+        const value = toNano('1')
+
+        const result1 = await sender.send({
+            to: receiver,
+            value,
+        })
+
+        expect(result1.transactions).toHaveTransaction({
+            from: sender.address,
+            to: receiver,
+            value,
+        })
+
+        const snapshot = blockchain.snapshot()
+
+        // try to break treasury
+        await sender.send({
+            to: receiver,
+            value: value * 2n,
+        })
+
+        await blockchain.loadFrom(snapshot)
+
+        const result2 = await sender.send({
+            to: receiver,
+            value,
+        })
+
+        expect(result2.transactions).toHaveTransaction({
+            from: sender.address,
+            to: receiver,
+            value,
+        })
+    })
 })
