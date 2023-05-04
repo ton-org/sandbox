@@ -5,13 +5,12 @@ import {BlockchainStorage, LocalBlockchainStorage} from "./BlockchainStorage";
 import { extractEvents, Event } from "../event/Event";
 import { BlockchainContractProvider } from "./BlockchainContractProvider";
 import { BlockchainSender } from "./BlockchainSender";
-import { testKey } from "../utils/testKey";
 import { TreasuryContract } from "../treasury/Treasury";
 import { GetMethodParams, LogsVerbosity, MessageParams, SmartContract, SmartContractSnapshot, Verbosity } from "./SmartContract";
 import { AsyncLock } from "../utils/AsyncLock";
 import { internal } from "../utils/message";
 import { slimConfig } from "../config/slimConfig";
-import { KeyPair } from "ton-crypto";
+import { testSubwalletId } from "../utils/testTreasurySubwalletId";
 
 const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS'
 
@@ -94,12 +93,6 @@ export type BlockchainSnapshot = {
     time?: number
     verbosity: LogsVerbosity
     libs?: Cell
-    treasuryStates: {
-        mapKey: string
-        workchain: number
-        keypair: KeyPair
-        seqno: number
-    }[]
     nextCreateWalletIndex: number
 }
 
@@ -118,7 +111,6 @@ export class Blockchain {
     protected globalLibs?: Cell
     protected lock = new AsyncLock()
     protected contractFetches = new Map<string, Promise<SmartContract>>()
-    protected treasuries = new Map<string, SandboxContract<TreasuryContract>>()
     protected nextCreateWalletIndex = 0
 
     readonly executor: Executor
@@ -131,7 +123,6 @@ export class Blockchain {
             time: this.currentTime,
             verbosity: { ...this.logsVerbosity },
             libs: this.globalLibs,
-            treasuryStates: Array.from(this.treasuries.entries()).map(t => ({ mapKey: t[0], workchain: t[1].address.workChain, keypair: t[1].keypair, seqno: t[1].seqno })),
             nextCreateWalletIndex: this.nextCreateWalletIndex,
         }
     }
@@ -148,12 +139,6 @@ export class Blockchain {
         this.currentTime = snapshot.time
         this.logsVerbosity = { ...snapshot.verbosity }
         this.globalLibs = snapshot.libs
-        this.treasuries.clear()
-        for (const ts of snapshot.treasuryStates) {
-            const tc = TreasuryContract.create(ts.workchain, ts.keypair)
-            tc.seqno = ts.seqno
-            this.treasuries.set(ts.mapKey, this.openContract(tc))
-        }
         this.nextCreateWalletIndex = snapshot.nextCreateWalletIndex
     }
 
@@ -292,15 +277,8 @@ export class Blockchain {
     }
 
     async treasury(seed: string, params?: TreasuryParams) {
-        const workchain = params?.workchain ?? 0
-        const mapKey = this.treasuryParamsToMapKey(workchain, seed)
-        let wallet = this.treasuries.get(mapKey)
-        if (wallet === undefined) {
-            const key = testKey(seed)
-            const treasury = TreasuryContract.create(params?.workchain ?? 0, key)
-            wallet = this.openContract(treasury)
-            this.treasuries.set(mapKey, wallet)
-        }
+        const subwalletId = testSubwalletId(seed)
+        const wallet = this.openContract(TreasuryContract.create(params?.workchain ?? 0, subwalletId))
 
         const contract = await this.getContract(wallet.address)
         if ((params?.predeploy ?? true) && (contract.accountState === undefined || contract.accountState.type === 'uninit')) {
