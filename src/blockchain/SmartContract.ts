@@ -249,7 +249,8 @@ export class SmartContract {
             randomSeed: params.randomSeed ?? Buffer.alloc(32),
             ignoreChksig: params.ignoreChksig ?? false,
             isTickTock: params.isTickTock ?? false,
-            isTock: params.isTickTock ? params.isTock : false
+            isTock: params.isTickTock ? params.isTock : false,
+            debugEnabled: this.verbosity.debugLogs,
         })
 
         if (this.verbosity.print && this.verbosity.blockchainLogs && res.logs.length > 0) {
@@ -324,6 +325,7 @@ export class SmartContract {
             balance: this.balance,
             randomSeed: params?.randomSeed ?? Buffer.alloc(32),
             gasLimit: params?.gasLimit ?? 10_000_000n,
+            debugEnabled: this.verbosity.debugLogs,
         })
 
         if (this.verbosity.print && this.verbosity.blockchainLogs && res.logs.length > 0) {

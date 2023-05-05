@@ -23,7 +23,8 @@ describe('Executor', () => {
             balance: 0n,
             gasLimit: 0n,
             unixTime: 0,
-            randomSeed: Buffer.alloc(32)
+            randomSeed: Buffer.alloc(32),
+            debugEnabled: true,
         });
         expect(res.output.success).toBe(true)
     })
@@ -58,6 +59,7 @@ describe('Executor', () => {
             lt: 0n,
             randomSeed: Buffer.alloc(32),
             ignoreChksig: false,
+            debugEnabled: true,
         })
         expect(res.result.success).toBe(true)
     })

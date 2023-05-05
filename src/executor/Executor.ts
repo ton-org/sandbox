@@ -15,7 +15,7 @@ export type GetMethodArgs = {
     balance: bigint
     randomSeed: Buffer
     gasLimit: bigint
-    debug_enabled?: boolean
+    debugEnabled: boolean
 }
 
 export type GetMethodResultSuccess = {
@@ -24,7 +24,6 @@ export type GetMethodResultSuccess = {
     gas_used: string
     vm_exit_code: number
     vm_log: string
-    c7: string
     missing_library: string | null
 };
 
@@ -51,7 +50,7 @@ export type RunTransactionArgs = {
     ignoreChksig: boolean
     isTickTock?: boolean
     isTock?: boolean
-    debug_enabled?: boolean
+    debugEnabled: boolean
 }
 
 type GetMethodInternalParams = {
@@ -85,7 +84,6 @@ type ResultSuccess = {
     transaction: string
     shard_account: string
     vm_log: string
-    c7: string | null
     actions: string | null
 }
 
@@ -102,7 +100,6 @@ export type EmulationResultSuccess = {
     transaction: string
     shardAccount: string
     vmLog: string
-    c7: string | null
     actions: string | null
 }
 
@@ -224,7 +221,7 @@ export class Executor {
             rand_seed: args.randomSeed.toString('hex'),
             gas_limit: args.gasLimit.toString(),
             method_id: args.methodId,
-            debug_enabled: args.debug_enabled ?? true
+            debug_enabled: args.debugEnabled,
         };
 
         let stack = serializeTuple(args.stack)
@@ -255,9 +252,9 @@ export class Executor {
             lt: args.lt.toString(),
             rand_seed: args.randomSeed === null ? '' : args.randomSeed.toString('hex'),
             ignore_chksig: args.ignoreChksig,
-            debug_enabled: args.debug_enabled ?? true,
             is_tick_tock: args.isTickTock ?? false,
-            is_tock: args.isTickTock ? args.isTock : false
+            is_tock: args.isTickTock ? args.isTock : false,
+            debug_enabled: args.debugEnabled,
         }
 
         this.debugLogs = []
@@ -287,7 +284,6 @@ export class Executor {
                 transaction: result.transaction,
                 shardAccount: result.shard_account,
                 vmLog: result.vm_log,
-                c7: result.c7,
                 actions: result.actions,
             } : {
                 success: false,
