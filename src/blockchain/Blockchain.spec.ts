@@ -7,6 +7,7 @@ import {prettyLogTransactions} from "../utils/prettyLogTransaction";
 import {printTransactionFees} from "../utils/printTransactionFees";
 import { createShardAccount, GetMethodError, TimeError } from "./SmartContract";
 import { internal } from "../utils/message";
+import { BlockchainContractProvider } from "./BlockchainContractProvider";
 
 describe('Blockchain', () => {
     jest.setTimeout(30000)
@@ -446,13 +447,22 @@ describe('Blockchain', () => {
 
         () recv_internal() {
         }
+        
         () run_ticktock(int is_tock) {
         	is_tock~dump();
+          var msg = begin_cell()
+            .store_uint(0x18, 6)
+            .store_slice(my_address())
+            .store_grams(0)
+            .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1)
+            .store_uint(0, 32)
+            .store_uint(0, 64);
+          send_raw_message(msg.end_cell(), 3);
         }
         */
         const bc   = await Blockchain.create();
-        const code = Cell.fromBase64("te6ccgEBBAEAHgABFP8A9KQT9LzyyAsBAgEgAgMAAtIADaX//38QGEA=");
-        const data = beginCell().storeUint(0, 32).endCell();
+        const code = Cell.fromBase64("te6ccgEBBAEANwABFP8A9KQT9LzyyAsBAgEgAgMAAtIAP6X//38QGDgpgEAMZGWC/BRnixD9AWW1ZY/ln+S5/YBA");
+        const data = beginCell().endCell();
         const testAddr = contractAddress(-1, {code, data});
         await bc.setShardAccount(testAddr, createShardAccount({
             address: testAddr,
@@ -470,5 +480,52 @@ describe('Blockchain', () => {
         if(res.description.type !== 'tick-tock')
             throw("Tick tock transaction expected");
         expect(res.description.isTock).toBe(false);
+    });
+
+    it('Should chain tick tock transaction output', async() => {
+        class TestWrapper implements Contract {
+            constructor(readonly address: Address) {}
+            runTickTock(provider: BlockchainContractProvider, isTock: boolean) {
+                return provider.tick_tock(isTock);
+            }
+            sendTest(provider: ContractProvider, test: number) {
+            }
+        };
+        const bc   = await Blockchain.create();
+        const code = Cell.fromBase64("te6ccgEBBAEANwABFP8A9KQT9LzyyAsBAgEgAgMAAtIAP6X//38QGDgpgEAMZGWC/BRnixD9AWW1ZY/ln+S5/YBA");
+        const data = beginCell().endCell();
+        const testAddr = contractAddress(-1, {code, data});
+        await bc.setShardAccount(testAddr, createShardAccount({
+            address: testAddr,
+            code,
+            data,
+            balance: toNano('1')
+        }));
+
+        let res = await bc.runTickTock(testAddr, true);
+        // Checking returned transaction count and order
+        expect(res.transactions.length).toBe(2);
+        expect(res.transactions[0].description.type).toEqual("tick-tock");
+        expect(res.transactions[1].description.type).toEqual("generic");
+
+        // Testing wrapped Contract 
+        // First for tick
+        const wrap = bc.openContract(new TestWrapper(testAddr));
+        res  = await wrap.runTickTock(false);
+        expect(res.transactions.length).toBe(2);
+        let tt = res.transactions[0];
+        if(tt.description.type !== "tick-tock")
+            throw("Expected tick tock")
+        expect(res.transactions[1].description.type).toEqual("generic");
+        expect(tt.description.isTock).toBe(false);
+        // Then for tock
+        res  = await wrap.runTickTock(true);
+        expect(res.transactions.length).toBe(2);
+        tt = res.transactions[0];
+        if(tt.description.type !== "tick-tock")
+            throw("Expected tick tock")
+        expect(res.transactions[1].description.type).toEqual("generic");
+        expect(tt.description.isTock).toBe(true);
+
     });
 })
