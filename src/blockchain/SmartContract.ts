@@ -102,7 +102,7 @@ export type TickTockParams = Partial<{
     isTock: boolean
 }>
 
-export type TransactionOpts = {message?: Message} & MessageParams & TickTockParams;
+export type TransactionParams = {message?: Message} & MessageParams & TickTockParams;
 
 export type GetMethodParams = Partial<{
     now: number,
@@ -230,7 +230,7 @@ export class SmartContract {
         return new SmartContract(createEmptyShardAccount(address), blockchain)
     }
 
-    protected runTransaction(params: TransactionOpts) {
+    protected runTransaction(params: TransactionParams) {
         const now = params.now ?? Math.floor(Date.now() / 1000)
         if (now < this.#lastTxTime) {
             throw new TimeError(this.address, this.#lastTxTime, now)
