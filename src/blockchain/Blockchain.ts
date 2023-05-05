@@ -51,6 +51,8 @@ export type SendMessageResult = {
     externals: ExternalOut[],
 }
 
+type QueueCallback = (txs: BlockchainTransaction []) => Promise<void>;
+
 export type SandboxContract<F> = {
     [P in keyof F]: P extends `get${string}`
         ? (F[P] extends (x: ContractProvider, ...args: infer P) => infer R ? (...args: P) => R : never)
@@ -228,8 +230,8 @@ export class Blockchain {
         })
     }
 
-    protected async runQueue(params?: MessageParams): Promise<SendMessageResult>  {
-        const txes = await this.processQueue(params)
+    protected async runQueue(params?: MessageParams, pre?:QueueCallback, post?:QueueCallback): Promise<SendMessageResult>  {
+        const txes = await this.processQueue(params, pre, post)
         return {
             transactions: txes,
             events: txes.map(tx => tx.events).flat(),
@@ -237,13 +239,17 @@ export class Blockchain {
         }
     }
 
-    protected async processQueue(params?: MessageParams) {
+    protected async processQueue(params?: MessageParams, pre?: QueueCallback, post?: QueueCallback) {
         params = {
             now: this.now,
             ...params,
         }
         return await this.lock.with(async () => {
             const result: BlockchainTransaction[] = []
+
+            if(pre) {
+                await pre(result);
+            }
 
             while (this.messageQueue.length > 0) {
                 const message = this.messageQueue.shift()!
@@ -261,35 +267,11 @@ export class Blockchain {
                     children: [],
                     externals: [],
                 }
-                transaction.parent?.children.push(transaction)
+                result.push(await this.chainTransaction(transaction));
+            }
 
-                result.push(transaction)
-
-                for (const message of transaction.outMessages.values()) {
-                    if (message.info.type === 'external-out') {
-                        transaction.externals.push({
-                            info: {
-                                type: 'external-out',
-                                src: message.info.src,
-                                dest: message.info.dest ?? undefined,
-                                createdAt: message.info.createdAt,
-                                createdLt: message.info.createdLt,
-                            },
-                            init: message.init ?? undefined,
-                            body: message.body,
-                        })
-                        continue
-                    }
-
-                    this.messageQueue.push({
-                        ...message,
-                        parentTransaction: transaction,
-                    })
-
-                    if (message.info.type === 'internal') {
-                        this.startFetchingContract(message.info.dest)
-                    }
-                }
+            if(post) {
+                await post(result);
             }
 
             return result
