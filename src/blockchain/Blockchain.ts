@@ -220,6 +220,37 @@ export class Blockchain {
         });
     }
 
+    // Generic transaction chaining
+    protected async chainTransaction(transaction: BlockchainTransaction) {
+        transaction.parent?.children.push(transaction)
+        for (const message of transaction.outMessages.values()) {
+            if (message.info.type === 'external-out') {
+                transaction.externals.push({
+                    info: {
+                        type: 'external-out',
+                        src: message.info.src,
+                        dest: message.info.dest ?? undefined,
+                        createdAt: message.info.createdAt,
+                        createdLt: message.info.createdLt,
+                    },
+                    init: message.init ?? undefined,
+                    body: message.body,
+                })
+                continue
+            }
+
+            this.messageQueue.push({
+                ...message,
+                parentTransaction: transaction,
+            })
+
+            if (message.info.type === 'internal') {
+                this.startFetchingContract(message.info.dest)
+            }
+        }
+        return transaction;
+    }
+
     protected async pushMessage(message: Message | Cell) {
         const msg = message instanceof Cell ? loadMessage(message.beginParse()) : message
         if (msg.info.type === 'external-out') {
