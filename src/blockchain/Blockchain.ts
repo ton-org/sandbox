@@ -58,7 +58,9 @@ export type SandboxContract<F> = {
             ? (F[P] extends (x: ContractProvider, ...args: infer P) => infer R ? (...args: P) => Promise<SendMessageResult & {
                 result: R extends Promise<infer PR> ? PR : R
             }> : never)
-            : F[P]);
+            : (P extends 'runTickTock' ?
+                (F[P] extends (x: BlockchainContractProvider, ...args: infer P) => infer R ? (...args: P) => Promise<SendMessageResult> : never)
+                    : F[P]));
 }
 
 export type PendingMessage = Message & {
@@ -195,6 +197,27 @@ export class Blockchain {
         })
     }
 
+    async runTickTock(address: Address, isTock: boolean, params?: MessageParams) {
+        // Quick and dirty implementation
+        params = {
+            now: this.now,
+            ...params,
+        };
+
+        return await this.runQueue(params, async (txes: BlockchainTransaction[] ) => {
+            this.currentLt += LT_ALIGN;
+            const Smc = await this.getContract(address);
+            const res = await Smc.runTickTock(isTock, params);
+            const tt  = await this.chainTransaction({
+                ...res,
+                events: extractEvents(res),
+                children: [],
+                externals: [],
+            });
+            txes.push(tt);
+        });
+    }
+
     protected async pushMessage(message: Message | Cell) {
         const msg = message instanceof Cell ? loadMessage(message.beginParse()) : message
         if (msg.info.type === 'external-out') {
@@ -278,6 +301,7 @@ export class Blockchain {
             getContract: (addr) => this.getContract(addr),
             pushMessage: (msg) => this.pushMessage(msg),
             runGetMethod: (addr, method, args) => this.runGetMethod(addr, method, args),
+            runTickTock: (addr, isTock) => this.runTickTock(addr, isTock)
         }, address, init)
     }
 
@@ -369,6 +393,11 @@ export class Blockchain {
                                     result: ret,
                                 }
                             }
+                        }
+                    } else if( prop == 'runTickTock' ) {
+                        return async (...args: any[]) => {
+                           const ret = value.apply(target, [provider, ...args])
+                           return ret instanceof Promise ? await ret : ret;
                         }
                     }
                 }
