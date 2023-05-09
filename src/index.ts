@@ -17,6 +17,7 @@ export {
 
 export {
     BlockchainContractProvider,
+    SandboxContractProvider,
 } from './blockchain/BlockchainContractProvider';
 
 export {
@@ -45,6 +46,10 @@ export {
     TimeError,
     SmartContractSnapshot,
 } from './blockchain/SmartContract';
+
+export {
+    TickOrTock,
+} from './executor/Executor';
 
 export {
     Event,

@@ -38,18 +38,27 @@ export type GetMethodResult = {
     debugLogs: string
 };
 
-export type RunTransactionArgs = {
+export type RunCommonArgs = {
     config: string
     libs: Cell | null
     verbosity: ExecutorVerbosity
     shardAccount: string
-    message: Cell
     now: number
     lt: bigint
     randomSeed: Buffer | null
     ignoreChksig: boolean
     debugEnabled: boolean
 }
+
+export type RunTransactionArgs = {
+    message: Cell
+} & RunCommonArgs
+
+export type TickOrTock = 'tick' | 'tock'
+
+export type RunTickTockArgs = {
+    which: TickOrTock
+} & RunCommonArgs
 
 type GetMethodInternalParams = {
     code: string
@@ -71,9 +80,11 @@ type EmulationInternalParams = {
     rand_seed: string
     ignore_chksig: boolean
     debug_enabled: boolean
+    is_tick_tock?: boolean
+    is_tock?: boolean
 };
 
-export type ExecutorVerbosity = 'short' | 'full' | 'full_location' | 'full_location_stack'
+export type ExecutorVerbosity = 'short' | 'full' | 'full_location' | 'full_location_gas' | 'full_location_stack' | 'full_location_stack_verbose'
 
 type ResultSuccess = {
     success: true
@@ -120,7 +131,19 @@ const verbosityToNum: Record<ExecutorVerbosity, number> = {
     'short': 0,
     'full': 1,
     'full_location': 2,
-    'full_location_stack': 3,
+    'full_location_gas': 3,
+    'full_location_stack': 4,
+    'full_location_stack_verbose': 5,
+}
+
+function runCommonArgsToInternalParams(args: RunCommonArgs): EmulationInternalParams {
+    return {
+        utime: args.now,
+        lt: args.lt.toString(),
+        rand_seed: args.randomSeed === null ? '' : args.randomSeed.toString('hex'),
+        ignore_chksig: args.ignoreChksig,
+        debug_enabled: args.debugEnabled,
+    }
 }
 
 class Pointer {
@@ -242,23 +265,9 @@ export class Executor {
         };
     }
 
-    runTransaction(args: RunTransactionArgs): EmulationResult {
-        let params: EmulationInternalParams = {
-            utime: args.now,
-            lt: args.lt.toString(),
-            rand_seed: args.randomSeed === null ? '' : args.randomSeed.toString('hex'),
-            ignore_chksig: args.ignoreChksig,
-            debug_enabled: args.debugEnabled,
-        }
-
+    private runCommon(args: (string | number)[]): EmulationResult {
         this.debugLogs = []
-        const resp = JSON.parse(this.extractString(this.invoke('_emulate', [
-            this.getEmulatorPointer(args.config, verbosityToNum[args.verbosity]),
-            args.libs?.toBoc().toString('base64') ?? 0,
-            args.shardAccount,
-            args.message.toBoc().toString('base64'),
-            JSON.stringify(params)
-        ])))
+        const resp = JSON.parse(this.extractString(this.invoke('_emulate', args)))
         const debugLogs = this.debugLogs.join('\n')
 
         if (resp.fail) {
@@ -288,6 +297,34 @@ export class Executor {
             logs,
             debugLogs,
         };
+    }
+
+    runTickTock(args: RunTickTockArgs): EmulationResult {
+        const params: EmulationInternalParams = {
+            ...runCommonArgsToInternalParams(args),
+            is_tick_tock: true,
+            is_tock: args.which === 'tock',
+        }
+
+        return this.runCommon([
+            this.getEmulatorPointer(args.config, verbosityToNum[args.verbosity]),
+            args.libs?.toBoc().toString('base64') ?? 0,
+            args.shardAccount,
+            '',
+            JSON.stringify(params),
+        ])
+    }
+
+    runTransaction(args: RunTransactionArgs): EmulationResult {
+        const params: EmulationInternalParams = runCommonArgsToInternalParams(args)
+
+        return this.runCommon([
+            this.getEmulatorPointer(args.config, verbosityToNum[args.verbosity]),
+            args.libs?.toBoc().toString('base64') ?? 0,
+            args.shardAccount,
+            args.message.toBoc().toString('base64'),
+            JSON.stringify(params),
+        ])
     }
 
     private createEmulator(config: string, verbosity: number) {

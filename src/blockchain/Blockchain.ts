@@ -1,12 +1,12 @@
 import { defaultConfig } from "../config/defaultConfig";
 import {Address, Cell, Message, Transaction, ContractProvider, Contract, Sender, toNano, loadMessage, ShardAccount, TupleItem, ExternalAddress, StateInit} from "ton-core";
-import {Executor} from "../executor/Executor";
+import {Executor, TickOrTock} from "../executor/Executor";
 import {BlockchainStorage, LocalBlockchainStorage} from "./BlockchainStorage";
 import { extractEvents, Event } from "../event/Event";
-import { BlockchainContractProvider } from "./BlockchainContractProvider";
+import { BlockchainContractProvider, SandboxContractProvider } from "./BlockchainContractProvider";
 import { BlockchainSender } from "./BlockchainSender";
 import { TreasuryContract } from "../treasury/Treasury";
-import { GetMethodParams, LogsVerbosity, MessageParams, SmartContract, SmartContractSnapshot, Verbosity } from "./SmartContract";
+import { GetMethodParams, LogsVerbosity, MessageParams, SmartContract, SmartContractSnapshot, SmartContractTransaction, Verbosity } from "./SmartContract";
 import { AsyncLock } from "../utils/AsyncLock";
 import { internal } from "../utils/message";
 import { slimConfig } from "../config/slimConfig";
@@ -50,17 +50,25 @@ export type SendMessageResult = {
     externals: ExternalOut[],
 }
 
+type ExtendsContractProvider<T> = T extends ContractProvider ? true : (T extends SandboxContractProvider ? true : false);
+
 export type SandboxContract<F> = {
     [P in keyof F]: P extends `get${string}`
-        ? (F[P] extends (x: ContractProvider, ...args: infer P) => infer R ? (...args: P) => R : never)
+        ? (F[P] extends (x: infer CP, ...args: infer P) => infer R ? (ExtendsContractProvider<CP> extends true ? (...args: P) => R : never) : never)
         : (P extends `send${string}`
-            ? (F[P] extends (x: ContractProvider, ...args: infer P) => infer R ? (...args: P) => Promise<SendMessageResult & {
+            ? (F[P] extends (x: infer CP, ...args: infer P) => infer R ? (ExtendsContractProvider<CP> extends true ? (...args: P) => Promise<SendMessageResult & {
                 result: R extends Promise<infer PR> ? PR : R
-            }> : never)
+            }> : never) : never)
             : F[P]);
 }
 
-export type PendingMessage = Message & {
+export type PendingMessage = (({
+    type: 'message',
+} & Message) | ({
+    type: 'ticktock',
+    which: TickOrTock,
+    on: Address,
+})) & {
     parentTransaction?: BlockchainTransaction,
 }
 
@@ -173,6 +181,13 @@ export class Blockchain {
         return await this.runQueue(params)
     }
 
+    async runTickTock(on: Address | Address[], which: TickOrTock, params?: MessageParams): Promise<SendMessageResult> {
+        for (const addr of (Array.isArray(on) ? on : [on])) {
+            await this.pushTickTock(addr, which)
+        }
+        return await this.runQueue(params)
+    }
+
     async runGetMethod(address: Address, method: number | string, stack: TupleItem[] = [], params?: GetMethodParams) {
         return (await this.getContract(address)).get(method, stack, {
             now: this.now,
@@ -186,7 +201,20 @@ export class Blockchain {
             throw new Error('Cannot send external out message')
         }
         await this.lock.with(async () => {
-            this.messageQueue.push(msg)
+            this.messageQueue.push({
+                type: 'message',
+                ...msg,
+            })
+        })
+    }
+
+    protected async pushTickTock(on: Address, which: TickOrTock) {
+        await this.lock.with(async () => {
+            this.messageQueue.push({
+                type: 'ticktock',
+                on,
+                which,
+            })
         })
     }
 
@@ -210,15 +238,22 @@ export class Blockchain {
             while (this.messageQueue.length > 0) {
                 const message = this.messageQueue.shift()!
 
-                if (message.info.type === 'external-out') {
-                    continue
+                let tx: SmartContractTransaction
+                if (message.type === 'message') {
+                    if (message.info.type === 'external-out') {
+                        continue
+                    }
+
+                    this.currentLt += LT_ALIGN
+                    tx = (await this.getContract(message.info.dest)).receiveMessage(message, params)
+                } else {
+                    this.currentLt += LT_ALIGN
+                    tx = (await this.getContract(message.on)).runTickTock(message.which, params)
                 }
 
-                this.currentLt += LT_ALIGN
-                const smcTx = await (await this.getContract(message.info.dest)).receiveMessage(message, params)
                 const transaction: BlockchainTransaction = {
-                    ...smcTx,
-                    events: extractEvents(smcTx),
+                    ...tx,
+                    events: extractEvents(tx),
                     parent: message.parentTransaction,
                     children: [],
                     externals: [],
@@ -244,8 +279,9 @@ export class Blockchain {
                     }
 
                     this.messageQueue.push({
-                        ...message,
+                        type: 'message',
                         parentTransaction: transaction,
+                        ...message,
                     })
 
                     if (message.info.type === 'internal') {
@@ -263,6 +299,7 @@ export class Blockchain {
             getContract: (addr) => this.getContract(addr),
             pushMessage: (msg) => this.pushMessage(msg),
             runGetMethod: (addr, method, args) => this.runGetMethod(addr, method, args),
+            pushTickTock: (on, which) => this.pushTickTock(on, which),
         }, address, init)
     }
 

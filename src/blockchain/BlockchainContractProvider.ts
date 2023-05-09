@@ -1,4 +1,5 @@
-import { AccountState, Address, Cell, comment, ContractGetMethodResult, ContractProvider, ContractState, Message, Sender, SendMode, toNano, TupleItem, TupleReader } from "ton-core";
+import { AccountState, Address, Cell, comment, ContractGetMethodResult, ContractProvider, ContractState, Message, Sender, SendMode, toNano, TupleItem } from "ton-core";
+import { TickOrTock } from "../executor/Executor";
 import { GetMethodResult, SmartContract } from "./SmartContract";
 
 function bigintToBuffer(x: bigint, n = 32): Buffer {
@@ -33,12 +34,17 @@ function convertState(state: AccountState | undefined): ContractState['state'] {
     }
 }
 
-export class BlockchainContractProvider implements ContractProvider {
+export interface SandboxContractProvider extends ContractProvider {
+    tickTock(which: TickOrTock): Promise<void>
+}
+
+export class BlockchainContractProvider implements SandboxContractProvider {
     constructor(
         private readonly blockchain: {
             getContract(address: Address): Promise<SmartContract>
             pushMessage(message: Message): Promise<void>
             runGetMethod(address: Address, method: string, args: TupleItem[]): Promise<GetMethodResult>
+            pushTickTock(on: Address, which: TickOrTock): Promise<void>
         },
         private readonly address: Address,
         private readonly init?: { code: Cell, data: Cell },
@@ -93,5 +99,8 @@ export class BlockchainContractProvider implements ContractProvider {
             init,
             body,
         })
+    }
+    async tickTock(which: TickOrTock) {
+        await this.blockchain.pushTickTock(this.address, which)
     }
 }

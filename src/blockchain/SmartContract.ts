@@ -13,7 +13,7 @@ import {
     TupleItem, TupleReader
 } from "ton-core";
 import {getSelectorForMethod} from "../utils/selector";
-import { ExecutorVerbosity } from "../executor/Executor";
+import { EmulationResult, ExecutorVerbosity, RunCommonArgs, TickOrTock } from "../executor/Executor";
 
 export function createShardAccount(args: { address?: Address, code: Cell, data: Cell, balance: bigint, workchain?: number }): ShardAccount {
     let wc = args.workchain ?? 0
@@ -224,27 +224,42 @@ export class SmartContract {
         return new SmartContract(createEmptyShardAccount(address), blockchain)
     }
 
-    receiveMessage(message: Message, params?: MessageParams) {
+    protected createCommonArgs(params?: MessageParams): RunCommonArgs {
         const now = params?.now ?? Math.floor(Date.now() / 1000)
 
         if (now < this.#lastTxTime) {
             throw new TimeError(this.address, this.#lastTxTime, now)
         }
 
-        const messageCell = beginCell().store(storeMessage(message)).endCell()
-
-        const res = this.blockchain.executor.runTransaction({
+        return {
             config: this.blockchain.configBase64,
             libs: this.blockchain.libs ?? null,
             verbosity: verbosityToExecutorVerbosity[this.verbosity.vmLogs],
             shardAccount: this.#account,
-            message: messageCell,
             now,
             lt: this.blockchain.lt,
             randomSeed: params?.randomSeed ?? Buffer.alloc(32),
             ignoreChksig: params?.ignoreChksig ?? false,
             debugEnabled: this.verbosity.debugLogs,
-        })
+        }
+    }
+
+    receiveMessage(message: Message, params?: MessageParams) {
+        return this.runCommon(() => this.blockchain.executor.runTransaction({
+            ...this.createCommonArgs(params),
+            message: beginCell().store(storeMessage(message)).endCell(),
+        }))
+    }
+
+    runTickTock(which: TickOrTock, params?: MessageParams) {
+        return this.runCommon(() => this.blockchain.executor.runTickTock({
+            ...this.createCommonArgs(params),
+            which,
+        }))
+    }
+
+    protected runCommon(run: () => EmulationResult): SmartContractTransaction {
+        const res = run()
 
         if (this.verbosity.print && this.verbosity.blockchainLogs && res.logs.length > 0) {
             console.log(res.logs)
@@ -263,12 +278,14 @@ export class SmartContract {
             console.log(res.debugLogs)
         }
 
+        const tx = loadTransaction(Cell.fromBase64(res.result.transaction).beginParse())
+
         this.#account = res.result.shardAccount
         this.#parsedAccount = undefined
-        this.#lastTxTime = now
+        this.#lastTxTime = tx.now
 
         return {
-            ...loadTransaction(Cell.fromBase64(res.result.transaction).beginParse()),
+            ...tx,
             blockchainLogs: res.logs,
             vmLogs: res.result.vmLog,
             debugLogs: res.debugLogs,
