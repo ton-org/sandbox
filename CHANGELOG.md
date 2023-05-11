@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added the ability to emulate ticktock transactions. There are 3 ways to do that: `blockchain.runTickTock(Address | Address[], TickOrTock, MessageParams?)`, `smartContract.runTickTock(TickOrTock, MessageParams?)`, or you can change `ContractProvider` in your wrapper classes to be `SandboxContractProvider` and invoke `tickTock(TickOrTock)` on it. `TickOrTock` is a union type `'tick' | 'tock'`
 - Added new verbosity levels: `'vm_logs_location'` (same as `'vm_logs'` but also display code cell hash and offset), `'vm_logs_gas'` (same as `'vm_logs_location'` but also display gas remaining), `'vm_logs_verbose'` (same as `'vm_logs_full'` but display stack values in a more verbose way)
 
+### Changed
+
+- Changed emulator WASM binary
+
 ## [0.10.0] - 2023-05-04
 
 ### Changed
