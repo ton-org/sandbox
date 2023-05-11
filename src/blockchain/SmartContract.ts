@@ -72,12 +72,15 @@ export function createEmptyShardAccount(address: Address): ShardAccount {
     }
 }
 
-export type Verbosity = 'none' | 'vm_logs' | 'vm_logs_full'
+export type Verbosity = 'none' | 'vm_logs' | 'vm_logs_location' | 'vm_logs_gas' | 'vm_logs_full' | 'vm_logs_verbose'
 
 const verbosityToExecutorVerbosity: Record<Verbosity, ExecutorVerbosity> = {
     'none': 'short',
     'vm_logs': 'full',
+    'vm_logs_location': 'full_location',
+    'vm_logs_gas': 'full_location_gas',
     'vm_logs_full': 'full_location_stack',
+    'vm_logs_verbose': 'full_location_stack_verbose',
 }
 
 export type LogsVerbosity = {
