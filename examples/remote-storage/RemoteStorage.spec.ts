@@ -1,6 +1,6 @@
 import { TonClient4 } from "ton"
 import { Address, toNano, SendMode } from "ton-core"
-import { Blockchain, RemoteBlockchainStorage } from "@ton-community/sandbox"
+import { Blockchain, RemoteBlockchainStorage, wrapTonClient4ForRemote } from "@ton-community/sandbox"
 import { NftSaleV3 } from "../contracts/NftSaleV3"
 import { NftItem } from "../contracts/NftItem"
 import "@ton-community/test-utils" // register matchers
@@ -9,9 +9,9 @@ import { Elector } from "../contracts/Elector"
 describe('RemoteStorage', () => {
     it('should pull a contract from the real network and interact with it', async () => {
         const blkch = await Blockchain.create({
-            storage: new RemoteBlockchainStorage(new TonClient4({
+            storage: new RemoteBlockchainStorage(wrapTonClient4ForRemote(new TonClient4({
                 endpoint: 'https://mainnet-v4.tonhubapi.com',
-            }))
+            })))
         })
 
         const saleAddress = Address.parse('EQCvEM2Q7GOmQIx9WVFTF9I1AtpTa1oqZUo3Hz7wo79AZICl')
@@ -40,9 +40,9 @@ describe('RemoteStorage', () => {
     it('should pull a elector contract from the real network on a specific block and interact with it', async () => {
         const blkch = await Blockchain.create({
             storage: new RemoteBlockchainStorage(
-                new TonClient4({
+                wrapTonClient4ForRemote(new TonClient4({
                     endpoint: 'https://mainnet-v4.tonhubapi.com',
-                }),
+                })),
                 27672122,
             )
         })
