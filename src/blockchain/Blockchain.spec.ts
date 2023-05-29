@@ -569,4 +569,19 @@ describe('Blockchain', () => {
         expect(res.transactions[1].description.type).toEqual('generic')
         expect(tt.description.isTock).toBe(true)
     })
+
+    it('should handle new op codes', async () => {
+        const blockchain = await Blockchain.create()
+        const code = Cell.fromBase64('te6cckEBBAEAHgABFP8A9KQT9LzyyAsBAgFiAgMABtBfBAAJoHql8FWVsVyo')
+        const addr = randomAddress()
+        await blockchain.setShardAccount(addr, createShardAccount({
+            address: addr,
+            code,
+            data: new Cell(),
+            balance: 0n,
+        }))
+
+        const res = await blockchain.runGetMethod(addr, 'get_code')
+        expect(code).toEqualCell(res.stackReader.readCell())
+    })
 })

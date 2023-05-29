@@ -1,6 +1,6 @@
 {
   "name": "@ton-community/sandbox",
-  "version": "0.11.0",
+  "version": "0.12.0-tvmbeta.1",
   "description": "TON transaction emulator",
   "main": "dist/index.js",
   "license": "MIT",
