@@ -9,18 +9,18 @@ The key difference of this package from [ton-contract-executor](https://github.c
 Requires node 16 or higher.
 
 ```
-yarn add @ton-community/sandbox ton ton-core ton-crypto
+yarn add @ton-org/sandbox ton @ton/core ton-crypto
 ```
 or
 ```
-npm i @ton-community/sandbox ton ton-core ton-crypto
+npm i @ton-org/sandbox ton @ton/core ton-crypto
 ```
 
 ## Usage
 
 To use this package, you need to create an instance of the `Blockchain` class using the static method `Blockchain.create` as follows:
 ```typescript
-import { Blockchain } from "@ton-community/sandbox";
+import { Blockchain } from "@ton/sandbox";
 
 const blockchain = await Blockchain.create()
 ```
