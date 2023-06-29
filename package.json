@@ -1,5 +1,5 @@
 {
-  "name": "@ton-community/sandbox",
+  "name": "@ton/sandbox",
   "version": "0.11.0",
   "description": "TON transaction emulator",
   "main": "dist/index.js",
@@ -10,7 +10,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ton-community/sandbox"
+    "url": "git+https://github.com/ton-org/sandbox"
   },
   "devDependencies": {
     "@ton-community/test-utils": "^0.2.0",
