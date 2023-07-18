@@ -94,9 +94,68 @@ Notes:
 - Ideally, at most one call to **either** `provider.internal` or `provider.external` should be made within a `send` method. Otherwise, you may get hard to interpret (but generally speaking correct) results.
 - No calls to `provider.external` or `provider.internal` should be made within `get` methods. Otherwise, you will get weird and wrong results in the following `send` methods of any contract.
 
+---
+
+
 ## Writing tests
 
+### Basic test template
+
+Writing tests in Sandbox works through defining arbitary action with contract and asserting this with expected result
+
+```typescript
+     it('should execute with success', async () => {                                 // description of a test case
+            const res = await main.sendMessage(sender.getSender(), toNano('0.05'));  // performing action with contract main and saving result in res
+
+            expect(res.transactions).toHaveTransaction({                             // configure asserted result with expect() function
+                success: true                                                        // set the desirable result with a matcher properties
+            });
+            
+            printTransactionFees(res.transactions);                                  // print table with details on spent fees
+
+     })
+```
+
+
+### Test transaction with `toHaveTransaction` matcher
+
 You can install additional `@ton/test-utils` package by running `yarn add @ton/test-utils -D` or `npm i --save-dev @ton/test-utils` (with `.toHaveTransaction` for jest or `.transaction` or `.to.have.transaction` for chai matcher) to add additional helpers for ease of testing. Don't forget to import them in your unit test files though!
+
+The basic workflow of creating test is:
+1. Create a specific `contract` entity with a Sandbox helper `SanboxContract`.
+2. Describe the actions your `contract` should perform and save the result in `res` variable.
+3. Verify the properties using the `expect()` function and the matcher `toHaveTransaction()`.
+
+The `toHaveTransaction` returns `FlatTransaction` struct defined with following fields
+
+| Name                 | Type          | Description                                                                                                              |
+|----------------------|---------------|--------------------------------------------------------------------------------------------------------------------------|
+| from?                | Address       | Contract address of a message sender as an Address ton-core entity                                                       |
+| to                   | Address       | Contract address of a message destination as an Address ton-core entity                                                  |
+| on                   | Address       | Contract address of a message destination as an Address ton-core entity. (Alternative name of the property `to`).        |
+ | value?               | bigint        | Amount of Toncoins in in message in nanotons                                                                             |
+| body                 | Cell          | Body defined as a Cell ton-core entity                                                                                   |
+| inMessageBounced?    | boolean       | Boolean flag Bounced. True - message is bounced, False if message is not bounced.                                        |
+| inMessageBounceable? | boolean       | Boolean flag Bounceable. True - message can be bounced, False if message can not be bounced.                             |
+| op?                  | number        | op code as a number(crc32 from TL-B usually). Expected in the first 32 bits of a message body.                           |
+| initData?            | Cell          | InitData Cell as a Cell ton-core entity. Used for deployment contract processes.                                         |
+| initCode?            | Cell          | initCode Cell as a Cell ton-core entity. Used for deployment contract processes.                                         |
+| deploy               | boolean       | Boolean flag of deployment success. True if deployment done with this transaction successful, False if deployment failed |
+| lt                   | bigint        | Logical time set by validators. Used for defining order of messages related to certain account(contract)                 |
+| now                  | bigint        | Unixtime of transaction                                                                                                  |
+| outMessagesCount     | number        | Quantity of outbounded messages in this transaction                                                                      |
+| oldStatus            | AccountStatus | AccountStatus before executing message defined as an AccountStatus ton-core entity                                       |
+| endStatus            | AccountStatus | AccountStatus after executing message defined as an AccountStatus ton-core entity                                        |
+| totalFees?           | bigint        | Number of spent fees in nanotons                                                                                         |
+|aborted?| boolean       | Flag.                                                                                                                    |
+|destroyed?| boolean       | Flag.                                                                                                                    |
+|exitCode?| number        | Resulted exit code of transaction executing                                                                              |
+|success?| boolean       | Flag that defines resulted status of transaction                                                                         |
+
+
+You can omit those you're not interested in, and you can also pass in functions accepting those types returning booleans (`true` meaning good) to check for example number ranges, message opcodes, etc. Note however that if a field is optional (like `from?: Address`), then the function needs to accept the optional type, too.
+
+
 
 Here is an excerpt of how it's used in the NFT collection example mentioned above:
 ```typescript
@@ -119,30 +178,31 @@ expect(buyResult.transactions).toHaveTransaction({
 ```
 (in that example `jest` is used)
 
-The matcher supports the following fields:
+
+### Testing fees with variable transaction times in the blockchain
+It is possible to configure and update the current time of the `Blockchain`, which allows the definition of how much a contract could spend on Storage Phase Fees.
+
+Suppose we have a `main` instance defined as `contract` type, and we wish to determine the amount of storage fees that will be accrued between two actions within a specified period.
+
 ```typescript
-export type FlatTransaction = {
-    from?: Address
-    to: Address
-    value?: bigint
-    body: Cell
-    initData?: Cell
-    initCode?: Cell
-    deploy: boolean
-    lt: bigint
-    now: number
-    outMessagesCount: number
-    oldStatus: AccountStatus
-    endStatus: AccountStatus
-    totalFees?: bigint
-    aborted?: boolean
-    destroyed?: boolean
-    exitCode?: number
-    success?: boolean
-}
+    it('should storage fees cost less than 1 TON', async () => {
+
+        const time1 = Math.floor(Date.now() / 1000)                                // current local unix time
+        const time2 = time1 + 365 * 24 * 60 * 60;                                  // offset 1 year
+
+        blockchain.now = time1;                                                    //set current time
+        const res1 = await main.sendMessage(sender.getSender(), toNano('0.05'));   //preview of fees 
+        printTransactionFees(res1.transactions);
+
+        blockchain.now = time2;                                                    //set current time
+        const res2 = await main.sendMessage(sender.getSender(), toNano('0.05'));   //preview of fees 
+        printTransactionFees(res2.transactions);
+
+        //check that delta of fees was lesser than 1 TON (delta fees between two equal actions ~ storage fees)
+        expect((res2.transactions[1].totalFees.coins - res2.transactions[1].totalFees.coins)).toBeLessThanOrEqual(toNano('1'));
+    })
 ```
 
-But you can omit those you're not interested in, and you can also pass in functions accepting those types returning booleans (`true` meaning good) to check for example number ranges, message opcodes, etc. Note however that if a field is optional (like `from?: Address`), then the function needs to accept the optional type, too.
 
 ### Viewing logs
 
