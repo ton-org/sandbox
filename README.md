@@ -128,29 +128,29 @@ The basic workflow of creating test is:
 
 The `toHaveTransaction` returns `FlatTransaction` struct defined with following fields
 
-| Name                 | Type          | Description                                                                                                              |
-|----------------------|---------------|--------------------------------------------------------------------------------------------------------------------------|
-| from?                | Address       | Contract address of a message sender as an Address ton-core entity                                                       |
-| to                   | Address       | Contract address of a message destination as an Address ton-core entity                                                  |
-| on                   | Address       | Contract address of a message destination as an Address ton-core entity. (Alternative name of the property `to`).        |
- | value?               | bigint        | Amount of Toncoins in in message in nanotons                                                                             |
-| body                 | Cell          | Body defined as a Cell ton-core entity                                                                                   |
-| inMessageBounced?    | boolean       | Boolean flag Bounced. True - message is bounced, False if message is not bounced.                                        |
-| inMessageBounceable? | boolean       | Boolean flag Bounceable. True - message can be bounced, False if message can not be bounced.                             |
-| op?                  | number        | op code as a number(crc32 from TL-B usually). Expected in the first 32 bits of a message body.                           |
-| initData?            | Cell          | InitData Cell as a Cell ton-core entity. Used for deployment contract processes.                                         |
-| initCode?            | Cell          | initCode Cell as a Cell ton-core entity. Used for deployment contract processes.                                         |
+| Name                 | Type          | Description                                                                                                            |
+|----------------------|---------------|------------------------------------------------------------------------------------------------------------------------|
+| from?                | Address       | Contract address of a message sender                                                             |
+| to                   | Address       | Contract address of a message destination                                                       |
+| on                   | Address       | Contract address of a message destination  (Alternative name of the property `to`).               |
+ | value?               | bigint        | Amount of Toncoins in in message in nanotons                                                                           |
+| body                 | Cell          | Body defined as a Cell entity                                                                                          |
+| inMessageBounced?    | boolean       | Boolean flag Bounced. True - message is bounced, False - message is not bounced.                                       |
+| inMessageBounceable? | boolean       | Boolean flag Bounceable. True - message can be bounced, False - message can not be bounced.                            |
+| op?                  | number        | op code is a number(crc32 from TL-B usually). Expected in the first 32 bits of a message body.                         |
+| initData?            | Cell          | InitData Cell as a Cell ton-core entity. Used for deployment contract processes.                                       |
+| initCode?            | Cell          | initCode Cell as a Cell ton-core entity. Used for deployment contract processes.                                       |
 | deploy               | boolean       | Boolean flag of deployment success. True if deployment done with this transaction successful, False if deployment failed |
-| lt                   | bigint        | Logical time set by validators. Used for defining order of messages related to certain account(contract)                 |
-| now                  | bigint        | Unixtime of transaction                                                                                                  |
-| outMessagesCount     | number        | Quantity of outbounded messages in this transaction                                                                      |
-| oldStatus            | AccountStatus | AccountStatus before executing message defined as an AccountStatus ton-core entity                                       |
-| endStatus            | AccountStatus | AccountStatus after executing message defined as an AccountStatus ton-core entity                                        |
-| totalFees?           | bigint        | Number of spent fees in nanotons                                                                                         |
-|aborted?| boolean       | Flag.                                                                                                                    |
-|destroyed?| boolean       | Flag.                                                                                                                    |
-|exitCode?| number        | Resulted exit code of transaction executing                                                                              |
-|success?| boolean       | Flag that defines resulted status of transaction                                                                         |
+| lt                   | bigint        | Logical time set by validators. Used for defining order of messages related to certain account(contract)               |
+| now                  | bigint        | Unixtime of transaction                                                                                                |
+| outMessagesCount     | number        | Quantity of outbounded messages in certain transaction                                                                 |
+| oldStatus            | AccountStatus | AccountStatus before executing message                                      |
+| endStatus            | AccountStatus | AccountStatus after executing message                                    |
+| totalFees?           | bigint        | Number of spent fees in nanotons                                                                                       |
+|aborted?| boolean       | Aborted flag.                                                                                                          |
+|destroyed?| boolean       | Destroyed flag.                                                                                                        |
+|exitCode?| number        | Resulted exit code of transaction executing                                                                            |
+|success?| boolean       | Flag that defines resulted status of transaction                                                                       |
 
 
 You can omit those you're not interested in, and you can also pass in functions accepting those types returning booleans (`true` meaning good) to check for example number ranges, message opcodes, etc. Note however that if a field is optional (like `from?: Address`), then the function needs to accept the optional type, too.
