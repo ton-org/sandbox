@@ -188,7 +188,7 @@ Suppose we have a `main` instance defined as `contract` type, and we wish to det
     it('should storage fees cost less than 1 TON', async () => {
 
         const time1 = Math.floor(Date.now() / 1000)                                // current local unix time
-        const time2 = time1 + 365 * 24 * 60 * 60;                                  // offset 1 year
+        const time2 = time1 + 365 * 24 * 60 * 60;                                  // offset for a year
 
         blockchain.now = time1;                                                    //set current time
         const res1 = await main.sendMessage(sender.getSender(), toNano('0.05'));   //preview of fees 
@@ -197,10 +197,54 @@ Suppose we have a `main` instance defined as `contract` type, and we wish to det
         blockchain.now = time2;                                                    //set current time
         const res2 = await main.sendMessage(sender.getSender(), toNano('0.05'));   //preview of fees 
         printTransactionFees(res2.transactions);
+        
+        const tx2 = res2.transactions[1];                                          //extract the transaction that executed in a year
+        if (tx2.description.type !== 'generic') {
+         throw new Error('generic tx expected');
+        }
 
         //check that delta of fees was lesser than 1 TON (delta fees between two equal actions ~ storage fees)
-        expect((res2.transactions[1].totalFees.coins - res2.transactions[1].totalFees.coins)).toBeLessThanOrEqual(toNano('1'));
+        expect(tx2.description.storagePhase?.storageFeesCollected).toBeLessThanOrEqual(toNano('1'));   
+ 
+
     })
+```
+
+### Testing the chain of messages in complex cross-contract systems
+
+The Sandbox emulates the entire process of executing cross-contract interactions as if they occurred on a real blockchain. 
+The result of sending a message (transfer) contains basic information about all transactions and actions. 
+You can verify all of these by creating specific requirements via `expect()` for each action and transaction.
+
+```typescript
+res = await main.sendMessage(...);
+
+expect(res).toHaveTransaction(...) // test case 
+        <...>
+expect(res).toHaveTransaction(...) // test case
+```
+
+For instance, with [Modern Jetton](https://github.com/EmelyanenkoK/modern_jetton) it's possible to test whether a Mint message results in minting to a new Jetton wallet Contract and returns the excess to the Minter Contract.
+```typescript
+    it('minter admin should be able to mint jettons', async () => {
+        // can mint from deployer
+        let initialTotalSupply = await jettonMinter.getTotalSupply();
+        const deployerJettonWallet = await userWallet(deployer.address);
+        let initialJettonBalance = toNano('1000.23');
+        const mintResult = await jettonMinter.sendMint(deployer.getSender(), deployer.address, initialJettonBalance, toNano('0.05'), toNano('1'));
+
+        expect(mintResult.transactions).toHaveTransaction({ //test transaction of deployment a jetton wallet
+            from: jettonMinter.address,
+            to: deployerJettonWallet.address,
+            deploy: true,
+        });
+        
+        expect(mintResult.transactions).toHaveTransaction({ // test transaction of excesses returned to minter
+            from: deployerJettonWallet.address,
+            to: jettonMinter.address
+        });
+
+    });    
 ```
 
 
