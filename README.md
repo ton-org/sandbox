@@ -101,19 +101,18 @@ Notes:
 
 ### Basic test template
 
-Writing tests in Sandbox works through defining arbitary action with contract and asserting this with expected result
+Writing tests in Sandbox works through defining arbitary actions with the contract and comparing their results with the expected result, for example:
 
 ```typescript
-     it('should execute with success', async () => {                                 // description of a test case
-            const res = await main.sendMessage(sender.getSender(), toNano('0.05'));  // performing action with contract main and saving result in res
+it('should execute with success', async () => {                              // description of the test case
+    const res = await main.sendMessage(sender.getSender(), toNano('0.05'));  // performing an action with contract main and saving result in res
 
-            expect(res.transactions).toHaveTransaction({                             // configure asserted result with expect() function
-                success: true                                                        // set the desirable result with a matcher properties
-            });
-            
-            printTransactionFees(res.transactions);                                  // print table with details on spent fees
+    expect(res.transactions).toHaveTransaction({                             // configure the expected result with expect() function
+        success: true                                                        // set the desirable result using matcher properties
+    });
 
-     })
+    printTransactionFees(res.transactions);                                  // print table with details on spent fees
+});
 ```
 
 
@@ -121,8 +120,8 @@ Writing tests in Sandbox works through defining arbitary action with contract an
 
 You can install additional `@ton/test-utils` package by running `yarn add @ton/test-utils -D` or `npm i --save-dev @ton/test-utils` (with `.toHaveTransaction` for jest or `.transaction` or `.to.have.transaction` for chai matcher) to add additional helpers for ease of testing. Don't forget to import them in your unit test files though!
 
-The basic workflow of creating test is:
-1. Create a specific `contract` entity with a Sandbox helper `SanboxContract`.
+The basic workflow of creating a test is:
+1. Create a specific `contract` entity with a Sandbox helper `SandboxContract`.
 2. Describe the actions your `contract` should perform and save the result in `res` variable.
 3. Verify the properties using the `expect()` function and the matcher `toHaveTransaction()`.
 
@@ -130,30 +129,30 @@ The `toHaveTransaction` returns `FlatTransaction` struct defined with following 
 
 | Name                 | Type          | Description                                                                                                            |
 |----------------------|---------------|------------------------------------------------------------------------------------------------------------------------|
-| from?                | Address       | Contract address of a message sender                                                             |
-| to                   | Address       | Contract address of a message destination                                                       |
-| on                   | Address       | Contract address of a message destination  (Alternative name of the property `to`).               |
- | value?               | bigint        | Amount of Toncoins in in message in nanotons                                                                           |
+| from?                | Address       | Contract address of the message sender                                                             |
+| to                   | Address       | Contract address of the message destination                                                       |
+| on                   | Address       | Contract address of the message destination  (Alternative name of the property `to`).               |
+ | value?               | bigint        | Amount of Toncoins in the message in nanotons                                                                           |
 | body                 | Cell          | Body defined as a Cell entity                                                                                          |
 | inMessageBounced?    | boolean       | Boolean flag Bounced. True - message is bounced, False - message is not bounced.                                       |
 | inMessageBounceable? | boolean       | Boolean flag Bounceable. True - message can be bounced, False - message can not be bounced.                            |
-| op?                  | number        | op code is a number(crc32 from TL-B usually). Expected in the first 32 bits of a message body.                         |
+| op?                  | number        | Op code is the operation identifier number (crc32 from TL-B usually). Expected in the first 32 bits of a message body.                         |
 | initData?            | Cell          | InitData Cell as a Cell ton-core entity. Used for deployment contract processes.                                       |
 | initCode?            | Cell          | initCode Cell as a Cell ton-core entity. Used for deployment contract processes.                                       |
 | deploy               | boolean       | Boolean flag of deployment success. True if deployment done with this transaction successful, False if deployment failed |
 | lt                   | bigint        | Logical time set by validators. Used for defining order of messages related to certain account(contract)               |
-| now                  | bigint        | Unixtime of transaction                                                                                                |
-| outMessagesCount     | number        | Quantity of outbounded messages in certain transaction                                                                 |
+| now                  | bigint        | Unix timestamp of transaction                                                                                                |
+| outMessagesCount     | number        | Quantity of outbound messages in a certain transaction                                                                 |
 | oldStatus            | AccountStatus | AccountStatus before executing message                                      |
 | endStatus            | AccountStatus | AccountStatus after executing message                                    |
 | totalFees?           | bigint        | Number of spent fees in nanotons                                                                                       |
 |aborted?| boolean       | Aborted flag.                                                                                                          |
 |destroyed?| boolean       | Destroyed flag.                                                                                                        |
-|exitCode?| number        | Resulted exit code of transaction executing                                                                            |
-|success?| boolean       | Flag that defines resulted status of transaction                                                                       |
+|exitCode?| number        | Resulting exit code of TVM execution                                                                           |
+|success?| boolean       | Flag that defines the resulting status of transaction                                                                       |
 
 
-You can omit those you're not interested in, and you can also pass in functions accepting those types returning booleans (`true` meaning good) to check for example number ranges, message opcodes, etc. Note however that if a field is optional (like `from?: Address`), then the function needs to accept the optional type, too.
+You can omit those that you're not interested in, and you can also pass in functions accepting those types returning booleans (`true` meaning good) to check for example number ranges, message opcodes, etc. Note however that if a field is optional (like `from?: Address`), then the function needs to accept the optional type, too.
 
 
 
@@ -180,37 +179,34 @@ expect(buyResult.transactions).toHaveTransaction({
 
 
 ### Testing fees with variable transaction times in the blockchain
-It is possible to configure and update the current time of the `Blockchain`, which allows the definition of how much a contract could spend on Storage Phase Fees.
+It is possible to configure and update the current time of the `Blockchain`, which allows one to inspect how much a contract would spend on storage fees.
 
 Suppose we have a `main` instance defined as `contract` type, and we wish to determine the amount of storage fees that will be accrued between two actions within a specified period.
 
 ```typescript
-    it('should storage fees cost less than 1 TON', async () => {
+it('should storage fees cost less than 1 TON', async () => {
+    const time1 = Math.floor(Date.now() / 1000);                               // current local unix time
+    const time2 = time1 + 365 * 24 * 60 * 60;                                  // offset for a year
 
-        const time1 = Math.floor(Date.now() / 1000)                                // current local unix time
-        const time2 = time1 + 365 * 24 * 60 * 60;                                  // offset for a year
+    blockchain.now = time1;                                                    // set current time
+    const res1 = await main.sendMessage(sender.getSender(), toNano('0.05'));   // preview of fees 
+    printTransactionFees(res1.transactions);
 
-        blockchain.now = time1;                                                    //set current time
-        const res1 = await main.sendMessage(sender.getSender(), toNano('0.05'));   //preview of fees 
-        printTransactionFees(res1.transactions);
+    blockchain.now = time2;                                                    // set current time
+    const res2 = await main.sendMessage(sender.getSender(), toNano('0.05'));   // preview of fees 
+    printTransactionFees(res2.transactions);
+    
+    const tx2 = res2.transactions[1];                                          // extract the transaction that executed in a year
+    if (tx2.description.type !== 'generic') {
+        throw new Error('Generic transaction expected');
+    }
 
-        blockchain.now = time2;                                                    //set current time
-        const res2 = await main.sendMessage(sender.getSender(), toNano('0.05'));   //preview of fees 
-        printTransactionFees(res2.transactions);
-        
-        const tx2 = res2.transactions[1];                                          //extract the transaction that executed in a year
-        if (tx2.description.type !== 'generic') {
-         throw new Error('generic tx expected');
-        }
-
-        //check that delta of fees was lesser than 1 TON (delta fees between two equal actions ~ storage fees)
-        expect(tx2.description.storagePhase?.storageFeesCollected).toBeLessThanOrEqual(toNano('1'));   
- 
-
-    })
+    // check that delta of fees was lesser than 1 TON (delta fees between two equal actions ~ storage fees)
+    expect(tx2.description.storagePhase?.storageFeesCollected).toBeLessThanOrEqual(toNano('1'));   
+});
 ```
 
-### Testing the chain of messages in complex cross-contract systems
+### Testing a chain of messages in complex cross-contract systems
 
 The Sandbox emulates the entire process of executing cross-contract interactions as if they occurred on a real blockchain. 
 The result of sending a message (transfer) contains basic information about all transactions and actions. 
@@ -226,25 +222,25 @@ expect(res).toHaveTransaction(...) // test case
 
 For instance, with [Modern Jetton](https://github.com/EmelyanenkoK/modern_jetton) it's possible to test whether a Mint message results in minting to a new Jetton wallet Contract and returns the excess to the Minter Contract.
 ```typescript
-    it('minter admin should be able to mint jettons', async () => {
-        // can mint from deployer
-        let initialTotalSupply = await jettonMinter.getTotalSupply();
-        const deployerJettonWallet = await userWallet(deployer.address);
-        let initialJettonBalance = toNano('1000.23');
-        const mintResult = await jettonMinter.sendMint(deployer.getSender(), deployer.address, initialJettonBalance, toNano('0.05'), toNano('1'));
+it('minter admin should be able to mint jettons', async () => {
+    // can mint from deployer
+    let initialTotalSupply = await jettonMinter.getTotalSupply();
+    const deployerJettonWallet = await userWallet(deployer.address);
+    let initialJettonBalance = toNano('1000.23');
+    const mintResult = await jettonMinter.sendMint(deployer.getSender(), deployer.address, initialJettonBalance, toNano('0.05'), toNano('1'));
 
-        expect(mintResult.transactions).toHaveTransaction({ //test transaction of deployment a jetton wallet
-            from: jettonMinter.address,
-            to: deployerJettonWallet.address,
-            deploy: true,
-        });
-        
-        expect(mintResult.transactions).toHaveTransaction({ // test transaction of excesses returned to minter
-            from: deployerJettonWallet.address,
-            to: jettonMinter.address
-        });
+    expect(mintResult.transactions).toHaveTransaction({ // test transaction of deployment of a jetton wallet
+        from: jettonMinter.address,
+        to: deployerJettonWallet.address,
+        deploy: true,
+    });
 
-    });    
+    expect(mintResult.transactions).toHaveTransaction({ // test transaction of excesses returned to minter
+        from: deployerJettonWallet.address,
+        to: jettonMinter.address
+    });
+
+});
 ```
 
 
