@@ -126,7 +126,7 @@ it('should execute with success', async () => {                              // 
     const res = await main.sendMessage(sender.getSender(), toNano('0.05'));  // performing an action with contract main and saving result in res
 
     expect(res.transactions).toHaveTransaction({                             // configure the expected result with expect() function
-        from: main.address,                                                  // set expected sender for transaction we want to test matcher property from
+        from: main.address,                                                  // set expected sender for transaction we want to test matcher properties from
         success: true                                                        // set the desirable result using matcher property success
     });
 
@@ -138,35 +138,36 @@ it('should execute with success', async () => {                              // 
 ### Test a transaction with matcher
 
 The basic workflow of creating a test is:
-1. Create a specific `contract` entity with a `blockchain.openContract()`.
-2. Describe the actions your `contract` should perform and save the result in `res` variable.
+1. Create a specific wrapped `Contract` entity using `blockchain.openContract()`.
+2. Describe the actions your `Contract` should perform and save the execution result in `res` variable.
 3. Verify the properties using the `expect()` function and the matcher `toHaveTransaction()`.
 
-The `toHaveTransaction` returns `FlatTransaction` struct defined with following fields
+The `toHaveTransaction` matcher expects an object with any combination of fields from the `FlatTransaction` type defined with the following properties
 
 | Name                 | Type          | Description                                                                                                                                                         |
 |----------------------|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| from?                | Address       | Contract address of the message sender                                                                                                                              |
+| from                 | Address?      | Contract address of the message sender                                                                                                                              |
 | to                   | Address       | Contract address of the message destination                                                                                                                         |
 | on                   | Address       | Contract address of the message destination  (Alternative name of the property `to`).                                                                               |
- | value?               | bigint        | Amount of Toncoins in the message in nanotons                                                                                                                       |
-| body                 | Cell          | Body defined as a Cell                                                                                                                                              |
-| inMessageBounced?    | boolean       | Boolean flag Bounced. True - message is bounced, False - message is not bounced.                                                                                    |
-| inMessageBounceable? | boolean       | Boolean flag Bounceable. True - message can be bounced, False - message can not be bounced.                                                                         |
-| op?                  | number        | Op code is the operation identifier number (crc32 from TL-B usually). Expected in the first 32 bits of a message body.                                              |
-| initData?            | Cell          | InitData Cell. Used for deployment contract processes.                                                                                                              |
-| initCode?            | Cell          | initCode Cell. Used for deployment contract processes.                                                                                                              |
-| deploy               | boolean       | Boolean flag of deployment success. True if contract before this transaction was uninitialized and after transaction became initialized. Otherwise - False.  |
-| lt                   | bigint        | Logical time set by validators. Used for defining order of messages related to certain account(contract)                                                            |
-| now                  | bigint        | Unix timestamp of transaction                                                                                                                                       |
+| value                | bigint?       | Amount of Toncoins in the message in nanotons                                                                                                                       |
+| body                 | Cell          | Message body defined as a Cell                                                                                                                                              |
+| inMessageBounced     | boolean?      | Boolean flag Bounced. True - message is bounced, False - message is not bounced.                                                                                    |
+| inMessageBounceable  | boolean?      | Boolean flag Bounceable. True - message can be bounced, False - message can not be bounced.                                                                         |
+| op                   | number?       | Op code is the operation identifier number (crc32 from TL-B usually). Expected in the first 32 bits of a message body.                                              |
+| initData             | Cell?         | InitData Cell. Used for contract deployment processes.                                                                                                              |
+| initCode             | Cell?         | initCode Cell. Used for contract deployment processes.                                                                                                              |
+| deploy               | boolean       | Custom Sandbox flag that indicates whether the contract was deployed during this transaction. True if contract before this transaction was not initialized and after this transaction became initialized. Otherwise - False.  |
+| lt                   | bigint        | Logical time (set by validators in a normal network, monotonically increases by a set interval in Sandbox). Used for defining order of transactions related to a certain contract                                                           |
+| now                  | bigint        | Unix timestamp of the transaction                                                                                                                                       |
 | outMessagesCount     | number        | Quantity of outbound messages in a certain transaction                                                                                                              |
-| oldStatus            | AccountStatus | AccountStatus before executing message                                                                                                                              |
-| endStatus            | AccountStatus | AccountStatus after executing message                                                                                                                               |
-| totalFees?           | bigint        | Number of spent fees in nanotons                                                                                                                                    |
-|aborted?| boolean       | True - execution of certain transaction aborted and rollbacked because of errors or insufficient gas. Otherwise - False.                                            |
-|destroyed?| boolean       | True - if the existing contract was destroyed due to executing a certain transaction. Otherwise - False.                                                            |
-|exitCode?| number        | Resulting exit code of TVM execution                                                                                                                                |
-|success?| boolean       | Custom Sandbox flag that defines the resulting status of a certain transaction. True - if both the compute and the action phase succeeded. Otherwise - False.       |
+| oldStatus            | AccountStatus | AccountStatus before transaction execution                                                                                                                              |
+| endStatus            | AccountStatus | AccountStatus after transaction execution                                                                                                                               |
+| totalFees            | bigint?        | Number of spent fees in nanotons                                                                                                                                    |
+|aborted| boolean?       | True - execution of certain transaction aborted and rollbacked because of errors or insufficient gas. Otherwise - False.                                            |
+|destroyed| boolean?       | True - if the existing contract was destroyed due to executing a certain transaction. Otherwise - False.                                                            |
+|exitCode| number?        | TVM exit code (from compute phase)                                                                                                                                |
+|actionResultCode| number? | Action phase result code |
+|success| boolean?       | Custom Sandbox flag that defines the resulting status of a certain transaction. True - if both the compute and the action phase succeeded. Otherwise - False.       |
 
 
 You can omit those that you're not interested in, and you can also pass in functions accepting those types returning booleans (`true` meaning good) to check for example number ranges, message opcodes, etc. Note however that if a field is optional (like `from?: Address`), then the function needs to accept the optional type, too.
@@ -198,7 +199,7 @@ expect(buyResult.transactions).toHaveTransaction({
 ### Testing transaction fees
 It is possible to configure and update the current time of the `Blockchain`, which allows one to inspect how much a contract would spend on storage fees.
 
-Suppose we have a `main` instance defined as `contract` type `main = blockchain.openContract()`, and we wish to determine the amount of storage fees that will be accrued between two actions within a specified period.
+Suppose we have a `main` instance defined as a wrapped `Contract` instance `main = blockchain.openContract(/* non-wrapped Main instance */)`, and we wish to determine the amount of storage fees that will be accrued between two actions within a specified period.
 
 ```typescript
 it('should storage fees cost less than 1 TON', async () => {
