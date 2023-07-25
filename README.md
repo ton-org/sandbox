@@ -218,7 +218,7 @@ it('should storage fees cost less than 1 TON', async () => {
         throw new Error('Generic transaction expected');
     }
 
-    // check that storagePhase fees less then 1 TON over the year
+    // Check that the storagePhase fees are less than 1 TON over the course of a year
     expect(tx2.description.storagePhase?.storageFeesCollected).toBeLessThanOrEqual(toNano('1'));   
 });
 ```
