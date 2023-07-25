@@ -4,6 +4,22 @@ This package allows you to emulate arbitrary TON smart contracts, send messages 
 
 The key difference of this package from [ton-contract-executor](https://github.com/ton-community/ton-contract-executor) is the fact that the latter only emulates the compute phase of the contract - it does not know about any other phases and thus does not know anything about fees and balances (in a sense that it does not know whether a contract's balance will be enough to process all the out messages that it produces). On the other hand, this package emulates all the phases of a contract, and as a result, the emulation is much closer to what would happen in a real network.
 
+## Content
+
+* [Instalation](#installation)
+* [Usage](#usage)
+* [Writing Tests](#writing-tests)
+  * [Basic test template](#basic-test-template)
+  * [Test a transaction with matcher](#test-a-transaction-with-matcher)
+  * [Testing transaction fees](#testing-transaction-fees)
+  * [Cross contract tests](#cross-contract-tests)
+  * [Test examples](#test-examples)
+* [Viewing logs](#viewing-logs)
+* [Network/Block configuration](#networkblock-configuration)
+* [Contributors](#contributors)
+* [License](#license)
+* [Donations](#donations)
+
 ## Installation
 
 Requires node 16 or higher.
@@ -101,6 +117,8 @@ Notes:
 
 ### Basic test template
 
+You can install additional `@ton/test-utils` package by running `yarn add @ton/test-utils -D` or `npm i --save-dev @ton/test-utils` (with `.toHaveTransaction` for jest or `.transaction` or `.to.have.transaction` for chai matcher) to add additional helpers for ease of testing. Don't forget to import them in your unit test files though!
+
 Writing tests in Sandbox works through defining arbitary actions with the contract and comparing their results with the expected result, for example:
 
 ```typescript
@@ -108,7 +126,8 @@ it('should execute with success', async () => {                              // 
     const res = await main.sendMessage(sender.getSender(), toNano('0.05'));  // performing an action with contract main and saving result in res
 
     expect(res.transactions).toHaveTransaction({                             // configure the expected result with expect() function
-        success: true                                                        // set the desirable result using matcher properties
+        from: main.address,                                                  // set expected sender for transaction we want to test matcher property from
+        success: true                                                        // set the desirable result using matcher property success
     });
 
     printTransactionFees(res.transactions);                                  // print table with details on spent fees
@@ -116,40 +135,38 @@ it('should execute with success', async () => {                              // 
 ```
 
 
-### Test transaction with `toHaveTransaction` matcher
-
-You can install additional `@ton/test-utils` package by running `yarn add @ton/test-utils -D` or `npm i --save-dev @ton/test-utils` (with `.toHaveTransaction` for jest or `.transaction` or `.to.have.transaction` for chai matcher) to add additional helpers for ease of testing. Don't forget to import them in your unit test files though!
+### Test a transaction with matcher
 
 The basic workflow of creating a test is:
-1. Create a specific `contract` entity with a Sandbox helper `SandboxContract`.
+1. Create a specific `contract` entity with a `blockchain.openContract()`.
 2. Describe the actions your `contract` should perform and save the result in `res` variable.
 3. Verify the properties using the `expect()` function and the matcher `toHaveTransaction()`.
 
 The `toHaveTransaction` returns `FlatTransaction` struct defined with following fields
 
-| Name                 | Type          | Description                                                                                                            |
-|----------------------|---------------|------------------------------------------------------------------------------------------------------------------------|
-| from?                | Address       | Contract address of the message sender                                                             |
-| to                   | Address       | Contract address of the message destination                                                       |
-| on                   | Address       | Contract address of the message destination  (Alternative name of the property `to`).               |
- | value?               | bigint        | Amount of Toncoins in the message in nanotons                                                                           |
-| body                 | Cell          | Body defined as a Cell entity                                                                                          |
-| inMessageBounced?    | boolean       | Boolean flag Bounced. True - message is bounced, False - message is not bounced.                                       |
-| inMessageBounceable? | boolean       | Boolean flag Bounceable. True - message can be bounced, False - message can not be bounced.                            |
-| op?                  | number        | Op code is the operation identifier number (crc32 from TL-B usually). Expected in the first 32 bits of a message body.                         |
-| initData?            | Cell          | InitData Cell as a Cell ton-core entity. Used for deployment contract processes.                                       |
-| initCode?            | Cell          | initCode Cell as a Cell ton-core entity. Used for deployment contract processes.                                       |
-| deploy               | boolean       | Boolean flag of deployment success. True if deployment done with this transaction successful, False if deployment failed |
-| lt                   | bigint        | Logical time set by validators. Used for defining order of messages related to certain account(contract)               |
-| now                  | bigint        | Unix timestamp of transaction                                                                                                |
-| outMessagesCount     | number        | Quantity of outbound messages in a certain transaction                                                                 |
-| oldStatus            | AccountStatus | AccountStatus before executing message                                      |
-| endStatus            | AccountStatus | AccountStatus after executing message                                    |
-| totalFees?           | bigint        | Number of spent fees in nanotons                                                                                       |
-|aborted?| boolean       | Aborted flag.                                                                                                          |
-|destroyed?| boolean       | Destroyed flag.                                                                                                        |
-|exitCode?| number        | Resulting exit code of TVM execution                                                                           |
-|success?| boolean       | Flag that defines the resulting status of transaction                                                                       |
+| Name                 | Type          | Description                                                                                                                              |
+|----------------------|---------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| from?                | Address       | Contract address of the message sender                                                                                                   |
+| to                   | Address       | Contract address of the message destination                                                                                              |
+| on                   | Address       | Contract address of the message destination  (Alternative name of the property `to`).                                                    |
+ | value?               | bigint        | Amount of Toncoins in the message in nanotons                                                                                            |
+| body                 | Cell          | Body defined as a Cell                                                                                                                   |
+| inMessageBounced?    | boolean       | Boolean flag Bounced. True - message is bounced, False - message is not bounced.                                                         |
+| inMessageBounceable? | boolean       | Boolean flag Bounceable. True - message can be bounced, False - message can not be bounced.                                              |
+| op?                  | number        | Op code is the operation identifier number (crc32 from TL-B usually). Expected in the first 32 bits of a message body.                   |
+| initData?            | Cell          | InitData Cell. Used for deployment contract processes.                                                                                   |
+| initCode?            | Cell          | initCode Cell. Used for deployment contract processes.                                                                                   |
+| deploy               | boolean       | Boolean flag of deployment success. True if contract before deployment done with this transaction successful, False if deployment failed |
+| lt                   | bigint        | Logical time set by validators. Used for defining order of messages related to certain account(contract)                                 |
+| now                  | bigint        | Unix timestamp of transaction                                                                                                            |
+| outMessagesCount     | number        | Quantity of outbound messages in a certain transaction                                                                                   |
+| oldStatus            | AccountStatus | AccountStatus before executing message                                                                                                   |
+| endStatus            | AccountStatus | AccountStatus after executing message                                                                                                    |
+| totalFees?           | bigint        | Number of spent fees in nanotons                                                                                                         |
+|aborted?| boolean       | True - execution of certain transaction aborted and rollbacked because of errors or insufficient gas. Otherwise - False.                 |
+|destroyed?| boolean       | True - if the existing contract was destroyed due to executing a certain transaction. Otherwise - False.                                 |
+|exitCode?| number        | Resulting exit code of TVM execution                                                                                                     |
+|success?| boolean       |Custom Sandbox flag that defines the resulting status of a certain transaction. True - if both the compute and the action phase succeeded. Otherwise - False.                                                             |
 
 
 You can omit those that you're not interested in, and you can also pass in functions accepting those types returning booleans (`true` meaning good) to check for example number ranges, message opcodes, etc. Note however that if a field is optional (like `from?: Address`), then the function needs to accept the optional type, too.
@@ -178,10 +195,10 @@ expect(buyResult.transactions).toHaveTransaction({
 (in that example `jest` is used)
 
 
-### Testing fees with variable transaction times in the blockchain
+### Testing transaction fees
 It is possible to configure and update the current time of the `Blockchain`, which allows one to inspect how much a contract would spend on storage fees.
 
-Suppose we have a `main` instance defined as `contract` type, and we wish to determine the amount of storage fees that will be accrued between two actions within a specified period.
+Suppose we have a `main` instance defined as `contract` type `main = blockchain.openContract()`, and we wish to determine the amount of storage fees that will be accrued between two actions within a specified period.
 
 ```typescript
 it('should storage fees cost less than 1 TON', async () => {
@@ -201,12 +218,12 @@ it('should storage fees cost less than 1 TON', async () => {
         throw new Error('Generic transaction expected');
     }
 
-    // check that delta of fees was lesser than 1 TON (delta fees between two equal actions ~ storage fees)
+    // check that storagePhase fees less then 1 TON over the year
     expect(tx2.description.storagePhase?.storageFeesCollected).toBeLessThanOrEqual(toNano('1'));   
 });
 ```
 
-### Testing a chain of messages in complex cross-contract systems
+### Cross contract tests
 
 The Sandbox emulates the entire process of executing cross-contract interactions as if they occurred on a real blockchain. 
 The result of sending a message (transfer) contains basic information about all transactions and actions. 
@@ -220,7 +237,7 @@ expect(res).toHaveTransaction(...) // test case
 expect(res).toHaveTransaction(...) // test case
 ```
 
-For instance, with [Modern Jetton](https://github.com/EmelyanenkoK/modern_jetton) it's possible to test whether a Mint message results in minting to a new Jetton wallet Contract and returns the excess to the Minter Contract.
+For instance, with [Modern Jetton](https://github.com/EmelyanenkoK/modern_jetton) it's possible to test whether a `mint` message results in minting to a new jetton wallet contract and returns the excess to the minter contract.
 ```typescript
 it('minter admin should be able to mint jettons', async () => {
     // can mint from deployer
@@ -243,8 +260,11 @@ it('minter admin should be able to mint jettons', async () => {
 });
 ```
 
+### Test examples
+You can typically find various tests for Sandbox-based project contracts in the `./tests` directory. Some examples can be found in the following [list](https://docs.ton.org/develop/smart-contracts/examples#examples-of-tests-for-smart-contracts).
 
-### Viewing logs
+
+## Viewing logs
 
 `Blockchain` and `SmartContract` use `LogsVerbosity` to determine what kinds of logs to print. Here is the definition:
 ```typescript
@@ -285,7 +305,7 @@ blockchain.verbosity = {
 ```
 Note that unlike with `setVerbosityForAddress`, with this setter you have to specify all the values from `LogsVerbosity`.
 
-### Setting smart contract state directly
+## Setting smart contract state directly
 
 If you want to test some behavior on a contract if it had specific code, data, and other state fields, but do not want to execute all the required transactions for that, you can directly set the full state of the contract as it is stored in sandbox by using this method on the `Blockchain` instance:
 ```
@@ -295,7 +315,7 @@ There are 2 helpers exported from sandbox that can help you create the `ShardAcc
 
 Note that this is a low-level function and does not check any invariants, such as that the address passed as the argument matches the one that is present in the `ShardAccount`, meaning it is possible to break stuff if you're not careful when using it.
 
-### Network/Block configuration
+## Network/Block configuration
 
 By default, this package will use its [stored network configuration](src/config/defaultConfig.ts) to emulate messages. However, you can set any configuration you want when creating the `Blockchain` instance by passing the configuration cell in the optional `params` argument in the `config` field.
 
