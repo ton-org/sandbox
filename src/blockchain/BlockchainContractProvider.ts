@@ -1,4 +1,4 @@
-import { AccountState, Address, Cell, comment, ContractGetMethodResult, ContractProvider, ContractState, Message, Sender, SendMode, toNano, TupleItem } from "ton-core";
+import { AccountState, Address, Cell, comment, ContractGetMethodResult, ContractProvider, ContractState, Message, Sender, SendMode, toNano, TupleItem } from "@ton/core";
 import { TickOrTock } from "../executor/Executor";
 import { GetMethodResult, SmartContract } from "./SmartContract";
 

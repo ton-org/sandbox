@@ -25,11 +25,11 @@ The key difference of this package from [ton-contract-executor](https://github.c
 Requires node 16 or higher.
 
 ```
-yarn add @ton/sandbox ton @ton/core ton-crypto
+yarn add @ton/sandbox @ton/ton @ton/core @ton/crypto
 ```
 or
 ```
-npm i @ton/sandbox ton @ton/core ton-crypto
+npm i @ton/sandbox @ton/ton @ton/core @ton/crypto
 ```
 
 ## Usage
@@ -41,14 +41,14 @@ import { Blockchain } from "@ton/sandbox";
 const blockchain = await Blockchain.create()
 ```
 
-After that, you can use the low level methods on Blockchain (such as sendMessage) to emulate any messages that you want, but the recommended way to use it is to write wrappers for your contract using the `Contract` interface from `ton-core`. Then you can use `blockchain.openContract` on instances of such contracts, and they will be wrapped in a Proxy that will supply a `ContractProvider` as a first argument to all its methods starting with either `get` or `send`. Also all `send` methods will get Promisified and will return results of running the blockchain message queue along with the original method's result in the `result` field.
+After that, you can use the low level methods on Blockchain (such as sendMessage) to emulate any messages that you want, but the recommended way to use it is to write wrappers for your contract using the `Contract` interface from `@ton/core`. Then you can use `blockchain.openContract` on instances of such contracts, and they will be wrapped in a Proxy that will supply a `ContractProvider` as a first argument to all its methods starting with either `get` or `send`. Also all `send` methods will get Promisified and will return results of running the blockchain message queue along with the original method's result in the `result` field.
 
 A good example of this is the [treasury contract](/src/treasury/Treasury.ts) that is basically a built-in highload wallet meant to help you write tests for your systems of smart contracts. When `blockchain.treasury` is called, an instance of `TreasuryContract` is created and `blockchain.openContract` is called to "open" it. After that, when you call `treasury.send`, `Blockchain` automatically supplies the first `provider` argument.
 
 For your own contracts, you can draw inspiration from the contracts in the [examples](/examples/) - all of them use the `provider.internal` method to send internal messages using the treasuries passed in from the unit test file.
 Here is an excerpt of that from [NftItem.ts](/examples/contracts/NftItem.ts):
 ```typescript
-import { Address, beginCell, Cell, Contract, ContractProvider, Sender, toNano, Builder } from "ton-core";
+import { Address, beginCell, Cell, Contract, ContractProvider, Sender, toNano, Builder } from "@ton/core";
 
 class NftItem implements Contract {
     async sendTransfer(provider: ContractProvider, via: Sender, params: {
@@ -78,7 +78,7 @@ When you call `nftItem.sendTransfer(treasury.getSender(), { to: recipient })` (w
 
 Here is another excerpt that shows the way to interact with get methods from wrappers:
 ```typescript
-import { Contract, ContractProvider } from "ton-core";
+import { Contract, ContractProvider } from "@ton/core";
 
 export type NftItemData = {
     inited: boolean

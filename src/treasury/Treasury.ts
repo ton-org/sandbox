@@ -1,4 +1,4 @@
-import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Dictionary, DictionaryValue, internal, loadMessageRelaxed, MessageRelaxed, Sender, SenderArguments, SendMode, storeMessageRelaxed } from "ton-core";
+import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Dictionary, DictionaryValue, internal, loadMessageRelaxed, MessageRelaxed, Sender, SenderArguments, SendMode, storeMessageRelaxed } from "@ton/core";
 
 const DictionaryMessageValue: DictionaryValue<{ sendMode: SendMode, message: MessageRelaxed }> = {
     serialize(src, builder) {

@@ -1,4 +1,4 @@
-import { Address, Cell, Message, Sender, SenderArguments } from "ton-core";
+import { Address, Cell, Message, Sender, SenderArguments } from "@ton/core";
 
 export class BlockchainSender implements Sender {
     constructor(

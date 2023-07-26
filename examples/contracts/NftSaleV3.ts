@@ -1,4 +1,4 @@
-import { Address, Cell, Contract, ContractProvider } from "ton-core";
+import { Address, Cell, Contract, ContractProvider } from "@ton/core";
 import { NftSaleConfig } from "./NftSale";
 
 export class NftSaleV3 implements Contract {

@@ -1,4 +1,4 @@
-import { Address, Cell, Contract, ContractProvider } from "ton-core";
+import { Address, Cell, Contract, ContractProvider } from "@ton/core";
 
 export class Elector implements Contract {
     constructor(readonly address: Address, readonly init?: { code: Cell; data: Cell }) {}

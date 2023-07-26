@@ -1,5 +1,5 @@
 import { defaultConfig } from "../config/defaultConfig";
-import {Address, Cell, Message, Transaction, ContractProvider, Contract, Sender, toNano, loadMessage, ShardAccount, TupleItem, ExternalAddress, StateInit} from "ton-core";
+import {Address, Cell, Message, Transaction, ContractProvider, Contract, Sender, toNano, loadMessage, ShardAccount, TupleItem, ExternalAddress, StateInit} from "@ton/core";
 import {Executor, TickOrTock} from "../executor/Executor";
 import {BlockchainStorage, LocalBlockchainStorage} from "./BlockchainStorage";
 import { extractEvents, Event } from "../event/Event";

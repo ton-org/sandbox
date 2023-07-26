@@ -11,7 +11,7 @@ import {
     storeMessage, storeShardAccount,
     Transaction,
     TupleItem, TupleReader
-} from "ton-core";
+} from "@ton/core";
 import {getSelectorForMethod} from "../utils/selector";
 import { EmulationResult, ExecutorVerbosity, RunCommonArgs, TickOrTock } from "../executor/Executor";
 
