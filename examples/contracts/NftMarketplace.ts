@@ -1,4 +1,4 @@
-import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Sender, storeStateInit, toNano } from "ton-core";
+import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Sender, storeStateInit, toNano } from "@ton/core";
 
 export type NftMarketplaceConfig = {
     owner: Address

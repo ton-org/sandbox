@@ -1,4 +1,4 @@
-import { AccountStatus, Address, Cell, Transaction } from "ton-core";
+import { AccountStatus, Address, Cell, Transaction } from "@ton/core";
 
 export type EventAccountCreated = {
     type: 'account_created',

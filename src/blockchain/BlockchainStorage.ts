@@ -1,4 +1,4 @@
-import {AccountState, Address, Cell} from "ton-core";
+import {AccountState, Address, Cell} from "@ton/core";
 import {SmartContract} from "./SmartContract";
 import {Blockchain} from "./Blockchain";
 

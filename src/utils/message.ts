@@ -1,4 +1,4 @@
-import { Address, Cell, Message, StateInit } from "ton-core";
+import { Address, Cell, Message, StateInit } from "@ton/core";
 
 export function internal(params: {
     from: Address

@@ -1,7 +1,7 @@
 import {Blockchain} from "./Blockchain";
-import {Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Message, Sender, storeTransaction, toNano} from "ton-core";
-import {randomAddress} from "@ton-community/test-utils";
-import {TonClient4} from "ton";
+import {Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Message, Sender, storeTransaction, toNano} from "@ton/core";
+import {randomAddress} from "@ton/test-utils";
+import {TonClient4} from "@ton/ton";
 import {RemoteBlockchainStorage, wrapTonClient4ForRemote} from "./BlockchainStorage";
 import {prettyLogTransactions} from "../utils/prettyLogTransaction";
 import {printTransactionFees} from "../utils/printTransactionFees";

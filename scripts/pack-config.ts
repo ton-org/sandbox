@@ -1,4 +1,4 @@
-import { beginCell, Cell, Dictionary, DictionaryValue, TonClient4 } from 'ton';
+import { beginCell, Cell, Dictionary, DictionaryValue, TonClient4 } from '@ton/ton';
 import fs from 'fs';
 
 const CellRef: DictionaryValue<Cell> = {
