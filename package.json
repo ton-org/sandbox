@@ -34,5 +34,6 @@
     "test": "yarn wasm:pack && yarn jest src",
     "build": "rm -rf dist && yarn wasm:pack && yarn test && tsc && yarn wasm:copy",
     "config:pack": "ts-node ./scripts/pack-config.ts"
-  }
+  },
+  "packageManager": "yarn@3.6.1"
 }
