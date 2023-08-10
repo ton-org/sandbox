@@ -1,6 +1,6 @@
-import {Blockchain} from "./Blockchain";
+import {Blockchain, BlockchainTransaction} from "./Blockchain";
 import {Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Message, Sender, storeTransaction, toNano} from "@ton/core";
-import {randomAddress} from "@ton/test-utils";
+import {compareTransaction, flattenTransaction, randomAddress} from "@ton/test-utils";
 import {TonClient4} from "@ton/ton";
 import {RemoteBlockchainStorage, wrapTonClient4ForRemote} from "./BlockchainStorage";
 import {prettyLogTransactions} from "../utils/prettyLogTransaction";
@@ -215,6 +215,55 @@ describe('Blockchain', () => {
             body: (x: Cell) => x.beginParse().skip(32).loadUint(32) === 3,
         })
     })
+
+    it('execution result in step by step mode should match one in regular mode', async() => {
+        // Bounces are the most common case where step by step execution makes sense, so let's do the same test in step by step.
+
+        const blockchain = await Blockchain.create();
+
+        const address = randomAddress()
+
+        await blockchain.setShardAccount(address, createShardAccount({
+            address,
+            code: Cell.fromBase64('te6ccgEBAgEAGAABFP8A9KQT9LzyyAsBABLTXwSCAN6t8vA='),
+            data: new Cell(),
+            balance: toNano('1'),
+        }))
+
+        const body = beginCell()
+            .storeUint(0xdeadbeef, 32)
+            .endCell()
+
+        // Make sure time is not ticking
+        blockchain.now = 42;
+
+        const prevState = blockchain.snapshot();
+
+        const testMsg = internal({
+            from: new Address(0, Buffer.alloc(32)),
+            to: address,
+            value: toNano('1'),
+            bounce: true,
+            body,
+        })
+        const res  = await blockchain.sendMessage(testMsg)
+        // Rolling back
+        await blockchain.loadFrom(prevState);
+        // Get iterable insead of iterator
+        const iter = await blockchain.sendMessageIter(testMsg, false)
+
+        const stepByStepResults : BlockchainTransaction[] = [];
+
+        for await (let tx of iter) {
+            stepByStepResults.push(tx);
+        }
+        // Length should match
+        expect(stepByStepResults.length).toEqual(res.transactions.length);
+        // Transactions order and content should match
+        for(let i = 0; i < res.transactions.length; i++) {
+            expect(compareTransaction(flattenTransaction(res.transactions[i]), flattenTransaction(stepByStepResults[i]))).toBe(true);
+        }
+    });
 
     it('should correctly return treasury balance', async () => {
         const blockchain = await Blockchain.create()
