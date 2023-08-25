@@ -180,18 +180,18 @@ export class Blockchain {
         await this.pushMessage(message)
         return await this.runQueue(params)
     }
-    async sendMessageIter(message: Message | Cell, iterator: true, params?: MessageParams): Promise<AsyncIterator<BlockchainTransaction>>;
+    async sendMessageIter(message: Message | Cell, iterator: true, params?: MessageParams): Promise<AsyncIterator<BlockchainTransaction>>
 
-    async sendMessageIter(message: Message | Cell, iterator: false, params?: MessageParams): Promise<AsyncIterable<BlockchainTransaction>>;
+    async sendMessageIter(message: Message | Cell, iterator: false, params?: MessageParams): Promise<AsyncIterable<BlockchainTransaction>>
     async sendMessageIter(message: Message | Cell, iterator: boolean, params?: MessageParams) {
         params = {
             now: this.now,
             ...params,
         }
 
-        await this.pushMessage(message);
+        await this.pushMessage(message)
         // Iterable will lock on per tx bases
-        return iterator ? await this.txIter(false, params) : await this.txIterable(false, params);
+        return iterator ? await this.txIter(false, params) : await this.txIterable(false, params)
     }
 
     async runTickTock(on: Address | Address[], which: TickOrTock, params?: MessageParams): Promise<SendMessageResult> {
@@ -241,27 +241,27 @@ export class Blockchain {
     }
 
     protected txIterable(locked: boolean, params?: MessageParams): AsyncIterable<BlockchainTransaction> {
-        const bc = this;
+        const bc = this
         return {
             [Symbol.asyncIterator] () {
-                return bc.txIter(locked, params);
+                return bc.txIter(locked, params)
             }
-        };
+        }
     }
     protected txIter(locked: boolean = true, params?: MessageParams): AsyncIterator<BlockchainTransaction> {
-        return { next: this.processTx.bind(this, locked, params) };
+        return { next: this.processTx.bind(this, locked, params) }
     }
     protected async processInternal(params?: MessageParams): Promise<IteratorResult<BlockchainTransaction>> {
-        let   result: BlockchainTransaction | undefined = undefined;
-        let   done = this.messageQueue.length == 0;
+        let   result: BlockchainTransaction | undefined = undefined
+        let   done = this.messageQueue.length == 0
         while (!done) {
             const message = this.messageQueue.shift()!
 
             let tx: SmartContractTransaction
             if (message.type === 'message') {
                 if (message.info.type === 'external-out') {
-                    done = this.messageQueue.length == 0;
-                    continue;
+                    done = this.messageQueue.length == 0
+                    continue
                 }
 
                 this.currentLt += LT_ALIGN
@@ -280,8 +280,8 @@ export class Blockchain {
             }
             transaction.parent?.children.push(transaction)
 
-            result = transaction;
-            done   = true;
+            result = transaction
+            done   = true
 
             for (const message of transaction.outMessages.values()) {
                 if (message.info.type === 'external-out') {
@@ -311,12 +311,12 @@ export class Blockchain {
             }
 
         }
-        return result === undefined ? {value: result, done: true } : {value: result, done: false };
+        return result === undefined ? {value: result, done: true } : {value: result, done: false }
     }
     protected async processTx(locked:boolean, params?: MessageParams): Promise<IteratorResult<BlockchainTransaction>> {
 
         // Lock only if not locked already
-        return locked ? await this.processInternal(params) : await this.lock.with(async () => this.processInternal(params));
+        return locked ? await this.processInternal(params) : await this.lock.with(async () => this.processInternal(params))
     }
     protected async processQueue(params?: MessageParams) {
         params = {
@@ -325,14 +325,14 @@ export class Blockchain {
         }
         return await this.lock.with(async () => {
             // Locked already
-            const txs = this.txIterable(true, params);
-            const result: BlockchainTransaction[] = [];
+            const txs = this.txIterable(true, params)
+            const result: BlockchainTransaction[] = []
 
-            for await (let tRes of txs) {
-                result.push(tRes);
+            for await (const tRes of txs) {
+                result.push(tRes)
             }
 
-            return result;
+            return result
         })
     }
 

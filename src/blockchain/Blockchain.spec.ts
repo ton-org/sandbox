@@ -219,7 +219,7 @@ describe('Blockchain', () => {
     it('execution result in step by step mode should match one in regular mode', async() => {
         // Bounces are the most common case where step by step execution makes sense, so let's do the same test in step by step.
 
-        const blockchain = await Blockchain.create();
+        const blockchain = await Blockchain.create()
 
         const address = randomAddress()
 
@@ -235,9 +235,9 @@ describe('Blockchain', () => {
             .endCell()
 
         // Make sure time is not ticking
-        blockchain.now = 42;
+        blockchain.now = 42
 
-        const prevState = blockchain.snapshot();
+        const prevState = blockchain.snapshot()
 
         const testMsg = internal({
             from: new Address(0, Buffer.alloc(32)),
@@ -248,22 +248,22 @@ describe('Blockchain', () => {
         })
         const res  = await blockchain.sendMessage(testMsg)
         // Rolling back
-        await blockchain.loadFrom(prevState);
+        await blockchain.loadFrom(prevState)
         // Get iterable insead of iterator
         const iter = await blockchain.sendMessageIter(testMsg, false)
 
-        const stepByStepResults : BlockchainTransaction[] = [];
+        const stepByStepResults : BlockchainTransaction[] = []
 
-        for await (let tx of iter) {
-            stepByStepResults.push(tx);
+        for await (const tx of iter) {
+            stepByStepResults.push(tx)
         }
         // Length should match
-        expect(stepByStepResults.length).toEqual(res.transactions.length);
+        expect(stepByStepResults.length).toEqual(res.transactions.length)
         // Transactions order and content should match
         for(let i = 0; i < res.transactions.length; i++) {
-            expect(compareTransaction(flattenTransaction(res.transactions[i]), flattenTransaction(stepByStepResults[i]))).toBe(true);
+            expect(compareTransaction(flattenTransaction(res.transactions[i]), flattenTransaction(stepByStepResults[i]))).toBe(true)
         }
-    });
+    })
 
     it('should correctly return treasury balance', async () => {
         const blockchain = await Blockchain.create()
@@ -573,7 +573,7 @@ describe('Blockchain', () => {
         if (res.description.type !== 'tick-tock')
             throw new Error('Tick tock transaction expected')
         expect(res.description.isTock).toBe(false)
-    });
+    })
 
     it('should chain tick tock transaction output', async () => {
         class TestWrapper implements Contract {
