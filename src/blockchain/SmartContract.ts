@@ -332,7 +332,7 @@ export class SmartContract {
             console.log(res.debugLogs)
         }
 
-        if (res.output.vm_exit_code !== 0) {
+        if (res.output.vm_exit_code !== 0 && res.output.vm_exit_code !== 1) {
             throw new GetMethodError(
                 res.output.vm_exit_code,
                 BigInt(res.output.gas_used),
