@@ -250,7 +250,7 @@ describe('Blockchain', () => {
         // Rolling back
         await blockchain.loadFrom(prevState)
         // Get iterable insead of iterator
-        const iter = await blockchain.sendMessageIter(testMsg, false)
+        const iter = await blockchain.sendMessageIter(testMsg)
 
         const stepByStepResults : BlockchainTransaction[] = []
 
