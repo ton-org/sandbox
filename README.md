@@ -261,9 +261,12 @@ it('minter admin should be able to mint jettons', async () => {
 });
 ```
 
-### Test examples
-You can typically find various tests for Sandbox-based project contracts in the `./tests` directory. Some examples can be found in the following [list](https://docs.ton.org/develop/smart-contracts/examples#examples-of-tests-for-smart-contracts).
+### Test Examples
+You can typically find various tests for Sandbox-based project contracts in the `./tests` directory. 
+Learn more from examples:
 
+* [FunC Test Examples](https://docs.ton.org/develop/smart-contracts/examples#examples-of-tests-for-smart-contracts)
+* [Tact Test Examples](docs/tact-testing-examples.md) 
 
 ## Viewing logs
 
