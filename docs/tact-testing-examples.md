@@ -268,7 +268,7 @@ For instance, in case of `laucnhResult` the following table will be printed:
     │    5    │    '0x0'     │ '0.683116 TON' │    '0 TON'     │ '0.000309 TON' │ '0.000862 TON' │     'N/A'     │     0      │ '0.000309 TON' │    0     │     0      │
     └─────────┴──────────────┴────────────────┴────────────────┴────────────────┴────────────────┴───────────────┴────────────┴────────────────┴──────────┴────────────┘
 
-![Screenshot 2023-08-31 at 12.28.09.png](..%2F..%2F..%2FDesktop%2FScreenshot%202023-08-31%20at%2012.28.09.png)
+![](msg-trace.png)
 
 Index - is an ID of transactions content in launchResult.
 * `0` - The emulation of external transaction to Launcher contract, that executed with outgoing message
