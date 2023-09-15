@@ -248,6 +248,11 @@ export class SmartContract {
     }
 
     receiveMessage(message: Message, params?: MessageParams) {
+        // Sync now with blockchain instance if not specified in parameters
+        params = {
+            now: this.blockchain.now,
+            ...params,
+        }
         return this.runCommon(() => this.blockchain.executor.runTransaction({
             ...this.createCommonArgs(params),
             message: beginCell().store(storeMessage(message)).endCell(),

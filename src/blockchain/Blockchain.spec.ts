@@ -214,6 +214,41 @@ describe('Blockchain', () => {
             op: 0xfffffffe,
             body: (x: Cell) => x.beginParse().skip(32).loadUint(32) === 3,
         })
+
+        // Current time in receiveMessage should match blockchain.now
+        const nowSmc = await blockchain.getContract(contract.address)
+
+        let   smcRes = nowSmc.receiveMessage(internal({
+            from: sender.address,
+            to: nowSmc.address,
+            body: beginCell().storeUint(0, 32).storeAddress(sender.address).endCell(),
+            value: toNano('1')
+        }))
+
+        expect(smcRes.now).toBe(3)
+        expect(smcRes.outMessagesCount).toBe(1)
+
+        let respMsg = smcRes.outMessages.get(0)!
+        if(respMsg.info.type !== 'internal')
+            throw(Error('Internal message expected'))
+        expect(respMsg.body.beginParse().skip(32).preloadUint(32)).toEqual(3);
+
+        // Make sure i didn't break anything and now is still overridable in receiveMessage call
+
+        smcRes = nowSmc.receiveMessage(internal({
+            from: sender.address,
+            to: nowSmc.address,
+            body: beginCell().storeUint(0, 32).storeAddress(sender.address).endCell(),
+            value: toNano('1')
+        }), {now: 4})
+
+        expect(smcRes.now).toBe(4)
+        expect(smcRes.outMessagesCount).toBe(1)
+
+        respMsg = smcRes.outMessages.get(0)!
+        if(respMsg.info.type !== 'internal')
+            throw(Error('Internal message expected'))
+        expect(respMsg.body.beginParse().skip(32).preloadUint(32)).toEqual(4);
     })
 
     it('execution result in step by step mode should match one in regular mode', async() => {
