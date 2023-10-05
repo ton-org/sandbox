@@ -45,6 +45,7 @@ export {
     GetMethodError,
     TimeError,
     SmartContractSnapshot,
+    EmulationError,
 } from './blockchain/SmartContract';
 
 export {

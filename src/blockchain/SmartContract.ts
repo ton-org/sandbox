@@ -139,6 +139,12 @@ export class TimeError extends Error {
     }
 }
 
+export class EmulationError extends Error {
+    constructor(public error: string, public vmLogs?: string, public exitCode?: number) {
+        super(`Error while executing transaction: ${error}`)
+    }
+}
+
 export type SmartContractSnapshot = {
     address: Address
     account: ShardAccount
@@ -274,8 +280,7 @@ export class SmartContract {
         }
 
         if (!res.result.success) {
-            console.error('Error:', res.result.error, 'VM logs', res.result.vmResults)
-            throw new Error('Error executing transaction')
+            throw new EmulationError(res.result.error, res.result.vmResults?.vmLog, res.result.vmResults?.vmExitCode)
         }
 
         if (this.verbosity.print && this.verbosity.vmLogs !== 'none' && res.result.vmLog.length > 0) {
