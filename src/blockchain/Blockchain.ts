@@ -439,9 +439,14 @@ export class Blockchain {
     }
 
     async getContract(address: Address) {
-        const contract = await this.startFetchingContract(address)
-        this.contractFetches.delete(address.toRawString())
-        return contract
+        try {
+            const contract = await this.startFetchingContract(address)
+            return contract
+        } catch (e) {
+            throw e
+        } finally {
+            this.contractFetches.delete(address.toRawString())
+        }
     }
 
     get verbosity() {
