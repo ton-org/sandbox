@@ -1,15 +1,15 @@
 {
-  "name": "@ton-community/sandbox-examples",
+  "name": "@ton/sandbox-examples",
   "version": "0.0.1",
   "license": "MIT",
   "devDependencies": {
-    "@ton-community/sandbox": "^0.11.0",
-    "@ton/test-utils": "^0.2.0",
+    "@ton/core": "^0.52.2",
+    "@ton/crypto": "^3.2.0",
+    "@ton/sandbox": "^0.11.0",
+    "@ton/test-utils": "^0.3.1",
+    "@ton/ton": "^13.5.1",
     "@types/jest": "^29.5.1",
     "jest": "^29.5.0",
-    "@ton/ton": "^13.5.1",
-    "@ton/core": "^0.49.1",
-    "@ton/crypto": "^3.2.0",
     "ts-jest": "^29.1.0",
     "typescript": "^4.9.5"
   },
