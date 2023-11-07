@@ -15,6 +15,10 @@ The key difference of this package from [ton-contract-executor](https://github.c
   * [Cross contract tests](#cross-contract-tests)
   * [Test examples](#test-examples)
 * [Viewing logs](#viewing-logs)
+* [Setting smart contract state directly](#setting-smart-contract-state-directly)
+* [Using snapshots](#using-snapshots)
+* [Performing testing on contracts from a real network](#performing-testing-on-contracts-from-a-real-network)
+* [Step-by-step execution](#step-by-step-execution)
 * [Network/Block configuration](#networkblock-configuration)
 * [Contributors](#contributors)
 * [License](#license)
@@ -318,6 +322,65 @@ async setShardAccount(address: Address, account: ShardAccount)
 There are 2 helpers exported from sandbox that can help you create the `ShardAccount` from the common properties: `createEmptyShardAccount` and `createShardAccount`.
 
 Note that this is a low-level function and does not check any invariants, such as that the address passed as the argument matches the one that is present in the `ShardAccount`, meaning it is possible to break stuff if you're not careful when using it.
+
+## Using snapshots
+
+It is possible to store the whole `Blockchain` state in an object and restore this state later. This can be useful to compare the outcomes of different actions after a certain point, or to store the state of the contract system after a long series of configuration actions in order to quickly restore it for all required tests instead of setting it up each time.
+
+To store the state, do the following:
+```typescript
+const snapshot = blockchain.snapshot()
+```
+
+To restore the state, do the following:
+```typescript
+await blockchain.loadFrom(snapshot)
+```
+
+Note: snapshots store **the entire state** of a `Blockchain` instance, that includes:
+- all contracts' states
+- the network config
+- next transaction lt
+- the unix timestamp (if it is set)
+- verbosity settings
+- the libraries dictionary
+- other internal parameters
+
+Basically, the state of a `Blockchain` instance after it is restored using a snapshot is the same as if the same actions were performed on that instance as on the instance from which the snapshot originates.
+
+## Performing testing on contracts from a real network
+
+It is possible to use Sandbox to perform tests on contracts that are deployed to a real network. To do that, create your `Blockchain` instance using a `RemoteBlockchainStorage`, like so:
+```typescript
+import { TonClient4 } from '@ton/ton'
+import { Blockchain, RemoteBlockchainStorage, wrapTonClient4ForRemote } from '@ton/sandbox'
+import { getHttpV4Endpoint } from '@orbs-network/ton-access'
+const blockchain = await Blockchain.create({
+    storage: new RemoteBlockchainStorage(wrapTonClient4ForRemote(new TonClient4({
+        endpoint: await getHttpV4Endpoint({
+            network: 'mainnet'
+        })
+    })))
+})
+```
+
+After that, whenever that `Blockchain` instance tries to read the state of an unknown contract, that contract's state will be pulled from that network. `RemoteBlockchainStorage` also accepts an optional second argument in its constructor, `blockSeqno`, and if it is passed, the contracts' states will be pulled from that block number, instead of from the latest known block.
+
+Note: only the states of unknown (do not confuse unknown with uninitialized) contracts will be pulled from the network - that is, if a contract's state has been previously set by any means (creation of a treasury, set manually, or was already pulled before), then it will not be re-read.
+
+## Step-by-step execution
+
+In cases where you need to process a few transactions from the transaction chain, but not all of them (for example, a contract generates 1000 transactions but you only need to check the first 10 - in that case, waiting for the whole 1000 transactions to be executed is wasteful), you may do so by using the `sendMessageIter` method:
+```typescript
+const iter = await blockchain.sendMessageIter(testMessage)
+
+for await (const tx of iter) {
+    // some kind of processing for tx, for example:
+    console.log(tx)
+}
+```
+
+This approach allows you to stop the processing of the transaction chain, unlike the usual approaches.
 
 ## Network/Block configuration
 
