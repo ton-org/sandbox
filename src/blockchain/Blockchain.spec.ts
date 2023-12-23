@@ -19,7 +19,7 @@ describe('Blockchain', () => {
         })
 
         let blockchain = await Blockchain.create({
-            storage: new RemoteBlockchainStorage(wrapTonClient4ForRemote(client))
+            storage: new RemoteBlockchainStorage(wrapTonClient4ForRemote(client), 34892000)
         })
 
         let buyer = randomAddress()
