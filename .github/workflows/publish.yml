@@ -1,7 +1,7 @@
 on:
   push:
     branches:
-      - main
+      - tvm-beta
 name: Publish to NPM
 jobs:
   publish:
