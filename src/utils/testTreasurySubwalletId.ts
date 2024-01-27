@@ -1,4 +1,4 @@
-import { sha256_sync } from "ton-crypto";
+import { sha256_sync } from "@ton/crypto";
 
 const prefix = 'TESTSEED'
 

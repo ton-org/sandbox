@@ -1,10 +1,10 @@
-import { beginCell, SendMode, toNano } from "ton-core"
-import { Blockchain } from "@ton-community/sandbox"
+import { beginCell, SendMode, toNano } from "@ton/core"
+import { Blockchain } from "@ton/sandbox"
 import { NftCollection } from "../contracts/NftCollection"
 import { NftItem } from "../contracts/NftItem"
 import { NftMarketplace } from "../contracts/NftMarketplace"
 import { NftSale } from "../contracts/NftSale"
-import "@ton-community/test-utils" // register matchers
+import "@ton/test-utils" // register matchers
 
 describe('Collection', () => {
     it('should work', async () => {

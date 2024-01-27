@@ -1,4 +1,4 @@
-import { AccountState, Address, Cell, comment, ContractGetMethodResult, ContractProvider, ContractState, Message, Sender, SendMode, toNano, TupleItem } from "ton-core";
+import { AccountState, Address, Cell, comment, ContractGetMethodResult, ContractProvider, ContractState, Message, Sender, SendMode, toNano, TupleItem } from "@ton/core";
 import { TickOrTock } from "../executor/Executor";
 import { GetMethodResult, SmartContract } from "./SmartContract";
 
@@ -63,11 +63,14 @@ export class BlockchainContractProvider implements SandboxContractProvider {
     }
     async get(name: string, args: TupleItem[]): Promise<ContractGetMethodResult> {
         const result = await this.blockchain.runGetMethod(this.address, name, args)
-        return {
+        const ret = {
+            ...result,
             stack: result.stackReader,
-            gasUsed: result.gasUsed,
+            stackItems: result.stack,
             logs: result.vmLogs,
         }
+        delete (ret as any).stackReader
+        return ret
     }
     async external(message: Cell) {
         const init = ((await this.getState()).state.type !== 'active' && this.init) ? this.init : undefined

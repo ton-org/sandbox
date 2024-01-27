@@ -1,4 +1,4 @@
-import { Builder, Cell, Dictionary, DictionaryValue, Slice, beginCell } from 'ton-core';
+import { Builder, Cell, Dictionary, DictionaryValue, Slice, beginCell } from '@ton/core';
 import { defaultConfig, defaultConfigSeqno } from '../src/config/defaultConfig';
 import { slimConfig, slimConfigSeqno } from '../src/config/slimConfig';
 import fs from 'fs';
@@ -53,7 +53,7 @@ function modifyConfig(source: string, name: string, seqno: number) {
 
     const globalVersion = loadGlobalVersion(oldGlobalVersionCell.beginParse());
 
-    globalVersion.version = Math.max(4, globalVersion.version);
+    globalVersion.version = Math.max(6, globalVersion.version);
 
     const newGlobalVersionCell = beginCell().store(storeGlobalVersion(globalVersion)).endCell();
 

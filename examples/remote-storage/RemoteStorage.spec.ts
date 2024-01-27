@@ -1,9 +1,9 @@
-import { TonClient4 } from "ton"
-import { Address, toNano, SendMode } from "ton-core"
-import { Blockchain, RemoteBlockchainStorage, wrapTonClient4ForRemote } from "@ton-community/sandbox"
+import { TonClient4 } from "@ton/ton"
+import { Address, toNano, SendMode } from "@ton/core"
+import { Blockchain, RemoteBlockchainStorage, wrapTonClient4ForRemote } from "@ton/sandbox"
 import { NftSaleV3 } from "../contracts/NftSaleV3"
 import { NftItem } from "../contracts/NftItem"
-import "@ton-community/test-utils" // register matchers
+import "@ton/test-utils" // register matchers
 import { Elector } from "../contracts/Elector"
 
 describe('RemoteStorage', () => {

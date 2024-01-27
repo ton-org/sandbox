@@ -1,5 +1,5 @@
 import { defaultConfig } from "../config/defaultConfig";
-import {Address, Cell, Message, Transaction, ContractProvider, Contract, Sender, toNano, loadMessage, ShardAccount, TupleItem, ExternalAddress, StateInit} from "ton-core";
+import {Address, Cell, Message, Transaction, ContractProvider, Contract, Sender, toNano, loadMessage, ShardAccount, TupleItem, ExternalAddress, StateInit} from "@ton/core";
 import {Executor, TickOrTock} from "../executor/Executor";
 import {BlockchainStorage, LocalBlockchainStorage} from "./BlockchainStorage";
 import { extractEvents, Event } from "../event/Event";
@@ -181,6 +181,17 @@ export class Blockchain {
         return await this.runQueue(params)
     }
 
+    async sendMessageIter(message: Message | Cell, params?: MessageParams): Promise<AsyncIterator<BlockchainTransaction> & AsyncIterable<BlockchainTransaction>> {
+        params = {
+            now: this.now,
+            ...params,
+        }
+
+        await this.pushMessage(message)
+        // Iterable will lock on per tx basis
+        return await this.txIter(true, params)
+    }
+
     async runTickTock(on: Address | Address[], which: TickOrTock, params?: MessageParams): Promise<SendMessageResult> {
         for (const addr of (Array.isArray(on) ? on : [on])) {
             await this.pushTickTock(addr, which)
@@ -227,67 +238,91 @@ export class Blockchain {
         }
     }
 
+    protected txIter(needsLocking: boolean, params?: MessageParams): AsyncIterator<BlockchainTransaction> & AsyncIterable<BlockchainTransaction> {
+        const it = { next: () => this.processTx(needsLocking, params), [Symbol.asyncIterator]() { return it; } }
+        return it;
+    }
+
+    protected async processInternal(params?: MessageParams): Promise<IteratorResult<BlockchainTransaction>> {
+        let result: BlockchainTransaction | undefined = undefined
+        let done = this.messageQueue.length == 0
+        while (!done) {
+            const message = this.messageQueue.shift()!
+
+            let tx: SmartContractTransaction
+            if (message.type === 'message') {
+                if (message.info.type === 'external-out') {
+                    done = this.messageQueue.length == 0
+                    continue
+                }
+
+                this.currentLt += LT_ALIGN
+                tx = (await this.getContract(message.info.dest)).receiveMessage(message, params)
+            } else {
+                this.currentLt += LT_ALIGN
+                tx = (await this.getContract(message.on)).runTickTock(message.which, params)
+            }
+
+            const transaction: BlockchainTransaction = {
+                ...tx,
+                events: extractEvents(tx),
+                parent: message.parentTransaction,
+                children: [],
+                externals: [],
+            }
+            transaction.parent?.children.push(transaction)
+
+            result = transaction
+            done = true
+
+            for (const message of transaction.outMessages.values()) {
+                if (message.info.type === 'external-out') {
+                    transaction.externals.push({
+                        info: {
+                            type: 'external-out',
+                            src: message.info.src,
+                            dest: message.info.dest ?? undefined,
+                            createdAt: message.info.createdAt,
+                            createdLt: message.info.createdLt,
+                        },
+                        init: message.init ?? undefined,
+                        body: message.body,
+                    })
+                    continue
+                }
+
+                this.messageQueue.push({
+                    type: 'message',
+                    parentTransaction: transaction,
+                    ...message,
+                })
+
+                if (message.info.type === 'internal') {
+                    this.startFetchingContract(message.info.dest)
+                }
+            }
+
+        }
+        return result === undefined ? { value: result, done: true } : { value: result, done: false }
+    }
+
+    protected async processTx(needsLocking: boolean, params?: MessageParams): Promise<IteratorResult<BlockchainTransaction>> {
+        // Lock only if not locked already
+        return needsLocking ? await this.lock.with(async () => this.processInternal(params)) : await this.processInternal(params)
+    }
+
     protected async processQueue(params?: MessageParams) {
         params = {
             now: this.now,
             ...params,
         }
         return await this.lock.with(async () => {
+            // Locked already
+            const txs = this.txIter(false, params)
             const result: BlockchainTransaction[] = []
 
-            while (this.messageQueue.length > 0) {
-                const message = this.messageQueue.shift()!
-
-                let tx: SmartContractTransaction
-                if (message.type === 'message') {
-                    if (message.info.type === 'external-out') {
-                        continue
-                    }
-
-                    this.currentLt += LT_ALIGN
-                    tx = (await this.getContract(message.info.dest)).receiveMessage(message, params)
-                } else {
-                    this.currentLt += LT_ALIGN
-                    tx = (await this.getContract(message.on)).runTickTock(message.which, params)
-                }
-
-                const transaction: BlockchainTransaction = {
-                    ...tx,
-                    events: extractEvents(tx),
-                    parent: message.parentTransaction,
-                    children: [],
-                    externals: [],
-                }
-                transaction.parent?.children.push(transaction)
-
-                result.push(transaction)
-
-                for (const message of transaction.outMessages.values()) {
-                    if (message.info.type === 'external-out') {
-                        transaction.externals.push({
-                            info: {
-                                type: 'external-out',
-                                src: message.info.src,
-                                dest: message.info.dest ?? undefined,
-                                createdAt: message.info.createdAt,
-                                createdLt: message.info.createdLt,
-                            },
-                            init: message.init ?? undefined,
-                            body: message.body,
-                        })
-                        continue
-                    }
-
-                    this.messageQueue.push({
-                        type: 'message',
-                        parentTransaction: transaction,
-                        ...message,
-                    })
-
-                    if (message.info.type === 'internal') {
-                        this.startFetchingContract(message.info.dest)
-                    }
-                }
+            for await (const tx of txs) {
+                result.push(tx)
             }
 
             return result
@@ -404,9 +439,14 @@ export class Blockchain {
     }
 
     async getContract(address: Address) {
-        const contract = await this.startFetchingContract(address)
-        this.contractFetches.delete(address.toRawString())
-        return contract
+        try {
+            const contract = await this.startFetchingContract(address)
+            return contract
+        } catch (e) {
+            throw e
+        } finally {
+            this.contractFetches.delete(address.toRawString())
+        }
     }
 
     get verbosity() {

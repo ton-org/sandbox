@@ -1,7 +1,7 @@
-import {Blockchain} from "./Blockchain";
-import {Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Message, Sender, storeTransaction, toNano} from "ton-core";
-import {randomAddress} from "@ton-community/test-utils";
-import {TonClient4} from "ton";
+import {Blockchain, BlockchainTransaction} from "./Blockchain";
+import {Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Dictionary, Message, Sender, storeTransaction, toNano} from "@ton/core";
+import {compareTransaction, flattenTransaction, randomAddress} from "@ton/test-utils";
+import {TonClient4} from "@ton/ton";
 import {RemoteBlockchainStorage, wrapTonClient4ForRemote} from "./BlockchainStorage";
 import {prettyLogTransactions} from "../utils/prettyLogTransaction";
 import {printTransactionFees} from "../utils/printTransactionFees";
@@ -19,7 +19,7 @@ describe('Blockchain', () => {
         })
 
         let blockchain = await Blockchain.create({
-            storage: new RemoteBlockchainStorage(wrapTonClient4ForRemote(client))
+            storage: new RemoteBlockchainStorage(wrapTonClient4ForRemote(client), 34892000)
         })
 
         let buyer = randomAddress()
@@ -163,7 +163,7 @@ describe('Blockchain', () => {
         expect(tx1.transactions).toHaveTransaction({
             from: address,
             op: 0xfffffffe,
-            body: (x: Cell) => x.beginParse().skip(32).loadUint(32) === 1,
+            body: (x?: Cell) => x?.beginParse().skip(32).loadUint(32) === 1,
         })
 
         const res2 = await blockchain.runGetMethod(address, 'get_now', [], {
@@ -183,7 +183,7 @@ describe('Blockchain', () => {
         expect(tx2.transactions).toHaveTransaction({
             from: address,
             op: 0xfffffffe,
-            body: (x: Cell) => x.beginParse().skip(32).loadUint(32) === 2,
+            body: (x?: Cell) => x?.beginParse().skip(32).loadUint(32) === 2,
         })
 
         class NowTest implements Contract {
@@ -212,8 +212,90 @@ describe('Blockchain', () => {
         expect(txc.transactions).toHaveTransaction({
             from: address,
             op: 0xfffffffe,
-            body: (x: Cell) => x.beginParse().skip(32).loadUint(32) === 3,
+            body: (x?: Cell) => x?.beginParse().skip(32).loadUint(32) === 3,
         })
+
+        // Current time in receiveMessage should match blockchain.now
+        const nowSmc = await blockchain.getContract(contract.address)
+
+        let smcRes = nowSmc.receiveMessage(internal({
+            from: sender.address,
+            to: nowSmc.address,
+            body: beginCell().storeUint(0, 32).storeAddress(sender.address).endCell(),
+            value: toNano('1')
+        }))
+
+        expect(smcRes.now).toBe(3)
+        expect(smcRes.outMessagesCount).toBe(1)
+
+        let respMsg = smcRes.outMessages.get(0)!
+        if (respMsg.info.type !== 'internal') throw new Error('Internal message expected')
+        expect(respMsg.body.beginParse().skip(32).preloadUint(32)).toEqual(3)
+
+        // Make sure now is still overridable in receiveMessage call
+
+        smcRes = nowSmc.receiveMessage(internal({
+            from: sender.address,
+            to: nowSmc.address,
+            body: beginCell().storeUint(0, 32).storeAddress(sender.address).endCell(),
+            value: toNano('1')
+        }), {now: 4})
+
+        expect(smcRes.now).toBe(4)
+        expect(smcRes.outMessagesCount).toBe(1)
+
+        respMsg = smcRes.outMessages.get(0)!
+        if (respMsg.info.type !== 'internal') throw new Error('Internal message expected')
+        expect(respMsg.body.beginParse().skip(32).preloadUint(32)).toEqual(4)
+    })
+
+    it('execution result in step by step mode should match one in regular mode', async() => {
+        // Bounces are the most common case where step by step execution makes sense, so let's do the same test in step by step.
+
+        const blockchain = await Blockchain.create()
+
+        const address = randomAddress()
+
+        await blockchain.setShardAccount(address, createShardAccount({
+            address,
+            code: Cell.fromBase64('te6ccgEBAgEAGAABFP8A9KQT9LzyyAsBABLTXwSCAN6t8vA='),
+            data: new Cell(),
+            balance: toNano('1'),
+        }))
+
+        const body = beginCell()
+            .storeUint(0xdeadbeef, 32)
+            .endCell()
+
+        // Make sure time is not ticking
+        blockchain.now = 42
+
+        const prevState = blockchain.snapshot()
+
+        const testMsg = internal({
+            from: new Address(0, Buffer.alloc(32)),
+            to: address,
+            value: toNano('1'),
+            bounce: true,
+            body,
+        })
+        const res  = await blockchain.sendMessage(testMsg)
+        // Rolling back
+        await blockchain.loadFrom(prevState)
+        // Get iterable insead of iterator
+        const iter = await blockchain.sendMessageIter(testMsg)
+
+        const stepByStepResults : BlockchainTransaction[] = []
+
+        for await (const tx of iter) {
+            stepByStepResults.push(tx)
+        }
+        // Length should match
+        expect(stepByStepResults.length).toEqual(res.transactions.length)
+        // Transactions order and content should match
+        for(let i = 0; i < res.transactions.length; i++) {
+            expect(compareTransaction(flattenTransaction(res.transactions[i]), flattenTransaction(stepByStepResults[i]))).toBe(true)
+        }
     })
 
     it('should correctly return treasury balance', async () => {
@@ -524,7 +606,7 @@ describe('Blockchain', () => {
         if (res.description.type !== 'tick-tock')
             throw new Error('Tick tock transaction expected')
         expect(res.description.isTock).toBe(false)
-    });
+    })
 
     it('should chain tick tock transaction output', async () => {
         class TestWrapper implements Contract {
@@ -572,7 +654,7 @@ describe('Blockchain', () => {
 
     it('should handle new op codes', async () => {
         const blockchain = await Blockchain.create()
-        const code = Cell.fromBase64('te6cckEBBAEAHgABFP8A9KQT9LzyyAsBAgFiAgMABtBfBAAJoHql8FWVsVyo')
+        const code = Cell.fromBase64('te6ccgEBBAEAHgABFP8A9KQT9LzyyAsBAgFiAgMABtBfBAAJofGdrss=')
         const addr = randomAddress()
         await blockchain.setShardAccount(addr, createShardAccount({
             address: addr,
@@ -581,7 +663,10 @@ describe('Blockchain', () => {
             balance: 0n,
         }))
 
-        const res = await blockchain.runGetMethod(addr, 'get_code')
-        expect(code).toEqualCell(res.stackReader.readCell())
+        const res = await blockchain.runGetMethod(addr, 'get_depth', [{type: 'cell', cell: new Cell()}])
+        expect(res.stackReader.readNumber()).toEqual(0)
+
+        const res2 = await blockchain.runGetMethod(addr, 'get_depth', [{type: 'cell', cell: beginCell().storeRef(new Cell()).endCell()}])
+        expect(res2.stackReader.readNumber()).toEqual(1)
     })
 })

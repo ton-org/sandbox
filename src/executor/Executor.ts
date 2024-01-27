@@ -1,4 +1,4 @@
-import {Address, Cell, serializeTuple, TupleItem} from "ton-core";
+import {Address, Cell, serializeTuple, TupleItem} from "@ton/core";
 import {base64Decode} from "../utils/base64";
 const EmulatorModule = require('./emulator-emscripten.js');
 

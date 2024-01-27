@@ -1,4 +1,4 @@
-import { Transaction } from "ton-core";
+import { Transaction } from "@ton/core";
 
 const decimalCount = 9;
 const decimal = pow10(decimalCount);

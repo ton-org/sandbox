@@ -1,4 +1,4 @@
-import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Sender, toNano } from "ton-core";
+import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Sender, toNano } from "@ton/core";
 import { NftItem } from "./NftItem";
 
 export type NftCollectionData = {

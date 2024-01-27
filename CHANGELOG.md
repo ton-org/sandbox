@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] - 2023-12-24
+
+### Changed
+
+- Changed the default and slim configs to use the latest config at the time of release, which enables new TVM opcodes
+
+## [0.14.0] - 2023-12-04
+
+### Changed
+
+- Updated emulator WASM binary
+
+## [0.13.1] - 2023-10-10
+
+### Fixed
+
+- Fixed a bug in `Blockchain` that led to storage fetch errors (for example, network errors in `RemoteBlockchainStorage`) being cached and breaking that contract address forever
+
+## [0.13.0] - 2023-10-05
+
+### Changed
+
+- On transaction emulation error, an `EmulationError` is now thrown that has an `error` string, `vmLogs`, and `exitCode` (the latter two being optional). The error is no longer being dumped into console
+
+## [0.12.0] - 2023-10-03
+
+### Added
+
+- Step by step execution (`blockchain.sendMessageIter`)
+- Better docs
+
+### Fixed
+
+- `now` from `Blockchain` is now honored in `SmartContract.receiveMessage`
+- Exit code 1 is now counted as success in get methods
+
+## [0.11.1] - 2023-07-26
+
+### Changed
+
+- Migrated dependencies to @ton organization packages
+- Bumped @ton/test-utils version to 0.3.1
+
 ## [0.11.0] - 2023-05-11
 
 ### Added
