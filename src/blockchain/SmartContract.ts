@@ -253,27 +253,27 @@ export class SmartContract {
         }
     }
 
-    receiveMessage(message: Message, params?: MessageParams) {
+    async receiveMessage(message: Message, params?: MessageParams) {
         // Sync now with blockchain instance if not specified in parameters
         params = {
             now: this.blockchain.now,
             ...params,
         }
-        return this.runCommon(() => this.blockchain.executor.runTransaction({
+        return await this.runCommon(() => this.blockchain.executor.runTransaction({
             ...this.createCommonArgs(params),
             message: beginCell().store(storeMessage(message)).endCell(),
         }))
     }
 
-    runTickTock(which: TickOrTock, params?: MessageParams) {
-        return this.runCommon(() => this.blockchain.executor.runTickTock({
+    async runTickTock(which: TickOrTock, params?: MessageParams) {
+        return await this.runCommon(() => this.blockchain.executor.runTickTock({
             ...this.createCommonArgs(params),
             which,
         }))
     }
 
-    protected runCommon(run: () => EmulationResult): SmartContractTransaction {
-        const res = run()
+    protected async runCommon(run: () => Promise<EmulationResult>): Promise<SmartContractTransaction> {
+        const res = await run()
 
         if (this.verbosity.print && this.verbosity.blockchainLogs && res.logs.length > 0) {
             console.log(res.logs)
@@ -305,12 +305,12 @@ export class SmartContract {
         }
     }
 
-    get(method: string | number, stack: TupleItem[] = [], params?: GetMethodParams): GetMethodResult {
+    async get(method: string | number, stack: TupleItem[] = [], params?: GetMethodParams): Promise<GetMethodResult> {
         if (this.account.account?.storage.state.type !== 'active') {
             throw new Error('Trying to run get method on non-active contract')
         }
 
-        const res = this.blockchain.executor.runGetMethod({
+        const res = await this.blockchain.executor.runGetMethod({
             code: this.account.account?.storage.state.state.code!,
             data: this.account.account?.storage.state.state.data!,
             methodId: typeof method === 'string' ? getSelectorForMethod(method) : method,

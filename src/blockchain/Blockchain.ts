@@ -200,7 +200,7 @@ export class Blockchain {
     }
 
     async runGetMethod(address: Address, method: number | string, stack: TupleItem[] = [], params?: GetMethodParams) {
-        return (await this.getContract(address)).get(method, stack, {
+        return await (await this.getContract(address)).get(method, stack, {
             now: this.now,
             ...params,
         })
@@ -257,10 +257,10 @@ export class Blockchain {
                 }
 
                 this.currentLt += LT_ALIGN
-                tx = (await this.getContract(message.info.dest)).receiveMessage(message, params)
+                tx = await (await this.getContract(message.info.dest)).receiveMessage(message, params)
             } else {
                 this.currentLt += LT_ALIGN
-                tx = (await this.getContract(message.on)).runTickTock(message.which, params)
+                tx = await (await this.getContract(message.on)).runTickTock(message.which, params)
             }
 
             const transaction: BlockchainTransaction = {
