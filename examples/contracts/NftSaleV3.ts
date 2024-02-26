@@ -1,8 +1,8 @@
-import { Address, Cell, Contract, ContractProvider } from "@ton/core";
+import {Address, Contract, ContractProvider, StateInit} from "@ton/core";
 import { NftSaleConfig } from "./NftSale";
 
 export class NftSaleV3 implements Contract {
-    constructor(readonly address: Address, readonly init?: { code: Cell; data: Cell }) {}
+    constructor(readonly address: Address, readonly init?: StateInit) {}
 
     static createFromAddress(address: Address) {
         return new NftSaleV3(address);

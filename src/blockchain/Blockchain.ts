@@ -1,5 +1,20 @@
 import { defaultConfig } from "../config/defaultConfig";
-import {Address, Cell, Message, Transaction, ContractProvider, Contract, Sender, toNano, loadMessage, ShardAccount, TupleItem, ExternalAddress, StateInit} from "@ton/core";
+import {
+    Address,
+    Cell,
+    Message,
+    Transaction,
+    ContractProvider,
+    Contract,
+    Sender,
+    toNano,
+    loadMessage,
+    ShardAccount,
+    TupleItem,
+    ExternalAddress,
+    StateInit,
+    OpenedContract
+} from "@ton/core";
 import {Executor, TickOrTock} from "../executor/Executor";
 import {BlockchainStorage, LocalBlockchainStorage} from "./BlockchainStorage";
 import { extractEvents, Event } from "../event/Event";
@@ -329,12 +344,16 @@ export class Blockchain {
         })
     }
 
-    provider(address: Address, init?: { code: Cell, data: Cell }): ContractProvider {
+    provider(address: Address, init?: StateInit | null): ContractProvider {
         return new BlockchainContractProvider({
             getContract: (addr) => this.getContract(addr),
             pushMessage: (msg) => this.pushMessage(msg),
             runGetMethod: (addr, method, args) => this.runGetMethod(addr, method, args),
             pushTickTock: (on, which) => this.pushTickTock(on, which),
+            // openContract<T extends Contract>(contract: T): OpenedContract<T> {
+            //     return this.openContract(contract);
+            // }
+            openContract: <T extends Contract>(contract: T) => this.openContract(contract) as OpenedContract<T>,
         }, address, init)
     }
 
@@ -379,7 +398,7 @@ export class Blockchain {
 
     openContract<T extends Contract>(contract: T) {
         let address: Address;
-        let init: { code: Cell, data: Cell } | undefined = undefined;
+        let init: StateInit | undefined = undefined;
 
         if (!Address.isAddress(contract.address)) {
             throw Error('Invalid address');
