@@ -5,6 +5,7 @@ export {
 
 export {
     Blockchain,
+    toSandboxContract,
     SendMessageResult,
     BlockchainTransaction,
     PendingMessage,

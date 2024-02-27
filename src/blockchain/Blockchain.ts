@@ -67,6 +67,8 @@ export type SendMessageResult = {
 
 type ExtendsContractProvider<T> = T extends ContractProvider ? true : (T extends SandboxContractProvider ? true : false);
 
+export const SANDBOX_CONTRACT_SYMBOL = Symbol('SandboxContract')
+
 export type SandboxContract<F> = {
     [P in keyof F]: P extends `get${string}`
         ? (F[P] extends (x: infer CP, ...args: infer P) => infer R ? (ExtendsContractProvider<CP> extends true ? (...args: P) => R : never) : never)
@@ -75,6 +77,14 @@ export type SandboxContract<F> = {
                 result: R extends Promise<infer PR> ? PR : R
             }> : never) : never)
             : F[P]);
+}
+
+export function toSandboxContract<T>(contract: OpenedContract<T>): SandboxContract<T> {
+    if ((contract as any)[SANDBOX_CONTRACT_SYMBOL] === true) {
+        return contract as any
+    }
+
+    throw new Error('Invalid contract: not a sandbox contract')
 }
 
 export type PendingMessage = (({
@@ -350,9 +360,6 @@ export class Blockchain {
             pushMessage: (msg) => this.pushMessage(msg),
             runGetMethod: (addr, method, args) => this.runGetMethod(addr, method, args),
             pushTickTock: (on, which) => this.pushTickTock(on, which),
-            // openContract<T extends Contract>(contract: T): OpenedContract<T> {
-            //     return this.openContract(contract);
-            // }
             openContract: <T extends Contract>(contract: T) => this.openContract(contract) as OpenedContract<T>,
         }, address, init)
     }
@@ -419,6 +426,10 @@ export class Blockchain {
 
         return new Proxy<any>(contract as any, {
             get(target, prop) {
+                if (prop === SANDBOX_CONTRACT_SYMBOL) {
+                    return true
+                }
+
                 const value = target[prop]
                 if (typeof prop === 'string' && typeof value === 'function') {
                     if (prop.startsWith('get')) {
