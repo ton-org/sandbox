@@ -8,11 +8,11 @@ describe('Executor', () => {
         executor = await Executor.create()
     })
 
-    it('should run get method', () => {
+    it('should run get method', async () => {
         let code = Cell.fromBoc(Buffer.from('te6ccsEBAgEAEQANEQEU/wD0pBP0vPLICwEABNOgu3u26g==', 'base64'))[0];
         let data = beginCell().endCell()
 
-        let res = executor.runGetMethod({
+        let res = await executor.runGetMethod({
             verbosity: 'full_location',
             code,
             data,
@@ -30,7 +30,7 @@ describe('Executor', () => {
     })
 
     it('should run transaction', async () => {
-        let res = executor.runTransaction({
+        let res = await executor.runTransaction({
             config: defaultConfig,
             libs: null,
             verbosity: 'full_location',
