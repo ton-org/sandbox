@@ -17,10 +17,6 @@ export {
 } from './blockchain/Blockchain';
 
 export {
-    BlockchainApi
-} from './blockchain/BlockchainApi';
-
-export {
     BlockchainContractProvider,
     SandboxContractProvider,
 } from './blockchain/BlockchainContractProvider';
