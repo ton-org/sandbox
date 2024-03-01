@@ -52,17 +52,17 @@ export interface SandboxContractProvider extends ContractProvider {
 
 export class BlockchainContractProvider implements SandboxContractProvider {
     constructor(
-      private readonly blockchain: {
-          getContract(address: Address): Promise<SmartContract>
-          pushMessage(message: Message): Promise<void>
-          runGetMethod(address: Address, method: string, args: TupleItem[]): Promise<GetMethodResult>
-          pushTickTock(on: Address, which: TickOrTock): Promise<void>,
-          openContract<T extends Contract>(contract: T): OpenedContract<T>
-      },
-      private readonly address: Address,
-      private readonly init?: StateInit | null,
-    ) {
-    }
+        private readonly blockchain: {
+            getContract(address: Address): Promise<SmartContract>
+            pushMessage(message: Message): Promise<void>
+            runGetMethod(address: Address, method: string, args: TupleItem[]): Promise<GetMethodResult>
+            pushTickTock(on: Address, which: TickOrTock): Promise<void>,
+            openContract<T extends Contract>(contract: T): OpenedContract<T>
+        },
+        private readonly address: Address,
+        private readonly init?: StateInit | null,
+    ) {}
+
     open<T extends Contract>(contract: T): OpenedContract<T> {
         return this.blockchain.openContract(contract);
     }
