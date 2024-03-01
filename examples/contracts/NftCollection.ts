@@ -1,4 +1,14 @@
-import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Sender, toNano } from "@ton/core";
+import {
+    Address,
+    beginCell,
+    Cell,
+    Contract,
+    contractAddress,
+    ContractProvider,
+    Sender,
+    StateInit,
+    toNano
+} from "@ton/core";
 import { NftItem } from "./NftItem";
 
 export type NftCollectionData = {
@@ -30,7 +40,7 @@ export class NftCollection implements Contract {
 
     nextItemIndex: number = 0;
 
-    constructor(readonly address: Address, readonly init?: { code: Cell; data: Cell }) {}
+    constructor(readonly address: Address, readonly init?: StateInit) {}
 
     static createFromAddress(address: Address) {
         return new NftCollection(address);

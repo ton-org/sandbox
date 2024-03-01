@@ -5,6 +5,7 @@ export {
 
 export {
     Blockchain,
+    toSandboxContract,
     SendMessageResult,
     BlockchainTransaction,
     PendingMessage,
@@ -14,6 +15,10 @@ export {
     BlockchainConfig,
     BlockchainSnapshot,
 } from './blockchain/Blockchain';
+
+export {
+    BlockchainApi
+} from './blockchain/BlockchainApi';
 
 export {
     BlockchainContractProvider,

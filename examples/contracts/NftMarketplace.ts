@@ -1,4 +1,15 @@
-import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Sender, storeStateInit, toNano } from "@ton/core";
+import {
+    Address,
+    beginCell,
+    Cell,
+    Contract,
+    contractAddress,
+    ContractProvider,
+    Sender,
+    StateInit,
+    storeStateInit,
+    toNano
+} from "@ton/core";
 
 export type NftMarketplaceConfig = {
     owner: Address
@@ -13,7 +24,7 @@ function nftMarketplaceConfigToCell(config: NftMarketplaceConfig): Cell {
 export class NftMarketplace implements Contract {
     static readonly code = Cell.fromBase64('te6ccgEBBAEAagABFP8A9KQT9LzyyAsBAgEgAgMApNIyIccAkVvg0NMDAXGwkVvg+kAw7UTQ+kAwxwXy4ZHTHwHAAY4p+gDU1DAh+QBwyMoHy//J0Hd0gBjIywXLAljPFlAE+gITy2vMzMlx+wCRMOIABPIw')
 
-    constructor(readonly address: Address, readonly init?: { code: Cell; data: Cell }) {}
+    constructor(readonly address: Address, readonly init?: StateInit) {}
 
     static createFromAddress(address: Address) {
         return new NftMarketplace(address);
@@ -26,7 +37,7 @@ export class NftMarketplace implements Contract {
     }
 
     async sendDeploy(provider: ContractProvider, via: Sender, params: {
-        init: { code: Cell, data: Cell }
+        init: StateInit
         body?: Cell
         value?: bigint
         deployValue?: bigint

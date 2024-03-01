@@ -1,11 +1,23 @@
-import { AccountState, Address, Cell, comment, ContractGetMethodResult, ContractProvider, ContractState, Message, Sender, SendMode, toNano, TupleItem } from "@ton/core";
-import { TickOrTock } from "../executor/Executor";
-import { GetMethodResult, SmartContract } from "./SmartContract";
+import {
+    AccountState, Address, Cell, comment, Contract,
+    ContractGetMethodResult,
+    ContractProvider,
+    ContractState,
+    Message, openContract,
+    OpenedContract,
+    Sender,
+    SendMode, StateInit,
+    toNano,
+    Transaction,
+    TupleItem
+} from "@ton/core";
+import {TickOrTock} from "../executor/Executor";
+import {GetMethodResult, SmartContract} from "./SmartContract";
 
 function bigintToBuffer(x: bigint, n = 32): Buffer {
     const b = Buffer.alloc(n)
     for (let i = 0; i < n; i++) {
-        b[n-i-1] = Number((x >> BigInt(i * 8)) & 0xffn)
+        b[n - i - 1] = Number((x >> BigInt(i * 8)) & 0xffn)
     }
     return b
 }
@@ -44,12 +56,16 @@ export class BlockchainContractProvider implements SandboxContractProvider {
             getContract(address: Address): Promise<SmartContract>
             pushMessage(message: Message): Promise<void>
             runGetMethod(address: Address, method: string, args: TupleItem[]): Promise<GetMethodResult>
-            pushTickTock(on: Address, which: TickOrTock): Promise<void>
+            pushTickTock(on: Address, which: TickOrTock): Promise<void>,
+            openContract<T extends Contract>(contract: T): OpenedContract<T>
         },
         private readonly address: Address,
-        private readonly init?: { code: Cell, data: Cell },
+        private readonly init?: StateInit | null,
     ) {}
 
+    open<T extends Contract>(contract: T): OpenedContract<T> {
+        return this.blockchain.openContract(contract);
+    }
     async getState(): Promise<ContractState> {
         const contract = await this.blockchain.getContract(this.address)
         return {
@@ -71,6 +87,9 @@ export class BlockchainContractProvider implements SandboxContractProvider {
         }
         delete (ret as any).stackReader
         return ret
+    }
+    getTransactions(address: Address, lt: bigint, hash: Buffer, limit?: number | undefined): Promise<Transaction[]> {
+        throw new Error("`getTransactions` is not implemented in `BlockchainContractProvider`, do not use it in the tests")
     }
     async external(message: Cell) {
         const init = ((await this.getState()).state.type !== 'active' && this.init) ? this.init : undefined
