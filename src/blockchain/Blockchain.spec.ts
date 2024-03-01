@@ -50,7 +50,7 @@ describe('Blockchain', () => {
         printTransactionFees(res.transactions)
 
         let nft = await blockchain.getContract(Address.parse('EQDTbyyOixs9JsO8bmHjk9WJYN8deL-qJeNZvWx147pM8qeO'))
-        let data = nft.get('get_nft_data')
+        let data = await nft.get('get_nft_data')
 
         let [, , , owner] = [data.stackReader.pop(), data.stackReader.pop(), data.stackReader.pop(), data.stackReader.readAddress()]
 
@@ -218,7 +218,7 @@ describe('Blockchain', () => {
         // Current time in receiveMessage should match blockchain.now
         const nowSmc = await blockchain.getContract(contract.address)
 
-        let smcRes = nowSmc.receiveMessage(internal({
+        let smcRes = await nowSmc.receiveMessage(internal({
             from: sender.address,
             to: nowSmc.address,
             body: beginCell().storeUint(0, 32).storeAddress(sender.address).endCell(),
@@ -234,7 +234,7 @@ describe('Blockchain', () => {
 
         // Make sure now is still overridable in receiveMessage call
 
-        smcRes = nowSmc.receiveMessage(internal({
+        smcRes = await nowSmc.receiveMessage(internal({
             from: sender.address,
             to: nowSmc.address,
             body: beginCell().storeUint(0, 32).storeAddress(sender.address).endCell(),
@@ -598,11 +598,11 @@ describe('Blockchain', () => {
         }))
 
         const smc = await blockchain.getContract(testAddr)
-        let res = smc.runTickTock('tock')
+        let res = await smc.runTickTock('tock')
         if (res.description.type !== 'tick-tock')
             throw new Error('Tick tock transaction expected')
         expect(res.description.isTock).toBe(true)
-        res = smc.runTickTock('tick')
+        res = await smc.runTickTock('tick')
         if (res.description.type !== 'tick-tock')
             throw new Error('Tick tock transaction expected')
         expect(res.description.isTock).toBe(false)
