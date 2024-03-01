@@ -1,4 +1,4 @@
-import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider } from "@ton/core";
+import {Address, beginCell, Cell, Contract, contractAddress, ContractProvider, StateInit} from "@ton/core";
 
 export type NftSaleConfig = {
     marketplace: Address
@@ -26,7 +26,7 @@ function nftSaleConfigToCell(config: NftSaleConfig): Cell {
 export class NftSale implements Contract {
     static readonly code = Cell.fromBase64('te6ccgECCgEAAbQAART/APSkE/S88sgLAQIBIAIDAgFIBAUABPIwAgLNBgcAL6A4WdqJofSB9IH0gfQBqGGh9AH0gfQAYQH30A6GmBgLjYSS+CcH0gGHaiaH0gfSB9IH0AahgRa6ThAVnHHZkbGymQ44LJL4NwKJFjgvlw+gFpj8EIAonGyIldeXD66Z+Y/SAYIBpkKALniygB54sA54sA/QFmZPaqcBNjgEybCBsimYI4eAJwA2mP6Z+YEOAAyS+FcBDAgB9dQQgdzWUAKShQKRhfeXDhAeh9AH0gfQAYOEAIZGWCqATniyi50JDQqFrQilAK/QEK5bVkuP2AOEAIZGWCrGeLKAP9AQtltWS4/YA4QAhkZYKoAueLAP0BCeW1ZLj9gDgQQQgv5h6KEMAMZGWCqALnixF9AQpltQnlj4pAkAyMACmjEQRxA2RUAS8ATgMjY3BMADjkeCEDuaygAVvvLhyVMSxwVZxwWx8uHKcCCCEF/MPRQhgBDIywVQBs8WIvoCFctqFMsfFMs/Ic8WAc8WygAh+gLKAMmBAKD7AOBfBoQP8vAAKss/Is8WWM8WygAh+gLKAMmBAKD7AA==')
 
-    constructor(readonly address: Address, readonly init?: { code: Cell; data: Cell }) {}
+    constructor(readonly address: Address, readonly init?: StateInit) {}
 
     static createFromAddress(address: Address) {
         return new NftSale(address);

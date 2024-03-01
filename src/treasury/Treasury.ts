@@ -1,4 +1,21 @@
-import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Dictionary, DictionaryValue, internal, loadMessageRelaxed, MessageRelaxed, Sender, SenderArguments, SendMode, storeMessageRelaxed } from "@ton/core";
+import {
+    Address,
+    beginCell,
+    Cell,
+    Contract,
+    contractAddress,
+    ContractProvider,
+    Dictionary,
+    DictionaryValue,
+    internal,
+    loadMessageRelaxed,
+    MessageRelaxed,
+    Sender,
+    SenderArguments,
+    SendMode,
+    StateInit,
+    storeMessageRelaxed
+} from "@ton/core";
 
 const DictionaryMessageValue: DictionaryValue<{ sendMode: SendMode, message: MessageRelaxed }> = {
     serialize(src, builder) {
@@ -34,7 +51,7 @@ export class TreasuryContract implements Contract {
     }
 
     readonly address: Address;
-    readonly init: { code: Cell, data: Cell };
+    readonly init: StateInit;
     readonly subwalletId: bigint;
 
     constructor(workchain: number, subwalletId: bigint) {
