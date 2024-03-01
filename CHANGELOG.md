@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2024-03-01
+
+This release contains a breaking change.
+
+### Added
+
+- Added `IExecutor` interface with the prospect of creating custom executor
+- Added `open` and `getTransactions` to sandbox's `ContractProvider`
+- Added `toSandboxContract` helper function to cast `OpenedContract<T>` to `SandboxContract<T>` when applicable
+
+### Changed
+
+- Changed the default executor to have `async` methods (it still has sync nature)
+- Improved get method return object
+
 ## [0.15.0] - 2023-12-24
 
 ### Changed
