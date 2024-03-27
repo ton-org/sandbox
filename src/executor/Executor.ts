@@ -273,7 +273,7 @@ export class Executor implements IExecutor {
 
     private runCommon(args: (string | number)[]): EmulationResult {
         this.debugLogs = []
-        const resp = JSON.parse(this.extractString(this.invoke('_emulate', args)))
+        const resp = JSON.parse(this.extractString(this.invoke('_emulate_with_emulator', args)))
         const debugLogs = this.debugLogs.join('\n')
 
         if (resp.fail) {

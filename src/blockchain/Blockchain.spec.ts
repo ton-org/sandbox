@@ -651,4 +651,22 @@ describe('Blockchain', () => {
         expect(res.transactions[1].description.type).toEqual('generic')
         expect(tt.description.isTock).toBe(true)
     })
+
+    it('should support TVM v6 opcodes', async () => {
+        const blockchain = await Blockchain.create()
+        const addr = randomAddress()
+        await blockchain.setShardAccount(addr, createShardAccount({
+            address: addr,
+            code: Cell.fromBase64('te6ccgEBBAEAHAABFP8A9KQT9LzyyAsBAgFiAgMAAtAACaA41fBt'),
+            data: new Cell(),
+            balance: toNano('1'),
+        }))
+
+        const res = await blockchain.runGetMethod(addr, 'gasfee', [
+            { type: 'int', value: 1n },
+            { type: 'int', value: 0n },
+        ])
+
+        expect(res.stackReader.readBigNumber()).toEqual(100000n)
+    })
 })
