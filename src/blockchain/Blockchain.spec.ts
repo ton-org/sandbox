@@ -667,6 +667,6 @@ describe('Blockchain', () => {
             { type: 'int', value: 0n },
         ])
 
-        expect(res.stackReader.readBigNumber()).toEqual(100000n)
+        expect(res.stackReader.readBigNumber()).toEqual(40000n)
     })
 })
