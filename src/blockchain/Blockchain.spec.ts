@@ -669,4 +669,36 @@ describe('Blockchain', () => {
 
         expect(res.stackReader.readBigNumber()).toEqual(40000n)
     })
+
+    it('should bounce in action phase when send mode = 16', async () => {
+        const blockchain = await Blockchain.create()
+        const addr = randomAddress()
+        await blockchain.setShardAccount(addr, createShardAccount({
+            address: addr,
+            code: Cell.fromBase64('te6cckEBAgEAOwABFP8A9KQT9LzyyAsBAFjTbDEgxwCRMODTHzDAAY4bcIAYyMsF+CjPFoIjjX6kxoAA+gLLasmAEPsA3jGRSXg='),
+            data: new Cell(),
+            balance: toNano('1'),
+        }))
+
+        const from = randomAddress()
+        const res = await blockchain.sendMessage(internal({
+            from,
+            to: addr,
+            value: toNano('1'),
+            bounce: true,
+            body: beginCell().storeUint(1, 32).endCell(),
+        }))
+
+        expect(res.transactions).toHaveTransaction({
+            on: addr,
+            from,
+            exitCode: 0,
+        })
+
+        expect(res.transactions).toHaveTransaction({
+            from: addr,
+            on: from,
+            inMessageBounced: true,
+        })
+    })
 })
