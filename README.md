@@ -265,6 +265,22 @@ it('minter admin should be able to mint jettons', async () => {
 });
 ```
 
+### Testing key points
+
+In order to make sure that the contract will work as expected, you need to follow the following points in testing
+
+* Test positive flows to make sure your contracts work
+* Test negative flows to make sure that smart contracts behave correctly under abnormal conditions. Abnormal conditions includes:
+  * incorrect input
+  * action list overflow
+  * insufficient toncoin amount
+  * integer overflow
+  * owner assertions
+
+More information about testing key points can be found here: 
+* [Testing key point](docs/testing-key-points.md)
+
+
 ### Test Examples
 You can typically find various tests for Sandbox-based project contracts in the `./tests` directory. 
 Learn more from examples:
