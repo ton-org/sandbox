@@ -14,6 +14,7 @@ The key difference of this package from [ton-contract-executor](https://github.c
   * [Testing transaction fees](#testing-transaction-fees)
   * [Cross contract tests](#cross-contract-tests)
   * [Test examples](#test-examples)
+* [Sandbox pitfalls](#sandbox-pitfalls)
 * [Viewing logs](#viewing-logs)
 * [Setting smart contract state directly](#setting-smart-contract-state-directly)
 * [Using snapshots](#using-snapshots)
@@ -271,6 +272,36 @@ Learn more from examples:
 
 * [FunC Test Examples](https://docs.ton.org/develop/smart-contracts/examples#examples-of-tests-for-smart-contracts)
 * [Tact Test Examples](docs/tact-testing-examples.md) 
+
+
+## Sandbox pitfalls
+
+There are several pitfalls in the sandbox due to the limitations of emulation. Be aware of it while testing your smart contracts.
+
+* Libs cells not updating in contract by `SETLIBCODE`, `CHANGELIB`. They need to be updated manually.
+```typescript
+const blockchain = await Blockchain.create();
+const code = await compile('Contract');
+
+// consist of a hash of a lib cell and its representation
+const libsDict = Dictionary.empty(Dictionary.Keys.Buffer(32), Dictionary.Values.Cell());
+libsDict.set(code.hash(), code);
+
+// manualy set libs
+blockchain.libs = beginCell().storeDictDirect(libsDict).endCell();
+```
+* There is no blocks in emulation, so opcodes like `PREVBLOCKSINFO`, `PREVMCBLOCKS`, `PREVKEYBLOCK`  will return empty tuple.
+* To make `RAND` provide random result you should specify randomSeed. Currently, there is no way to use randomSeed in open contracts.
+```typescript
+const res = await blockchain.runGetMethod(example.address,
+        'get_method',
+        [],
+        { randomSeed: randomBytes(32) }
+);
+const stack = new TupleReader(res.stack);
+// read data from stack ...
+```
+* Because there is no blocks concepts like sharding not working in sandbox environment.
 
 ## Viewing logs
 
