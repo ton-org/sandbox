@@ -1,5 +1,9 @@
 import {Transaction, fromNano} from "@ton/core";
 
+/**
+ * @param tx Transaction to create log string
+ * @returns Transaction log string
+ */
 export function prettyLogTransaction(tx: Transaction) {
     let res = `${tx.inMessage?.info.src!}  ➡️  ${tx.inMessage?.info.dest}\n`
 
@@ -14,6 +18,15 @@ export function prettyLogTransaction(tx: Transaction) {
     return res
 }
 
+/**
+ * Log transaction using `console.log`. Logs base on result of {@link prettyLogTransaction}.
+ * Example output:
+ * ```
+ * null  ➡️  EQBGhqLAZseEqRXz4ByFPTGV7SVMlI4hrbs-Sps_Xzx01x8G
+ *       ➡️  0.05 💎 EQC2VluVfpj2FoHNMAiDMpcMzwvjLZxxTG8ecq477RE3NvVt
+ * ```
+ * @param txs Transactions to log
+ */
 export function prettyLogTransactions(txs: Transaction[]) {
     let out = ''
 

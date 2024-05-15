@@ -59,6 +59,12 @@ export type BlockchainTransaction = Transaction & {
     externals: ExternalOut[],
 }
 
+/**
+ * @type SendMessageResult Represents the result of sending a message.
+ * @property {BlockchainTransaction[]} transactions Array of blockchain transactions.
+ * @property {Event[]} events Array of blockchain events.
+ * @property {ExternalOut[]} externals - Array of external messages.
+ */
 export type SendMessageResult = {
     transactions: BlockchainTransaction[],
     events: Event[],
@@ -69,6 +75,10 @@ type ExtendsContractProvider<T> = T extends ContractProvider ? true : (T extends
 
 export const SANDBOX_CONTRACT_SYMBOL = Symbol('SandboxContract')
 
+/**
+ * @type SandboxContract Represents a sandbox contract.
+ * @template F Type parameter representing the original contract object.
+ */
 export type SandboxContract<F> = {
     [P in keyof F]: P extends `get${string}`
         ? (F[P] extends (x: infer CP, ...args: infer P) => infer R ? (ExtendsContractProvider<CP> extends true ? (...args: P) => R : never) : never)
@@ -79,6 +89,11 @@ export type SandboxContract<F> = {
             : F[P]);
 }
 
+/**
+ * Provide way to check if contract is in sandbox environment.
+ * @param contract Any open contract
+ * @throws Error if contract not a sandbox contract
+ */
 export function toSandboxContract<T>(contract: OpenedContract<T>): SandboxContract<T> {
     if ((contract as any)[SANDBOX_CONTRACT_SYMBOL] === true) {
         return contract as any
@@ -97,6 +112,13 @@ export type PendingMessage = (({
     parentTransaction?: BlockchainTransaction,
 }
 
+/**
+ * @type TreasuryParams Parameters for configuring a treasury contract.
+ * @property {number} workchain The workchain ID of the treasury.
+ * @property {boolean} predeploy If set the treasury will be deployed on the moment of creation.
+ * @property {bigint} balance Initial balance of the treasury. If omitted {@link TREASURY_INIT_BALANCE_TONS} is used.
+ * @property {boolean} resetBalanceIfZero If set and treasury balance is zero on moment of calling method it reset balance to {@link balance}.
+ */
 export type TreasuryParams = Partial<{
     workchain: number,
     predeploy: boolean,
@@ -148,6 +170,14 @@ export class Blockchain {
 
     readonly executor: Executor
 
+    /**
+     * Saves snapshot of current blockchain.
+     * ```ts
+     * const snapshot = blockchain.snapshot();
+     * // some operations
+     * blockchain.loadFrom(snapshot); // restores blockchain state
+     * ```
+     */
     snapshot(): BlockchainSnapshot {
         return {
             contracts: this.storage.knownContracts().map(s => s.snapshot()),
@@ -160,6 +190,12 @@ export class Blockchain {
         }
     }
 
+    /**
+     * Restores blockchain state from snapshot.
+     * Usage provided in {@link snapshot}.
+     *
+     * @param snapshot Snapshot of blockchain
+     */
     async loadFrom(snapshot: BlockchainSnapshot) {
         this.storage.clearKnownContracts()
         for (const contract of snapshot.contracts) {
@@ -175,14 +211,24 @@ export class Blockchain {
         this.nextCreateWalletIndex = snapshot.nextCreateWalletIndex
     }
 
+    /**
+     * @returns Current time in blockchain
+     */
     get now() {
         return this.currentTime
     }
 
+    /**
+     * Updates Current time in blockchain.
+     * @param now UNIX time to set
+     */
     set now(now: number | undefined) {
         this.currentTime = now
     }
 
+    /**
+     * @returns Current logical time in blockchain
+     */
     get lt() {
         return this.currentLt
     }
@@ -193,19 +239,59 @@ export class Blockchain {
         this.storage = opts.storage
     }
 
+    /**
+     * @returns Config used in blockchain.
+     */
     get config(): Cell {
         return Cell.fromBase64(this.networkConfig)
     }
 
+    /**
+     * @returns Config used in blockchain in base64 format.
+     */
     get configBase64(): string {
         return this.networkConfig
     }
 
+
+    /**
+     * Pushes message to message queue and executes it. Every transaction simply increases lt by {@link LT_ALIGN}.
+     * ```ts
+     * const result = await blockchain.sendMessage(internal({
+     *      from: sender.address,
+     *      to: address,
+     *      value: toNano('1'),
+     *      body: beginCell().storeUint(0, 32).endCell(),
+     * }));
+     * ```
+     *
+     * @param message Message to sent
+     * @param params Optional params
+     * @returns Result of queue processing
+     */
     async sendMessage(message: Message | Cell, params?: MessageParams): Promise<SendMessageResult> {
         await this.pushMessage(message)
         return await this.runQueue(params)
     }
 
+    /**
+     * Pushes message to message queue and executes it step by step.
+     * ```ts
+     * const message = internal({
+     *     from: sender.address,
+     *     to: address,
+     *     value: toNano('1'),
+     *     body: beginCell().storeUint(0, 32).endCell(),
+     * }, { randomSeed: crypto.randomBytes(32) });
+     * for await (const tx of await blockchain.sendMessageIter(message)) {
+     *     // process transaction
+     * }
+     * ```
+     *
+     * @param message Message to sent
+     * @param params Optional params
+     * @returns Async iterable of {@link BlockchainTransaction}
+     */
     async sendMessageIter(message: Message | Cell, params?: MessageParams): Promise<AsyncIterator<BlockchainTransaction> & AsyncIterable<BlockchainTransaction>> {
         params = {
             now: this.now,
@@ -217,6 +303,17 @@ export class Blockchain {
         return await this.txIter(true, params)
     }
 
+    /**
+     * Runs tick or tock transaction.
+     * ```ts
+     * let res = await blockchain.runTickTock(address, 'tock');
+     * ```
+     *
+     * @param on Address or addresses to run tick-tock
+     * @param which Type of transaction (tick or tock)
+     * @param [params] Params to run tick tock transaction
+     * @returns Result of tick-tock transaction
+     */
     async runTickTock(on: Address | Address[], which: TickOrTock, params?: MessageParams): Promise<SendMessageResult> {
         for (const addr of (Array.isArray(on) ? on : [on])) {
             await this.pushTickTock(addr, which)
@@ -224,6 +321,21 @@ export class Blockchain {
         return await this.runQueue(params)
     }
 
+    /**
+     * Runs get method on contract.
+     * ```ts
+     * const { stackReader } = await blockchain.runGetMethod(address, 'get_now', [], {
+     *     now: 2,
+     * });
+     * const now = res.stackReader.readNumber();
+     * ```
+     *
+     * @param address Address or addresses to run get method
+     * @param method MethodId or method name to run
+     * @param stack Method params
+     * @param [params] Params to run get method
+     * @returns Result of get method
+     */
     async runGetMethod(address: Address, method: number | string, stack: TupleItem[] = [], params?: GetMethodParams) {
         return await (await this.getContract(address)).get(method, stack, {
             now: this.now,
@@ -354,6 +466,16 @@ export class Blockchain {
         })
     }
 
+    /**
+     * Creates new provider for contract address.
+     * ```ts
+     * const provider = this.provider(address, init);
+     * const txs = await provider.getTransactions(...);
+     * ```
+     *
+     * @param address Address to create provider
+     * @param init Initial state of contract
+     */
     provider(address: Address, init?: StateInit | null): ContractProvider {
         return new BlockchainContractProvider({
             getContract: (addr) => this.getContract(addr),
@@ -364,6 +486,15 @@ export class Blockchain {
         }, address, init)
     }
 
+    /**
+     * Creates sender for address.
+     * ```ts
+     * const sender = this.sender(address);
+     * await contract.send(sender, ...);
+     * ```
+     *
+     * @param address Address to create sender
+     */
     sender(address: Address): Sender {
         return new BlockchainSender({
             pushMessage: (msg) => this.pushMessage(msg),
@@ -374,6 +505,16 @@ export class Blockchain {
         return `${workchain}:${seed}`
     }
 
+    /**
+     * Creates treasury wallet contract. This wallet is used as alternative to wallet-v4 smart contract.
+     * ```ts
+     * const sender = this.sender(address);
+     * await contract.send(sender, ...);
+     * ```
+     *
+     * @param {string} seed Initial seed for treasury. If the same seed is used to create a treasury, then these treasuries will be identical
+     * @param [params] Params for treasury creation. See {@link TreasuryParams} for more information.
+     */
     async treasury(seed: string, params?: TreasuryParams) {
         const subwalletId = testSubwalletId(seed)
         const wallet = this.openContract(TreasuryContract.create(params?.workchain ?? 0, subwalletId))
@@ -394,6 +535,15 @@ export class Blockchain {
         return wallet
     }
 
+    /**
+     * Bulk variant of {@link treasury}.
+     * ```ts
+     * const [wallet1, wallet2, wallet3] = await blockchain.createWallets(3);
+     * ```
+     * @param n Number of wallets to create
+     * @param params Params for treasury creation. See {@link TreasuryParams} for more information.
+     * @returns Array of opened treasury contracts
+     */
     async createWallets(n: number, params?: TreasuryParams) {
         const wallets: SandboxContract<TreasuryContract>[] = []
         for (let i = 0; i < n; i++) {
@@ -403,6 +553,14 @@ export class Blockchain {
         return wallets
     }
 
+    /**
+     * Opens contract. Returns proxy that substitutes the blockchain Provider in methods starting with get and set.
+     * ```ts
+     * const contract = blockchain.openContract(new Contract(address));
+     * ```
+     *
+     * @param contract Contract to open.
+     */
     openContract<T extends Contract>(contract: T) {
         let address: Address;
         let init: StateInit | undefined = undefined;
@@ -468,6 +626,11 @@ export class Blockchain {
         return promise
     }
 
+
+    /**
+     * Retrieves contract from {@link BlockchainStorage}.
+     * @param address Address of contract to get
+     */
     async getContract(address: Address) {
         try {
             const contract = await this.startFetchingContract(address)
@@ -479,10 +642,17 @@ export class Blockchain {
         }
     }
 
+    /**
+     * @returns {LogsVerbosity} level
+     */
     get verbosity() {
         return this.logsVerbosity
     }
 
+    /**
+     * Updates logs verbosity level.
+     * @param {LogsVerbosity} value
+     */
     set verbosity(value: LogsVerbosity) {
         this.logsVerbosity = value
     }
@@ -501,14 +671,51 @@ export class Blockchain {
         contract.account = account
     }
 
+
+    /**
+     * Retrieves global libs cell
+     */
     get libs() {
         return this.globalLibs
     }
 
+    /**
+     * Update global blockchain libs.
+     * ```ts
+     * const code = await compile('Contract');
+     *
+     * const libsDict = Dictionary.empty(Dictionary.Keys.Buffer(32), Dictionary.Values.Cell());
+     * libsDict.set(code.hash(), code);
+     *
+     * blockchain.libs = beginCell().storeDictDirect(libsDict).endCell();
+     * ```
+     *
+     * @param value Config used in blockchain. If omitted {@link defaultConfig} used.
+     */
     set libs(value: Cell | undefined) {
         this.globalLibs = value
     }
 
+    /**
+     * Creates instance of sandbox blockchain.
+     * ```ts
+     * const blockchain = await Blockchain.create({ config: 'slim' });
+     * ```
+     *
+     * Remote storage example:
+     * ```ts
+     * let client = new TonClient4({
+     *     endpoint: 'https://mainnet-v4.tonhubapi.com'
+     * })
+     *
+     * let blockchain = await Blockchain.create({
+     *     storage: new RemoteBlockchainStorage(wrapTonClient4ForRemote(client), 34892000)
+     * });
+     * ```
+     *
+     * @param [opts.config] Config used in blockchain. If omitted {@link defaultConfig} used.
+     * @param [opts.storage] Contracts storage used for blockchain. If omitted {@link LocalBlockchainStorage} used.
+     */
     static async create(opts?: { config?: BlockchainConfig, storage?: BlockchainStorage }) {
         return new Blockchain({
             executor: await Executor.create(),

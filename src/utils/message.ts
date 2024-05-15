@@ -1,5 +1,8 @@
 import { Address, Cell, Message, StateInit } from "@ton/core";
 
+/**
+ * Creates {@link Message} from params.
+ */
 export function internal(params: {
     from: Address
     to: Address

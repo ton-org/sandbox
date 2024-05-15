@@ -1,5 +1,9 @@
 import { Address, Cell, Message, Sender, SenderArguments } from "@ton/core";
 
+
+/**
+ * Sender for sandbox blockchain. For additional information see {@link Blockchain.sender}
+ */
 export class BlockchainSender implements Sender {
     constructor(
         private readonly blockchain: {
