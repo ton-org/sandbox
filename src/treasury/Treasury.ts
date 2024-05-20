@@ -43,6 +43,9 @@ function senderArgsToMessageRelaxed(args: SenderArguments): MessageRelaxed {
     })
 }
 
+/**
+ * @class TreasuryContract is Wallet v4 alternative. For additional information see {@link Blockchain.treasury}
+ */
 export class TreasuryContract implements Contract {
     static readonly code = Cell.fromBase64('te6cckEBBAEARQABFP8A9KQT9LzyyAsBAgEgAwIAWvLT/+1E0NP/0RK68qL0BNH4AH+OFiGAEPR4b6UgmALTB9QwAfsAkTLiAbPmWwAE0jD+omUe')
 
@@ -63,6 +66,11 @@ export class TreasuryContract implements Contract {
         this.subwalletId = subwalletId;
     }
 
+    /**
+     * Send bulk messages using one external message.
+     * @param messages Messages to send
+     * @param sendMode Send mode of every message
+     */
     async sendMessages(provider: ContractProvider, messages: MessageRelaxed[], sendMode?: SendMode) {
         let transfer = this.createTransfer({
             sendMode: sendMode,
@@ -71,10 +79,16 @@ export class TreasuryContract implements Contract {
         await provider.external(transfer)
     }
 
+    /**
+     * Sends message by arguments specified.
+     */
     async send(provider: ContractProvider, args: SenderArguments) {
         await this.sendMessages(provider, [senderArgsToMessageRelaxed(args)], args.sendMode ?? undefined)
     }
 
+    /**
+     * @returns Sender
+     */
     getSender(provider: ContractProvider): Treasury {
         return {
             address: this.address,
@@ -88,10 +102,16 @@ export class TreasuryContract implements Contract {
         };
     }
 
+    /**
+     * @returns wallet balance in nanoTONs
+     */
     async getBalance(provider: ContractProvider): Promise<bigint> {
         return (await provider.getState()).balance
     }
 
+    /**
+     * Creates transfer cell for {@link sendMessages}.
+     */
     createTransfer(args: {
         messages: MessageRelaxed[]
         sendMode?: SendMode,
