@@ -291,7 +291,7 @@ libsDict.set(code.hash(), code);
 blockchain.libs = beginCell().storeDictDirect(libsDict).endCell();
 ```
 * There is no blocks in emulation, so opcodes like `PREVBLOCKSINFO`, `PREVMCBLOCKS`, `PREVKEYBLOCK`  will return empty tuple.
-* To make `RAND` provide random result you should specify randomSeed. Currently, there is no way to use randomSeed in open contracts.
+* The randomness in the TON is always deterministic and the same randomSeed always gives the same random number. If necessary, you can change the randomSeed to make `RAND` provide result based on provided seed. Currently, there is no way to provide randomSeed in open contracts.
 ```typescript
 const res = await blockchain.runGetMethod(example.address,
         'get_method',
@@ -301,7 +301,7 @@ const res = await blockchain.runGetMethod(example.address,
 const stack = new TupleReader(res.stack);
 // read data from stack ...
 ```
-* Because there is no blocks concepts like sharding not working in sandbox environment.
+* Because there is no concept of blocks in Sandbox, things like sharding do not work.
 
 ## Viewing logs
 
