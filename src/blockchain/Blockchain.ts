@@ -116,7 +116,7 @@ export type PendingMessage = (({
  * @type TreasuryParams Parameters for configuring a treasury contract.
  * @property {number} workchain The workchain ID of the treasury.
  * @property {boolean} predeploy If set the treasury will be deployed on the moment of creation.
- * @property {bigint} balance Initial balance of the treasury. If omitted {@link TREASURY_INIT_BALANCE_TONS} is used.
+ * @property {bigint} balance Initial balance of the treasury. If omitted 1_000_000 is used.
  * @property {boolean} resetBalanceIfZero If set and treasury balance is zero on moment of calling method it reset balance to {@link balance}.
  */
 export type TreasuryParams = Partial<{
@@ -175,7 +175,7 @@ export class Blockchain {
      * ```ts
      * const snapshot = blockchain.snapshot();
      * // some operations
-     * blockchain.loadFrom(snapshot); // restores blockchain state
+     * await blockchain.loadFrom(snapshot); // restores blockchain state
      * ```
      */
     snapshot(): BlockchainSnapshot {
@@ -255,7 +255,7 @@ export class Blockchain {
 
 
     /**
-     * Pushes message to message queue and executes it. Every transaction simply increases lt by {@link LT_ALIGN}.
+     * Emulates the result of sending a message to this Blockchain. Emulates the whole chain of transactions before returning the result. Each transaction increases lt by 1000000.
      * ```ts
      * const result = await blockchain.sendMessage(internal({
      *      from: sender.address,
@@ -275,7 +275,7 @@ export class Blockchain {
     }
 
     /**
-     * Pushes message to message queue and executes it step by step.
+     * Starts emulating the result of sending a message to this Blockchain (refer to {@link sendMessage}). Each iterator call emulates one transaction, so the whole chain is not emulated immediately, unlike in {@link sendMessage}.
      * ```ts
      * const message = internal({
      *     from: sender.address,
@@ -467,13 +467,13 @@ export class Blockchain {
     }
 
     /**
-     * Creates new provider for contract address.
+     * Creates new {@link ContractProvider} for contract address.
      * ```ts
-     * const provider = this.provider(address, init);
-     * const txs = await provider.getTransactions(...);
+     * const contractProvider = blockchain.provider(address, init);
+     * const txs = await contractProvider.getTransactions(...);
      * ```
      *
-     * @param address Address to create provider
+     * @param address Address to create contract provider for
      * @param init Initial state of contract
      */
     provider(address: Address, init?: StateInit | null): ContractProvider {
@@ -487,13 +487,13 @@ export class Blockchain {
     }
 
     /**
-     * Creates sender for address.
+     * Creates {@link Sender} for address.
      * ```ts
      * const sender = this.sender(address);
      * await contract.send(sender, ...);
      * ```
      *
-     * @param address Address to create sender
+     * @param address Address to create sender for
      */
     sender(address: Address): Sender {
         return new BlockchainSender({
@@ -508,8 +508,11 @@ export class Blockchain {
     /**
      * Creates treasury wallet contract. This wallet is used as alternative to wallet-v4 smart contract.
      * ```ts
-     * const sender = this.sender(address);
-     * await contract.send(sender, ...);
+     * const wallet = await blockchain.treasury('wallet')
+     * await wallet.send({
+     *     to: someAddress,
+     *     value: toNano('0.5'),
+     * });
      * ```
      *
      * @param {string} seed Initial seed for treasury. If the same seed is used to create a treasury, then these treasuries will be identical
@@ -628,7 +631,7 @@ export class Blockchain {
 
 
     /**
-     * Retrieves contract from {@link BlockchainStorage}.
+     * Retrieves {@link SmartContract} from {@link BlockchainStorage}.
      * @param address Address of contract to get
      */
     async getContract(address: Address) {
@@ -690,7 +693,7 @@ export class Blockchain {
      * blockchain.libs = beginCell().storeDictDirect(libsDict).endCell();
      * ```
      *
-     * @param value Config used in blockchain. If omitted {@link defaultConfig} used.
+     * @param value Cell in libs format: Dictionary<CellHash, Cell>
      */
     set libs(value: Cell | undefined) {
         this.globalLibs = value

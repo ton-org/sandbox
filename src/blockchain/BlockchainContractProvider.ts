@@ -103,7 +103,9 @@ export class BlockchainContractProvider implements SandboxContractProvider {
     }
 
     /**
-     * Throws error in every call
+     * Dummy implementation of getTransactions. Sandbox does not store transactions, so its ContractProvider cannot fetch any.
+     * Throws error in every call.
+     *
      * @throws {Error}
      */
     getTransactions(address: Address, lt: bigint, hash: Buffer, limit?: number | undefined): Promise<Transaction[]> {
@@ -111,7 +113,7 @@ export class BlockchainContractProvider implements SandboxContractProvider {
     }
 
     /**
-     * Pushes external-in message to message queue and executes it.
+     * Pushes external-in message to message queue.
      * @param message Message to push
      */
     async external(message: Cell) {
@@ -129,7 +131,7 @@ export class BlockchainContractProvider implements SandboxContractProvider {
     }
 
     /**
-     * Pushes internal message to message queue and executes it.
+     * Pushes internal message to message queue.
      */
     async internal(via: Sender, args: { value: string | bigint; bounce?: boolean | null; sendMode?: SendMode; body?: string | Cell | null; }) {
         const init = ((await this.getState()).state.type !== 'active' && this.init) ? this.init : undefined
@@ -151,7 +153,7 @@ export class BlockchainContractProvider implements SandboxContractProvider {
     }
 
     /**
-     * Pushes tick-tock message to message queue and executes it.
+     * Pushes tick-tock message to message queue.
      */
     async tickTock(which: TickOrTock) {
         await this.blockchain.pushTickTock(this.address, which)
