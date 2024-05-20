@@ -15,14 +15,14 @@ it('should deploy', async () => {
 
   expect(result.transactions).toHaveTransaction({
     from: owner.address,
-    to: distributor.address,
+    on: distributor.address,
     deploy: true,
     success: true
   });
 });
 ```
 
-Let's check that our getters are working.
+Let's check that our get methods are working.
 Note that we are using `toEqualAddress` from `@ton/test-utils`. Under the hood it uses `Address.equals` to compare addresses.
 
 ```typescript
@@ -49,7 +49,7 @@ it('should add firstUser', async () => {
 
   expect(result.transactions).toHaveTransaction({
     from: owner.address,
-    to: distributor.address,
+    on: distributor.address,
     success: true,
   });
 
@@ -68,13 +68,13 @@ it('should share coins to one user', async () => {
 
   expect(result.transactions).toHaveTransaction({
     from: owner.address,
-    to: distributor.address,
+    on: distributor.address,
     outMessagesCount: 1,
     success: true
   });
   expect(result.transactions).toHaveTransaction({
     from: distributor.address,
-    to: firstUser.address,
+    on: firstUser.address,
     op: 0x0,
     success: true
   });
@@ -85,7 +85,7 @@ Additionally, lets validate that our contract share coins to multiple users corr
 Function `findTransactionRequired` from `@ton/test-utils` will throw error if tx is not found. Also, it has silent version `findTransaction`.
 
 ```typescript
-    it('should add secondUser', async () => {
+it('should add secondUser', async () => {
   const result = await distributor.sendAddUser(owner.getSender(), {
     value: toNano('0.05'),
     userAddress: secondUser.address
@@ -93,7 +93,7 @@ Function `findTransactionRequired` from `@ton/test-utils` will throw error if tx
 
   expect(result.transactions).toHaveTransaction({
     from: owner.address,
-    to: distributor.address,
+    on: distributor.address,
     success: true
   });
 
@@ -112,25 +112,25 @@ it('should share coins to 2 users', async () => {
 
   expect(result.transactions).toHaveTransaction({
     from: owner.address,
-    to: distributor.address,
+    on: distributor.address,
     success: true,
     outMessagesCount: 2
   });
   expect(result.transactions).toHaveTransaction({
     from: distributor.address,
-    to: firstUser.address,
+    on: firstUser.address,
     op: 0x0,
     success: true
   });
   expect(result.transactions).toHaveTransaction({
     from: distributor.address,
-    to: secondUser.address,
+    on: secondUser.address,
     op: 0x0,
     success: true
   });
   
-  const firstUserTransaction = findTransactionRequired(result.transactions, { to: firstUser.address });
-  const secondUserTransaction = findTransactionRequired(result.transactions, { to: secondUser.address });
+  const firstUserTransaction = findTransactionRequired(result.transactions, { on: firstUser.address });
+  const secondUserTransaction = findTransactionRequired(result.transactions, { on: secondUser.address });
 
   expect(flattenTransaction(firstUserTransaction).value).toEqual(flattenTransaction(secondUserTransaction).value);
 });
@@ -153,7 +153,7 @@ it('should not add user as not owner', async () => {
 
   expect(result.transactions).toHaveTransaction({
     from: notOwner.address,
-    to: distributor.address,
+    on: distributor.address,
     success: false,
     exitCode: ExitCode.MUST_BE_OWNER,
   });
@@ -169,34 +169,33 @@ If impure is not specified compiler will delete this function call. This can lea
 }
 ```
 
-Be sure to set max limits of dynamic data structures in your func code.
-If the limit is not set, then more than 255 out actions can be performed, and the action phase will fail with 33 exit code.
+Make sure that your contract does not output more than 255 out actions, or else action phase will fail with 33 exit code.
 
 ```typescript
 it('should add 255 users', async () => {
   for (let i = 0; i < 255; ++i) {
-    const userWallet = await blockchain.treasury(`${i}`);
+    const userAddress = randomAddress();
     const result = await distributor.sendAddUser(owner.getSender(), {
       value: toNano('0.5'),
-      userAddress: userWallet.address
+      userAddress,
     });
     expect(result.transactions).toHaveTransaction({
       from: owner.address,
-      to: distributor.address,
+      on: distributor.address,
       success: true
     });
   }
 });
 
 it('should not add one more user', async () => {
-  const userWallet = await blockchain.treasury(`256`);
+  const userAddress = randomAddress();
   const result = await distributor.sendAddUser(owner.getSender(), {
     value: toNano('0.5'),
-    userAddress: userWallet.address
+    userAddress,
   });
   expect(result.transactions).toHaveTransaction({
     from: owner.address,
-    to: distributor.address,
+    on: distributor.address,
     success: false,
     exitCode: ExitCode.SHARES_SIZE_EXCEEDED_LIMIT
   });
@@ -213,7 +212,7 @@ it('should share money to 255 users', async () => {
 
   expect(result.transactions).toHaveTransaction({
     from: owner.address,
-    to: distributor.address,
+    on: distributor.address,
     success: true
   });
 

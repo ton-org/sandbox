@@ -13,6 +13,7 @@ The key difference of this package from [ton-contract-executor](https://github.c
   * [Test a transaction with matcher](#test-a-transaction-with-matcher)
   * [Testing transaction fees](#testing-transaction-fees)
   * [Cross contract tests](#cross-contract-tests)
+  * [Testing key points](#testing-key-points)
   * [Test examples](#test-examples)
 * [Viewing logs](#viewing-logs)
 * [Setting smart contract state directly](#setting-smart-contract-state-directly)
