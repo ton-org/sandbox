@@ -15,7 +15,7 @@ import {
     StateInit,
     OpenedContract
 } from "@ton/core";
-import {Executor, TickOrTock} from "../executor/Executor";
+import {IExecutor, Executor, TickOrTock} from "../executor/Executor";
 import {BlockchainStorage, LocalBlockchainStorage} from "./BlockchainStorage";
 import { extractEvents, Event } from "../event/Event";
 import { BlockchainContractProvider, SandboxContractProvider } from "./BlockchainContractProvider";
@@ -168,7 +168,7 @@ export class Blockchain {
     protected contractFetches = new Map<string, Promise<SmartContract>>()
     protected nextCreateWalletIndex = 0
 
-    readonly executor: Executor
+    readonly executor: IExecutor
 
     /**
      * Saves snapshot of current blockchain.
@@ -233,7 +233,7 @@ export class Blockchain {
         return this.currentLt
     }
 
-    protected constructor(opts: { executor: Executor, config?: BlockchainConfig, storage: BlockchainStorage }) {
+    protected constructor(opts: { executor: IExecutor, config?: BlockchainConfig, storage: BlockchainStorage }) {
         this.networkConfig = blockchainConfigToBase64(opts.config)
         this.executor = opts.executor
         this.storage = opts.storage
@@ -716,12 +716,13 @@ export class Blockchain {
      * });
      * ```
      *
+     * @param [opts.executor] Custom contract executor. If omitted {@link Executor} used.
      * @param [opts.config] Config used in blockchain. If omitted {@link defaultConfig} used.
      * @param [opts.storage] Contracts storage used for blockchain. If omitted {@link LocalBlockchainStorage} used.
      */
-    static async create(opts?: { config?: BlockchainConfig, storage?: BlockchainStorage }) {
+    static async create(opts?: { executor?: IExecutor, config?: BlockchainConfig, storage?: BlockchainStorage }) {
         return new Blockchain({
-            executor: await Executor.create(),
+            executor: opts?.executor ?? await Executor.create(),
             storage: opts?.storage ?? new LocalBlockchainStorage(),
             ...opts
         })
