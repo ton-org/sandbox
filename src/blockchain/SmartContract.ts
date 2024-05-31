@@ -140,8 +140,27 @@ export class TimeError extends Error {
 }
 
 export class EmulationError extends Error {
-    constructor(public error: string, public vmLogs?: string, public exitCode?: number) {
-        super(`Error while executing transaction: ${error}`)
+    constructor(
+        public error: string,
+        public vmLogs?: string,
+        public exitCode?: number,
+        public blockchainLogs?: string,
+        public debugLogs?: string,
+    ) {
+        let errMsg = `Error while executing transaction: ${error}`
+        if (exitCode !== undefined) {
+            errMsg += `\nExit code: ${exitCode}`
+        }
+        if (vmLogs !== undefined) {
+            errMsg += `\nVM logs:\n${vmLogs}`
+        }
+        if (blockchainLogs !== undefined) {
+            errMsg += `\nBlockchain logs:\n${blockchainLogs}`
+        }
+        if (debugLogs !== undefined) {
+            errMsg += `\nDebug logs:\n${debugLogs}`
+        }
+        super(errMsg)
     }
 }
 
@@ -280,7 +299,13 @@ export class SmartContract {
         }
 
         if (!res.result.success) {
-            throw new EmulationError(res.result.error, res.result.vmResults?.vmLog, res.result.vmResults?.vmExitCode)
+            throw new EmulationError(
+                res.result.error,
+                res.result.vmResults?.vmLog,
+                res.result.vmResults?.vmExitCode,
+                res.logs.length === 0 ? undefined : res.logs,
+                res.debugLogs.length === 0 ? undefined : res.debugLogs,
+            )
         }
 
         if (this.verbosity.print && this.verbosity.vmLogs !== 'none' && res.result.vmLog.length > 0) {
