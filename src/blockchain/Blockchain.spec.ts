@@ -1,4 +1,5 @@
-import {Blockchain, BlockchainTransaction} from "./Blockchain";
+import {Blockchain} from "./Blockchain";
+import {BlockchainTransaction} from "./BlockchainBase";
 import {Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Message, Sender, storeTransaction, toNano} from "@ton/core";
 import {compareTransaction, flattenTransaction, randomAddress} from "@ton/test-utils";
 import {TonClient4} from "@ton/ton";

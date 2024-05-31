@@ -1,13 +1,13 @@
 import {AccountState, Address, Cell} from "@ton/core";
 import {SmartContract} from "./SmartContract";
-import {Blockchain} from "./Blockchain";
+import {BlockchainBase} from "./BlockchainBase";
 
 
 /**
  * @interface BlockchainStorage Provides information about contracts by blockchain
  */
 export interface BlockchainStorage {
-    getContract(blockchain: Blockchain, address: Address): Promise<SmartContract>
+    getContract(blockchain: BlockchainBase, address: Address): Promise<SmartContract>
     knownContracts(): SmartContract[]
     clearKnownContracts(): void
 }
@@ -15,7 +15,7 @@ export interface BlockchainStorage {
 export class LocalBlockchainStorage implements BlockchainStorage {
     private contracts: Map<string, SmartContract> = new Map()
 
-    async getContract(blockchain: Blockchain, address: Address) {
+    async getContract(blockchain: BlockchainBase, address: Address) {
         let existing = this.contracts.get(address.toString())
         if (!existing) {
             existing = SmartContract.empty(blockchain, address)
@@ -151,7 +151,7 @@ export class RemoteBlockchainStorage implements BlockchainStorage {
         return this.blockSeqno ?? await this.client.getLastBlockSeqno()
     }
 
-    async getContract(blockchain: Blockchain, address: Address) {
+    async getContract(blockchain: BlockchainBase, address: Address) {
         let existing = this.contracts.get(address.toString())
         if (!existing) {
             let blockSeqno = await this.getLastBlockSeqno()

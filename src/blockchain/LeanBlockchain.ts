@@ -1,8 +1,8 @@
-import { Executor, IExecutor } from "../executor/Executor";
+import { IExecutor } from "../executor/Executor";
 import { BlockchainBase, BlockchainConfig } from "./BlockchainBase";
 import { BlockchainStorage, LocalBlockchainStorage } from "./BlockchainStorage";
 
-export class Blockchain extends BlockchainBase {
+export class LeanBlockchain extends BlockchainBase {
     /**
      * Creates instance of sandbox blockchain.
      * ```ts
@@ -24,10 +24,9 @@ export class Blockchain extends BlockchainBase {
      * @param [opts.config] Config used in blockchain. If omitted {@link defaultConfig} used.
      * @param [opts.storage] Contracts storage used for blockchain. If omitted {@link LocalBlockchainStorage} used.
      */
-    static async create(opts?: { executor?: IExecutor, config?: BlockchainConfig, storage?: BlockchainStorage }) {
-        return new Blockchain({
-            executor: opts?.executor ?? await Executor.create(),
-            storage: opts?.storage ?? new LocalBlockchainStorage(),
+    static async create(opts: { executor: IExecutor, config?: BlockchainConfig, storage?: BlockchainStorage }) {
+        return new LeanBlockchain({
+            storage: opts.storage ?? new LocalBlockchainStorage(),
             ...opts
         })
     }

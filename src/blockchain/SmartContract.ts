@@ -1,4 +1,3 @@
-import {Blockchain} from "./Blockchain";
 import {
     Account,
     Address,
@@ -14,6 +13,7 @@ import {
 } from "@ton/core";
 import {getSelectorForMethod} from "../utils/selector";
 import { EmulationResult, ExecutorVerbosity, RunCommonArgs, TickOrTock } from "../executor/Executor";
+import { BlockchainBase } from "./BlockchainBase";
 
 export function createShardAccount(args: { address?: Address, code: Cell, data: Cell, balance: bigint, workchain?: number }): ShardAccount {
     let wc = args.workchain ?? 0
@@ -173,13 +173,13 @@ export type SmartContractSnapshot = {
 
 export class SmartContract {
     readonly address: Address
-    readonly blockchain: Blockchain
+    readonly blockchain: BlockchainBase
     #account: string
     #parsedAccount?: ShardAccount
     #lastTxTime: number
     #verbosity?: Partial<LogsVerbosity>
 
-    constructor(shardAccount: ShardAccount, blockchain: Blockchain) {
+    constructor(shardAccount: ShardAccount, blockchain: BlockchainBase) {
         this.address = shardAccount.account!.addr
         this.#account = beginCell().store(storeShardAccount(shardAccount)).endCell().toBoc().toString('base64')
         this.#parsedAccount = shardAccount
@@ -244,11 +244,11 @@ export class SmartContract {
         this.#lastTxTime = account.account?.storageStats.lastPaid ?? 0
     }
 
-    static create(blockchain: Blockchain, args: { address: Address, code: Cell, data: Cell, balance: bigint }) {
+    static create(blockchain: BlockchainBase, args: { address: Address, code: Cell, data: Cell, balance: bigint }) {
         return new SmartContract(createShardAccount(args), blockchain)
     }
 
-    static empty(blockchain: Blockchain, address: Address) {
+    static empty(blockchain: BlockchainBase, address: Address) {
         return new SmartContract(createEmptyShardAccount(address), blockchain)
     }
 

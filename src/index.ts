@@ -4,7 +4,7 @@ export {
 } from './config/defaultConfig';
 
 export {
-    Blockchain,
+    BlockchainBase,
     toSandboxContract,
     SendMessageResult,
     BlockchainTransaction,
@@ -14,7 +14,15 @@ export {
     ExternalOutInfo,
     BlockchainConfig,
     BlockchainSnapshot,
+} from './blockchain/BlockchainBase';
+
+export {
+    Blockchain,
 } from './blockchain/Blockchain';
+
+export {
+    LeanBlockchain,
+} from './blockchain/LeanBlockchain';
 
 export {
     BlockchainContractProvider,
