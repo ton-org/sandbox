@@ -333,6 +333,17 @@ export class Executor implements IExecutor {
         ])
     }
 
+    getVersion(): { commitHash: string, commitDate: string } {
+        const v: {
+            emulatorLibCommitHash: string,
+            emulatorLibCommitDate: string,
+        } = JSON.parse(this.extractString(this.invoke('_version', [])));
+        return {
+            commitHash: v.emulatorLibCommitHash,
+            commitDate: v.emulatorLibCommitDate,
+        };
+    }
+
     private createEmulator(config: string, verbosity: number) {
         if (this.emulator !== undefined) {
             this.invoke('_destroy_emulator', [this.emulator.ptr]);
