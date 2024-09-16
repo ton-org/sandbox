@@ -80,7 +80,7 @@ export const SANDBOX_CONTRACT_SYMBOL = Symbol('SandboxContract')
  * @template F Type parameter representing the original contract object.
  */
 export type SandboxContract<F> = {
-    [P in keyof F]: P extends `get${string}`
+    [P in keyof F]: P extends `${'get' | 'is'}${string}`
         ? (F[P] extends (x: infer CP, ...args: infer P) => infer R ? (ExtendsContractProvider<CP> extends true ? (...args: P) => R : never) : never)
         : (P extends `send${string}`
             ? (F[P] extends (x: infer CP, ...args: infer P) => infer R ? (ExtendsContractProvider<CP> extends true ? (...args: P) => Promise<SendMessageResult & {
