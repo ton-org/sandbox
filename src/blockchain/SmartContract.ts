@@ -94,6 +94,8 @@ export type SmartContractTransaction = Transaction & {
     blockchainLogs: string
     vmLogs: string
     debugLogs: string
+    oldStorage?: Cell
+    newStorage?: Cell
 }
 export type MessageParams = Partial<{
     now: number,
@@ -292,6 +294,11 @@ export class SmartContract {
     }
 
     protected async runCommon(run: () => Promise<EmulationResult>): Promise<SmartContractTransaction> {
+        let oldStorage: Cell | undefined = undefined
+        if (this.blockchain.recordStorage && this.account.account?.storage.state.type === 'active') {
+            oldStorage = this.account.account?.storage.state.state.data ?? undefined
+        }
+
         const res = await run()
 
         if (this.verbosity.print && this.verbosity.blockchainLogs && res.logs.length > 0) {
@@ -322,11 +329,18 @@ export class SmartContract {
         this.#parsedAccount = undefined
         this.#lastTxTime = tx.now
 
+        let newStorage: Cell | undefined = undefined
+        if (this.blockchain.recordStorage && this.account.account?.storage.state.type === 'active') {
+            newStorage = this.account.account?.storage.state.state.data ?? undefined
+        }
+
         return {
             ...tx,
             blockchainLogs: res.logs,
             vmLogs: res.result.vmLog,
             debugLogs: res.debugLogs,
+            oldStorage,
+            newStorage,
         }
     }
 

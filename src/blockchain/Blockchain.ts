@@ -57,6 +57,8 @@ export type BlockchainTransaction = Transaction & {
     parent?: BlockchainTransaction,
     children: BlockchainTransaction[],
     externals: ExternalOut[],
+    oldStorage?: Cell,
+    newStorage?: Cell,
 }
 
 /**
@@ -167,6 +169,7 @@ export class Blockchain {
     protected lock = new AsyncLock()
     protected contractFetches = new Map<string, Promise<SmartContract>>()
     protected nextCreateWalletIndex = 0
+    protected shouldRecordStorage = false
 
     readonly executor: IExecutor
 
@@ -209,6 +212,14 @@ export class Blockchain {
         this.logsVerbosity = { ...snapshot.verbosity }
         this.globalLibs = snapshot.libs
         this.nextCreateWalletIndex = snapshot.nextCreateWalletIndex
+    }
+
+    get recordStorage() {
+        return this.shouldRecordStorage
+    }
+
+    set recordStorage(v: boolean) {
+        this.shouldRecordStorage = v
     }
 
     /**
