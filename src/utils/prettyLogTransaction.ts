@@ -1,9 +1,8 @@
 import {Transaction, fromNano} from "@ton/core";
 import {Address, ExternalAddress} from "@ton/core"
-import { Maybe } from "@ton/core/dist/utils/maybe";
 
  // Helper function to get the mapped address to human readable format, fallback to original address if not found
-export type AddressMapFunc = (address: Address | Maybe<ExternalAddress>) => Maybe<string>;
+ export type AddressMapFunc = (address: Address | ExternalAddress | null | undefined) => string | null | undefined;
 
 /**
  * @param tx Transaction to create log string
@@ -12,7 +11,7 @@ export type AddressMapFunc = (address: Address | Maybe<ExternalAddress>) => Mayb
  */
 export function prettyLogTransaction(tx: Transaction, mapFunc?: AddressMapFunc) {
     // Helper to map addresses using mapFunc and fallback to original if mapping is false or undefined
-    const mapAddress = (address: Address | Maybe<ExternalAddress>) => {
+    const mapAddress = (address: Address | ExternalAddress | null | undefined) => {
         return mapFunc ? (mapFunc(address) || address) : address;
     };
 

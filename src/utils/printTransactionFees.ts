@@ -1,5 +1,4 @@
 import { Transaction } from "@ton/core";
-import { Maybe } from "@ton/core/dist/utils/maybe";
 
 const decimalCount = 9;
 const decimal = pow10(decimalCount);
@@ -35,7 +34,7 @@ function formatCoins(value: bigint | undefined, precision = 6): string {
     return formatCoinsPure(value, precision) + ' TON';
 }
 
-export type OpMapFunc = (op: number) => Maybe<string>; 
+export type OpMapFunc = (op: number) => string | null | undefined;
 
 /**
  * Prints transaction fees.
