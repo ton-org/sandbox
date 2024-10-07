@@ -11,8 +11,8 @@ export type AddressMapFunc = (address: Address | Maybe<ExternalAddress>) => Mayb
  * @returns Transaction log string
  */
 export function prettyLogTransaction(tx: Transaction, mapFunc?: AddressMapFunc) {
-     // Helper to map addresses using mapFunc and fallback to original if mapping is false or undefined
-     const mapAddress = (address: Address | Maybe<ExternalAddress>) => {
+    // Helper to map addresses using mapFunc and fallback to original if mapping is false or undefined
+    const mapAddress = (address: Address | Maybe<ExternalAddress>) => {
         return mapFunc ? (mapFunc(address) || address) : address;
     };
 
