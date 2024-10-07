@@ -5,6 +5,63 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.0] - 2024-09-17
+
+### Added
+
+- Added `blockchain.recordStorage` flag. If set to `true`, `BlockchainTransaction` will have `oldStorage` and `newStorage` fields. Note that enabling this flag will disable a certain optimization, which will slow down contract emulation
+
+## [0.21.0] - 2024-09-16
+
+### Added
+
+- `SandboxContract` now wraps methods starting with `is` (having the same semantics as `get`) as well as `send` and `get`
+
+### Changed
+
+- Updated dependencies
+
+## [0.20.0] - 2024-05-31
+
+### Added
+
+- Added the ability to create `Blockchain` using a custom `IExecutor` instead of the default `Executor`
+- Added more information to `EmulationError`, extended its error message
+
+## [0.19.0] - 2024-04-27
+
+### Fixed
+
+- Fixed a bug in the emulator that caused send mode 16 to not properly work
+
+## [0.18.0] - 2024-04-23
+
+### Changed
+
+- Changed the default and slim configs to use the latest config at the time of release, which reduces gas fees by a factor of 2.5x
+
+## [0.17.0] - 2024-03-27
+
+### Changed
+
+- Updated emulator WASM binary
+- Changed the default and slim configs to use the latest config at the time of release, which enables TVM v6 opcodes
+
+## [0.16.0] - 2024-03-01
+
+This release contains a breaking change.
+
+### Added
+
+- Added `IExecutor` interface with the prospect of creating custom executor
+- Added `open` and `getTransactions` to sandbox's `ContractProvider`
+- Added `toSandboxContract` helper function to cast `OpenedContract<T>` to `SandboxContract<T>` when applicable
+
+### Changed
+
+- Changed the default executor to have `async` methods (it still has sync nature)
+- Improved get method return object
+
 ## [0.15.0] - 2023-12-24
 
 ### Changed

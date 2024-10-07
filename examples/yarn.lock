@@ -815,22 +815,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ton-community/sandbox-examples@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "@ton-community/sandbox-examples@workspace:."
-  dependencies:
-    "@ton/core": ^0.52.2
-    "@ton/crypto": ^3.2.0
-    "@ton/sandbox": ^0.11.0
-    "@ton/test-utils": ^0.3.1
-    "@ton/ton": ^13.5.1
-    "@types/jest": ^29.5.1
-    jest: ^29.5.0
-    ts-jest: ^29.1.0
-    typescript: ^4.9.5
-  languageName: unknown
-  linkType: soft
-
 "@ton/core@npm:^0.52.2":
   version: 0.52.2
   resolution: "@ton/core@npm:0.52.2"
@@ -861,6 +845,22 @@ __metadata:
   checksum: 0851fad506796573ec6079c1f36d3d07f4070abb90a4a2f3e621f6b2b2c6725c13096a5afdabb24611aa2a063ba335dcbc742e98a3c1cd0bbf3645ae55c1a8c6
   languageName: node
   linkType: hard
+
+"@ton/sandbox-examples@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "@ton/sandbox-examples@workspace:."
+  dependencies:
+    "@ton/core": ^0.52.2
+    "@ton/crypto": ^3.2.0
+    "@ton/sandbox": ^0.11.0
+    "@ton/test-utils": ^0.3.1
+    "@ton/ton": ^13.5.1
+    "@types/jest": ^29.5.1
+    jest: ^29.5.0
+    ts-jest: ^29.1.0
+    typescript: ^4.9.5
+  languageName: unknown
+  linkType: soft
 
 "@ton/sandbox@npm:^0.11.0":
   version: 0.11.1

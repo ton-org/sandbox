@@ -2,6 +2,10 @@ import {AccountState, Address, Cell} from "@ton/core";
 import {SmartContract} from "./SmartContract";
 import {Blockchain} from "./Blockchain";
 
+
+/**
+ * @interface BlockchainStorage Provides information about contracts by blockchain
+ */
 export interface BlockchainStorage {
     getContract(blockchain: Blockchain, address: Address): Promise<SmartContract>
     knownContracts(): SmartContract[]
@@ -61,6 +65,19 @@ function convertTonClient4State(state: {
     }
 }
 
+/**
+ * Wraps ton client for remote storage.
+ *
+ * ```ts
+ * let client = new TonClient4({
+ *     endpoint: 'https://mainnet-v4.tonhubapi.com'
+ * })
+ *
+ * let remoteStorageClient = wrapTonClient4ForRemote(client);
+ * ```
+ *
+ * @param client TonClient4 to wrap
+ */
 export function wrapTonClient4ForRemote(client: {
     getLastBlock(): Promise<{
         last: {
@@ -108,6 +125,18 @@ export function wrapTonClient4ForRemote(client: {
     }
 }
 
+/**
+ * @class {RemoteBlockchainStorage} Remote blockchain storage implementation.
+ * ```ts
+ * let client = new TonClient4({
+ *     endpoint: 'https://mainnet-v4.tonhubapi.com'
+ * })
+ *
+ * let blockchain = await Blockchain.create({
+ *     storage: new RemoteBlockchainStorage(wrapTonClient4ForRemote(client), 34892000)
+ * });
+ * ```
+ */
 export class RemoteBlockchainStorage implements BlockchainStorage {
     private contracts: Map<string, SmartContract> = new Map()
     private client: RemoteBlockchainStorageClient

@@ -1,62 +1,12 @@
 import {Blockchain, BlockchainTransaction} from "./Blockchain";
-import {Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Message, Sender, storeTransaction, toNano} from "@ton/core";
+import {Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Sender, storeTransaction, toNano} from "@ton/core";
 import {compareTransaction, flattenTransaction, randomAddress} from "@ton/test-utils";
-import {TonClient4} from "@ton/ton";
-import {RemoteBlockchainStorage, wrapTonClient4ForRemote} from "./BlockchainStorage";
-import {prettyLogTransactions} from "../utils/prettyLogTransaction";
-import {printTransactionFees} from "../utils/printTransactionFees";
 import { createShardAccount, GetMethodError, TimeError } from "./SmartContract";
 import { internal } from "../utils/message";
 import { SandboxContractProvider } from "./BlockchainContractProvider";
 import { TickOrTock } from "../executor/Executor";
 
 describe('Blockchain', () => {
-    jest.setTimeout(30000)
-
-    it('should work with remote storage', async () => {
-        let client = new TonClient4({
-            endpoint: 'https://mainnet-v4.tonhubapi.com'
-        })
-
-        let blockchain = await Blockchain.create({
-            storage: new RemoteBlockchainStorage(wrapTonClient4ForRemote(client), 34892000)
-        })
-
-        let buyer = randomAddress()
-
-        let saleContractAddress = Address.parse('EQARG1yo4fg29oCxOFM3Ua2rizUErlRw9gu0RWvIfKFtxsF0')
-
-        let message: Message = {
-            info: {
-                type: 'internal',
-                dest: saleContractAddress,
-                src: buyer,
-                value: { coins: toNano(400) },
-                bounce: true,
-                ihrDisabled: true,
-                bounced: false,
-                ihrFee: 0n,
-                forwardFee: 0n,
-                createdAt: 0,
-                createdLt: 0n
-            },
-            body: beginCell().endCell()
-        }
-
-        let res = await blockchain.sendMessage(message)
-
-        prettyLogTransactions(res.transactions)
-
-        printTransactionFees(res.transactions)
-
-        let nft = await blockchain.getContract(Address.parse('EQDTbyyOixs9JsO8bmHjk9WJYN8deL-qJeNZvWx147pM8qeO'))
-        let data = nft.get('get_nft_data')
-
-        let [, , , owner] = [data.stackReader.pop(), data.stackReader.pop(), data.stackReader.pop(), data.stackReader.readAddress()]
-
-        expect(buyer.equals(owner)).toBe(true)
-    })
-
     it('should print debug logs', async () => {
         const blockchain = await Blockchain.create()
 
@@ -218,7 +168,7 @@ describe('Blockchain', () => {
         // Current time in receiveMessage should match blockchain.now
         const nowSmc = await blockchain.getContract(contract.address)
 
-        let smcRes = nowSmc.receiveMessage(internal({
+        let smcRes = await nowSmc.receiveMessage(internal({
             from: sender.address,
             to: nowSmc.address,
             body: beginCell().storeUint(0, 32).storeAddress(sender.address).endCell(),
@@ -234,7 +184,7 @@ describe('Blockchain', () => {
 
         // Make sure now is still overridable in receiveMessage call
 
-        smcRes = nowSmc.receiveMessage(internal({
+        smcRes = await nowSmc.receiveMessage(internal({
             from: sender.address,
             to: nowSmc.address,
             body: beginCell().storeUint(0, 32).storeAddress(sender.address).endCell(),
@@ -598,11 +548,11 @@ describe('Blockchain', () => {
         }))
 
         const smc = await blockchain.getContract(testAddr)
-        let res = smc.runTickTock('tock')
+        let res = await smc.runTickTock('tock')
         if (res.description.type !== 'tick-tock')
             throw new Error('Tick tock transaction expected')
         expect(res.description.isTock).toBe(true)
-        res = smc.runTickTock('tick')
+        res = await smc.runTickTock('tick')
         if (res.description.type !== 'tick-tock')
             throw new Error('Tick tock transaction expected')
         expect(res.description.isTock).toBe(false)
@@ -650,5 +600,55 @@ describe('Blockchain', () => {
             throw new Error('Expected tick tock')
         expect(res.transactions[1].description.type).toEqual('generic')
         expect(tt.description.isTock).toBe(true)
+    })
+
+    it('should support TVM v6 opcodes', async () => {
+        const blockchain = await Blockchain.create()
+        const addr = randomAddress()
+        await blockchain.setShardAccount(addr, createShardAccount({
+            address: addr,
+            code: Cell.fromBase64('te6ccgEBBAEAHAABFP8A9KQT9LzyyAsBAgFiAgMAAtAACaA41fBt'),
+            data: new Cell(),
+            balance: toNano('1'),
+        }))
+
+        const res = await blockchain.runGetMethod(addr, 'gasfee', [
+            { type: 'int', value: 1n },
+            { type: 'int', value: 0n },
+        ])
+
+        expect(res.stackReader.readBigNumber()).toEqual(40000n)
+    })
+
+    it('should bounce in action phase when send mode = 16', async () => {
+        const blockchain = await Blockchain.create()
+        const addr = randomAddress()
+        await blockchain.setShardAccount(addr, createShardAccount({
+            address: addr,
+            code: Cell.fromBase64('te6cckEBAgEAOwABFP8A9KQT9LzyyAsBAFjTbDEgxwCRMODTHzDAAY4bcIAYyMsF+CjPFoIjjX6kxoAA+gLLasmAEPsA3jGRSXg='),
+            data: new Cell(),
+            balance: toNano('1'),
+        }))
+
+        const from = randomAddress()
+        const res = await blockchain.sendMessage(internal({
+            from,
+            to: addr,
+            value: toNano('1'),
+            bounce: true,
+            body: beginCell().storeUint(1, 32).endCell(),
+        }))
+
+        expect(res.transactions).toHaveTransaction({
+            on: addr,
+            from,
+            exitCode: 0,
+        })
+
+        expect(res.transactions).toHaveTransaction({
+            from: addr,
+            on: from,
+            inMessageBounced: true,
+        })
     })
 })
