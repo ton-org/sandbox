@@ -303,7 +303,7 @@ export class Blockchain {
      * @param params Optional params
      * @returns Async iterable of {@link BlockchainTransaction}
      */
-    async sendMessageIter(message: Message | Cell, params?: MessageParams): Promise<AsyncIterator<BlockchainTransaction> & AsyncIterable<BlockchainTransaction>> {
+    async sendMessageIter(message: Message | Cell, params?: MessageParams & { follow_blockchain_time?: boolean }): Promise<AsyncIterator<BlockchainTransaction> & AsyncIterable<BlockchainTransaction>> {
         params = {
             now: this.now,
             ...params,
@@ -386,7 +386,12 @@ export class Blockchain {
         }
     }
 
-    protected txIter(needsLocking: boolean, params?: MessageParams): AsyncIterator<BlockchainTransaction> & AsyncIterable<BlockchainTransaction> {
+    protected txIter(needsLocking: boolean, params?: MessageParams & { follow_blockchain_time?: boolean }): AsyncIterator<BlockchainTransaction> & AsyncIterable<BlockchainTransaction> {
+        if (params?.follow_blockchain_time) {
+            const it = { next: () => this.processTx(needsLocking, { ...params, now: this.now }), [Symbol.asyncIterator]() { return it; } }
+
+            return it;
+        }
         const it = { next: () => this.processTx(needsLocking, params), [Symbol.asyncIterator]() { return it; } }
         return it;
     }

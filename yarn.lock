@@ -409,6 +409,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@blubbo/sandbox@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "@blubbo/sandbox@workspace:."
+  dependencies:
+    "@ton/core": ^0.58.1
+    "@ton/crypto": 3.3.0
+    "@ton/test-utils": ^0.3.1
+    "@ton/ton": ^15.0.0
+    "@types/jest": ^29.5.0
+    "@types/node": ^18.15.11
+    jest: ^29.5.0
+    ts-jest: ^29.0.5
+    ts-node: ^10.9.1
+    typescript: ^4.9.5
+  peerDependencies:
+    "@ton/core": ">=0.58.1"
+    "@ton/crypto": ">=3.3.0"
+  languageName: unknown
+  linkType: soft
+
 "@cspotcode/source-map-support@npm:^0.8.0":
   version: 0.8.1
   resolution: "@cspotcode/source-map-support@npm:0.8.1"
@@ -819,26 +839,6 @@ __metadata:
   checksum: e25036de9850b284dac53ef51dbf00ce63f9d451b2a3a2720d91e9f5b3d6b335e045510cd38d99cce8095b468ad312da76f607ca99a5b66d1b5059c9844b4098
   languageName: node
   linkType: hard
-
-"@ton/sandbox@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "@ton/sandbox@workspace:."
-  dependencies:
-    "@ton/core": ^0.58.1
-    "@ton/crypto": 3.3.0
-    "@ton/test-utils": ^0.3.1
-    "@ton/ton": ^15.0.0
-    "@types/jest": ^29.5.0
-    "@types/node": ^18.15.11
-    jest: ^29.5.0
-    ts-jest: ^29.0.5
-    ts-node: ^10.9.1
-    typescript: ^4.9.5
-  peerDependencies:
-    "@ton/core": ">=0.58.1"
-    "@ton/crypto": ">=3.3.0"
-  languageName: unknown
-  linkType: soft
 
 "@ton/test-utils@npm:^0.3.1":
   version: 0.3.1

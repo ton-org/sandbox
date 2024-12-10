@@ -1,16 +1,16 @@
 {
-  "name": "@ton/sandbox",
+  "name": "@blubbo/sandbox",
   "version": "0.22.0",
   "description": "TON transaction emulator",
   "main": "dist/index.js",
   "license": "MIT",
-  "author": "TonTech",
+  "author": "9oelM",
   "files": [
     "dist/**/*"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ton-org/sandbox"
+    "url": "git+https://github.com/blubbofi/sandbox"
   },
   "devDependencies": {
     "@ton/core": "^0.58.1",
