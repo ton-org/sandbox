@@ -409,9 +409,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blubbo/sandbox@workspace:.":
+"@blubbofi/sandbox@workspace:.":
   version: 0.0.0-use.local
-  resolution: "@blubbo/sandbox@workspace:."
+  resolution: "@blubbofi/sandbox@workspace:."
   dependencies:
     "@ton/core": ^0.58.1
     "@ton/crypto": 3.3.0

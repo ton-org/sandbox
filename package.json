@@ -1,5 +1,5 @@
 {
-  "name": "@blubbo/sandbox",
+  "name": "@blubbofi/sandbox",
   "version": "0.22.0",
   "description": "TON transaction emulator",
   "main": "dist/index.js",
