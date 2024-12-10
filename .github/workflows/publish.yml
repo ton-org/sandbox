@@ -15,19 +15,18 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           always-auth: true
+          registry-url: "https://registry.npmjs.org"
       - name: Install Yarn
         run: npm install -g yarn
       - name: Install dependencies
         run: yarn
       - name: Build
         run: yarn build
-      - name: Setup .yarnrc.yml
-        run: |
-          yarn config set npmAuthToken $NPM_AUTH_TOKEN
-          yarn config set npmAlwaysAuth true
+
+      - name: Publish to npm
+        run: npm publish --provenance --access public
         env:
-          NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
-      - name: Publish
-        env:
-          NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
-        run: yarn npm publish --access public
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+
+      - name: Verify publish
+        run: npm info @blubbofi/sandbox
