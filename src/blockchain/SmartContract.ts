@@ -4,7 +4,7 @@ import {
     Address,
     beginCell,
     Cell,
-    contractAddress, loadShardAccount, loadTransaction,
+    contractAddress, CurrencyCollection, Dictionary, loadShardAccount, loadTransaction,
     Message,
     parseTuple,
     ShardAccount,
@@ -173,6 +173,15 @@ export type SmartContractSnapshot = {
     verbosity?: Partial<LogsVerbosity>
 }
 
+function extractEc(cc: Dictionary<number, bigint>): [number, bigint][] {
+    const r: [number, bigint][] = [];
+    for (const [k, v] of cc) {
+        r.push([k, v]);
+    }
+    r.sort((a, b) => a[0] - b[0]);
+    return r;
+}
+
 export class SmartContract {
     readonly address: Address
     readonly blockchain: Blockchain
@@ -206,6 +215,23 @@ export class SmartContract {
         this.account = snapshot.account
         this.#lastTxTime = snapshot.lastTxTime
         this.#verbosity = snapshot.verbosity === undefined ? undefined : { ...snapshot.verbosity }
+    }
+
+    get ec() {
+        return extractEc(this.account.account?.storage.balance.other ?? Dictionary.empty())
+    }
+
+    set ec(nv: [number, bigint][]) {
+        const cc: Dictionary<number, bigint> = Dictionary.empty()
+        for (const [k, v] of nv) {
+            cc.set(k, v)
+        }
+        const acc = this.account
+        if (acc.account === undefined) {
+            acc.account = createEmptyAccount(this.address)
+        }
+        acc.account!.storage.balance.other = cc
+        this.account = acc
     }
 
     get balance() {

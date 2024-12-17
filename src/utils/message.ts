@@ -1,4 +1,4 @@
-import { Address, Cell, Message, StateInit } from "@ton/core";
+import { Address, Cell, Dictionary, Message, StateInit } from "@ton/core";
 
 /**
  * Creates {@link Message} from params.
@@ -16,13 +16,25 @@ export function internal(params: {
     forwardFee?: bigint
     createdAt?: number
     createdLt?: bigint
+    ec?: Dictionary<number, bigint> | [number, bigint][]
 }): Message {
+    let ecd: Dictionary<number, bigint> | undefined = undefined
+    if (params.ec !== undefined) {
+        if (Array.isArray(params.ec)) {
+            ecd = Dictionary.empty()
+            for (const [k, v] of params.ec) {
+                ecd.set(k, v)
+            }
+        } else {
+            ecd = params.ec
+        }
+    }
     return {
         info: {
             type: 'internal',
             dest: params.to,
             src: params.from,
-            value: { coins: params.value },
+            value: { coins: params.value, other: ecd },
             bounce: params.bounce ?? true,
             ihrDisabled: params.ihrDisabled ?? true,
             bounced: params.bounced ?? false,
