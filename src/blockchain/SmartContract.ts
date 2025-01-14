@@ -4,7 +4,7 @@ import {
     Address,
     beginCell,
     Cell,
-    contractAddress, CurrencyCollection, Dictionary, loadShardAccount, loadTransaction,
+    contractAddress, Dictionary, loadShardAccount, loadTransaction,
     Message,
     parseTuple,
     ShardAccount,
@@ -173,12 +173,15 @@ export type SmartContractSnapshot = {
     verbosity?: Partial<LogsVerbosity>
 }
 
-function extractEc(cc: Dictionary<number, bigint>): [number, bigint][] {
-    const r: [number, bigint][] = [];
+export type ExtraCurrency = {
+    [key: number]: bigint
+}
+
+function extractEc(cc: Dictionary<number, bigint>): ExtraCurrency {
+    const r: ExtraCurrency = {};
     for (const [k, v] of cc) {
-        r.push([k, v]);
+        r[k] = v;
     }
-    r.sort((a, b) => a[0] - b[0]);
     return r;
 }
 
@@ -218,13 +221,13 @@ export class SmartContract {
     }
 
     get ec() {
-        return extractEc(this.account.account?.storage.balance.other ?? Dictionary.empty())
+        return extractEc(this.account.account?.storage.balance.other ?? Dictionary.empty(Dictionary.Keys.Uint(32), Dictionary.Values.BigVarUint(5)))
     }
 
-    set ec(nv: [number, bigint][]) {
-        const cc: Dictionary<number, bigint> = Dictionary.empty()
-        for (const [k, v] of nv) {
-            cc.set(k, v)
+    set ec(nv: ExtraCurrency) {
+        const cc: Dictionary<number, bigint> = Dictionary.empty(Dictionary.Keys.Uint(32), Dictionary.Values.BigVarUint(5))
+        for (const [k, v] of Object.entries(nv)) {
+            cc.set(Number(k), v)
         }
         const acc = this.account
         if (acc.account === undefined) {

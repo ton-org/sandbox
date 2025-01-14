@@ -21,7 +21,7 @@ export function internal(params: {
     let ecd: Dictionary<number, bigint> | undefined = undefined
     if (params.ec !== undefined) {
         if (Array.isArray(params.ec)) {
-            ecd = Dictionary.empty()
+            ecd = Dictionary.empty(Dictionary.Keys.Uint(32), Dictionary.Values.BigVarUint(5))
             for (const [k, v] of params.ec) {
                 ecd.set(k, v)
             }
