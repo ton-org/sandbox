@@ -85,3 +85,7 @@ export {
 export {
     internal,
 } from './utils/message';
+
+export {
+    ExtraCurrency,
+} from './utils/ec';

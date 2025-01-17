@@ -4,7 +4,7 @@ import {
     Address,
     beginCell,
     Cell,
-    contractAddress, loadShardAccount, loadTransaction,
+    contractAddress, Dictionary, loadShardAccount, loadTransaction,
     Message,
     parseTuple,
     ShardAccount,
@@ -12,6 +12,7 @@ import {
     Transaction,
     TupleItem, TupleReader
 } from "@ton/core";
+import { ExtraCurrency, extractEc, packEc } from "../utils/ec";
 import {getSelectorForMethod} from "../utils/selector";
 import { EmulationResult, ExecutorVerbosity, RunCommonArgs, TickOrTock } from "../executor/Executor";
 
@@ -206,6 +207,19 @@ export class SmartContract {
         this.account = snapshot.account
         this.#lastTxTime = snapshot.lastTxTime
         this.#verbosity = snapshot.verbosity === undefined ? undefined : { ...snapshot.verbosity }
+    }
+
+    get ec() {
+        return extractEc(this.account.account?.storage.balance.other ?? Dictionary.empty(Dictionary.Keys.Uint(32), Dictionary.Values.BigVarUint(5)))
+    }
+
+    set ec(nv: ExtraCurrency) {
+        const acc = this.account
+        if (acc.account === undefined) {
+            acc.account = createEmptyAccount(this.address)
+        }
+        acc.account!.storage.balance.other = packEc(Object.entries(nv).map(([k, v]) => [Number(k), v]))
+        this.account = acc
     }
 
     get balance() {
