@@ -1,5 +1,6 @@
 import {Address, Cell, serializeTuple, TupleItem} from "@ton/core";
 import {base64Decode} from "../utils/base64";
+import { ExtraCurrency } from "../utils/ec";
 const EmulatorModule = require('./emulator-emscripten.js');
 
 export type GetMethodArgs = {
@@ -16,6 +17,7 @@ export type GetMethodArgs = {
     randomSeed: Buffer
     gasLimit: bigint
     debugEnabled: boolean
+    extraCurrency?: ExtraCurrency
 }
 
 export type GetMethodResultSuccess = {
@@ -72,6 +74,7 @@ type GetMethodInternalParams = {
     gas_limit: string
     method_id: number
     debug_enabled: boolean
+    extra_currencies?: { [k: string]: string }
 };
 
 type EmulationInternalParams = {
@@ -248,6 +251,13 @@ export class Executor implements IExecutor {
             method_id: args.methodId,
             debug_enabled: args.debugEnabled,
         };
+
+        if (args.extraCurrency !== undefined) {
+            params.extra_currencies = {};
+            for (const [k, v] of Object.entries(args.extraCurrency)) {
+                params.extra_currencies[k] = v.toString();
+            }
+        }
 
         let stack = serializeTuple(args.stack)
 

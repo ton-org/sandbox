@@ -1,5 +1,5 @@
 import {Blockchain, BlockchainTransaction} from "./Blockchain";
-import {Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Sender, storeTransaction, toNano} from "@ton/core";
+import {Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Dictionary, Sender, storeTransaction, toNano} from "@ton/core";
 import {compareTransaction, flattenTransaction, randomAddress} from "@ton/test-utils";
 import { createShardAccount, GetMethodError, TimeError } from "./SmartContract";
 import { internal } from "../utils/message";
@@ -651,4 +651,24 @@ describe('Blockchain', () => {
             inMessageBounced: true,
         })
     })
+
+    it('should work with extra currency', async () => {
+        const b = await Blockchain.create()
+        const addr = randomAddress()
+        await b.setShardAccount(addr, createShardAccount({
+            address: addr,
+            code: Cell.fromHex('b5ee9c7241010401001e000114ff00f4a413f4bcf2c80b0102016202030006d05f040009a0c075f04f3cf8c2ca'),
+            data: new Cell(),
+            balance: toNano('1'),
+        }));
+
+        (await b.getContract(addr)).ec = { 1: 100n };
+
+        const res = await (await b.getContract(addr)).get('bal');
+        const t = res.stackReader.readTuple();
+        t.readBigNumber();
+        const c = t.readCell();
+        const d = Dictionary.loadDirect(Dictionary.Keys.Uint(32), Dictionary.Values.BigVarUint(5), c);
+        expect(d.get(1)).toEqual(100n);
+    });
 })

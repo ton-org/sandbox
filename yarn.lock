@@ -789,14 +789,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ton/core@npm:^0.58.1":
-  version: 0.58.1
-  resolution: "@ton/core@npm:0.58.1"
+"@ton/core@npm:^0.59.1":
+  version: 0.59.1
+  resolution: "@ton/core@npm:0.59.1"
   dependencies:
     symbol.inspect: 1.0.1
   peerDependencies:
     "@ton/crypto": ">=3.2.0"
-  checksum: f762e96203acb85a3637f9657f1f2320f6777afe31c0611acbd6ca03371c43d701e66d379424a556d47cb8945bafeb64b06ba0d1e6c301665d7e40548d9c697d
+  checksum: b34a9589f90f32c04bf46f79aac665019b16a81db4e28741f90dc1103d31600acfe36aa0ad4d4e43789c64ba9c016c0ce70cabe33b93c61210af81d1ef82a8f1
   languageName: node
   linkType: hard
 
@@ -824,7 +824,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@ton/sandbox@workspace:."
   dependencies:
-    "@ton/core": ^0.58.1
+    "@ton/core": ^0.59.1
     "@ton/crypto": 3.3.0
     "@ton/test-utils": ^0.3.1
     "@ton/ton": ^15.0.0

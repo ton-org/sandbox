@@ -13,7 +13,7 @@
     "url": "git+https://github.com/ton-org/sandbox"
   },
   "devDependencies": {
-    "@ton/core": "^0.58.1",
+    "@ton/core": "^0.59.1",
     "@ton/crypto": "3.3.0",
     "@ton/test-utils": "^0.3.1",
     "@ton/ton": "^15.0.0",
