@@ -37,6 +37,7 @@ function senderArgsToMessageRelaxed(args: SenderArguments): MessageRelaxed {
     return internal({
         to: args.to,
         value: args.value,
+        extracurrency: args.extracurrency,
         init: args.init,
         body: args.body,
         bounce: args.bounce

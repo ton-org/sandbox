@@ -3,6 +3,7 @@ import {
     ContractGetMethodResult,
     ContractProvider,
     ContractState,
+    ExtraCurrency,
     Message, openContract,
     OpenedContract,
     Sender,
@@ -77,6 +78,7 @@ export class BlockchainContractProvider implements SandboxContractProvider {
         const contract = await this.blockchain.getContract(this.address)
         return {
             balance: contract.balance,
+            extracurrency: contract.ec,
             last: {
                 lt: contract.lastTransactionLt,
                 hash: bigintToBuffer(contract.lastTransactionHash),
@@ -133,7 +135,7 @@ export class BlockchainContractProvider implements SandboxContractProvider {
     /**
      * Pushes internal message to message queue.
      */
-    async internal(via: Sender, args: { value: string | bigint; bounce?: boolean | null; sendMode?: SendMode; body?: string | Cell | null; }) {
+    async internal(via: Sender, args: { value: string | bigint; extracurrency?: ExtraCurrency, bounce?: boolean | null; sendMode?: SendMode; body?: string | Cell | null; }) {
         const init = ((await this.getState()).state.type !== 'active' && this.init) ? this.init : undefined
 
         const bounce = (args.bounce !== null && args.bounce !== undefined) ? args.bounce : true
@@ -146,6 +148,7 @@ export class BlockchainContractProvider implements SandboxContractProvider {
             to: this.address,
             value,
             bounce,
+            extracurrency: args.extracurrency,
             sendMode: args.sendMode,
             init,
             body,
