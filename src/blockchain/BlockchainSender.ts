@@ -1,4 +1,4 @@
-import { Address, Cell, Message, Sender, SenderArguments } from "@ton/core";
+import { Address, Cell, Message, packExtraCurrencyDict, Sender, SenderArguments } from "@ton/core";
 
 
 /**
@@ -22,7 +22,7 @@ export class BlockchainSender implements Sender {
                 bounced: false,
                 src: this.address,
                 dest: args.to,
-                value: { coins: args.value },
+                value: { coins: args.value, other: args.extracurrency ? packExtraCurrencyDict(args.extracurrency) : undefined },
                 forwardFee: 0n,
                 createdAt: 0,
                 createdLt: 0n,
