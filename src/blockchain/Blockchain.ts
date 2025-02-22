@@ -201,6 +201,7 @@ export class Blockchain {
      */
     async loadFrom(snapshot: BlockchainSnapshot) {
         this.storage.clearKnownContracts()
+        this.contractFetches.clear();
         for (const contract of snapshot.contracts) {
             const storageContract = await this.getContract(contract.address)
             storageContract.loadFrom(contract)
