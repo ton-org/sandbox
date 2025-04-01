@@ -387,4 +387,16 @@ export class Executor implements IExecutor {
         this.module._free(ptr)
         return str
     }
+
+    getVersion(): { commitHash: string, commitDate: string } {
+        const v: {
+            emulatorLibCommitHash: string,
+            emulatorLibCommitDate: string,
+        } = JSON.parse(this.extractString(this.invoke('_version', [])));
+
+        return {
+            commitHash: v.emulatorLibCommitHash,
+            commitDate: v.emulatorLibCommitDate,
+        };
+    }
 }

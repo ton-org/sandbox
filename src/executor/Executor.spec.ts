@@ -63,4 +63,10 @@ describe('Executor', () => {
         })
         expect(res.result.success).toBe(true)
     })
+
+    it('reports version', () => {
+        const v = executor.getVersion()
+        expect(typeof v.commitHash).toBe('string')
+        expect(typeof v.commitDate).toBe('string')
+    })
 })

@@ -1,6 +1,6 @@
 {
   "name": "@ton/sandbox",
-  "version": "0.27.1",
+  "version": "0.28.0",
   "description": "TON transaction emulator",
   "main": "dist/index.js",
   "license": "MIT",
