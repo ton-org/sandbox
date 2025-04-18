@@ -7,11 +7,30 @@ import {Blockchain} from "./Blockchain";
  * @interface BlockchainStorage Provides information about contracts by blockchain
  */
 export interface BlockchainStorage {
+    /**
+     * Retrieves a smart contract by blockchain and address.
+     *
+     * @param {Blockchain} blockchain - The blockchain instance.
+     * @param {Address} address - The address of the smart contract.
+     * @returns {Promise<SmartContract>} - The smart contract instance.
+     */
     getContract(blockchain: Blockchain, address: Address): Promise<SmartContract>
+    /**
+     * Lists all known smart contracts.
+     *
+     * @returns {SmartContract[]} - An array of known smart contracts.
+     */
     knownContracts(): SmartContract[]
+
+    /**
+     * Clears the internal cache of known contracts.
+     */
     clearKnownContracts(): void
 }
 
+/**
+ * In-memory storage for blockchain smart contracts.
+ */
 export class LocalBlockchainStorage implements BlockchainStorage {
     private contracts: Map<string, SmartContract> = new Map()
 
@@ -68,13 +87,12 @@ function convertTonClient4State(state: {
 /**
  * Wraps ton client for remote storage.
  *
- * ```ts
+ * @example
  * let client = new TonClient4({
  *     endpoint: 'https://mainnet-v4.tonhubapi.com'
  * })
  *
  * let remoteStorageClient = wrapTonClient4ForRemote(client);
- * ```
  *
  * @param client TonClient4 to wrap
  */
@@ -127,7 +145,8 @@ export function wrapTonClient4ForRemote(client: {
 
 /**
  * @class {RemoteBlockchainStorage} Remote blockchain storage implementation.
- * ```ts
+ *
+ * @example
  * let client = new TonClient4({
  *     endpoint: 'https://mainnet-v4.tonhubapi.com'
  * })
@@ -135,7 +154,6 @@ export function wrapTonClient4ForRemote(client: {
  * let blockchain = await Blockchain.create({
  *     storage: new RemoteBlockchainStorage(wrapTonClient4ForRemote(client), 34892000)
  * });
- * ```
  */
 export class RemoteBlockchainStorage implements BlockchainStorage {
     private contracts: Map<string, SmartContract> = new Map()
