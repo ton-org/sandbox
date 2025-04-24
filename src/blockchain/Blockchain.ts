@@ -194,7 +194,7 @@ export class Blockchain {
 
     /**
      * Restores blockchain state from snapshot.
-     * Usage provided in {@link Blockchain.snapshot}.
+     * Usage provided in {@link Blockchain#snapshot}.
      *
      * @param snapshot Snapshot of blockchain
      */
@@ -275,7 +275,7 @@ export class Blockchain {
     /**
      * Emulates the result of sending a message to this Blockchain. Emulates the whole chain of transactions before returning the result. Each transaction increases lt by 1000000.
      *
-     * @param message Message to sent
+     * @param message Message to send
      * @param params Optional params
      * @returns Result of queue processing
      *
@@ -295,7 +295,7 @@ export class Blockchain {
     /**
      * Starts emulating the result of sending a message to this Blockchain (refer to {@link sendMessage}). Each iterator call emulates one transaction, so the whole chain is not emulated immediately, unlike in {@link sendMessage}.
      *
-     * @param message Message to sent
+     * @param message Message to send
      * @param params Optional params
      * @returns Async iterable of {@link BlockchainTransaction}
      *
@@ -492,7 +492,6 @@ export class Blockchain {
      *
      * @example
      * const contractProvider = blockchain.provider(address, init);
-     * const txs = await contractProvider.getTransactions(...);
      */
     provider(address: Address, init?: StateInit | null): ContractProvider {
         return new BlockchainContractProvider({
@@ -507,10 +506,10 @@ export class Blockchain {
     /**
      * Creates {@link Sender} for address.
      *
-     * Note, that this sender pushes internal message directly blockchain.
-     * No balanced deducted from sender address, all the values set. Used for test purposes
+     * Note, that this sender pushes internal messages to Blockchain directly.
+     * No value is deducted from sender address, all the values are set to defaults. Use for test purposes only.
      *
-     *  @example
+     * @example
      * const sender = this.sender(address);
      * await contract.send(sender, ...);
      *
@@ -530,7 +529,7 @@ export class Blockchain {
      * Creates treasury wallet contract. This wallet is used as alternative to wallet smart contract.
      *
      * @param {string} seed Initial seed for treasury. If the same seed is used to create a treasury, then these treasuries will be identical
-     * @param [params] Params for treasury creation. See {@link TreasuryParams} for more information.
+     * @param {TreasuryParams} params Params for treasury creation. See {@link TreasuryParams} for more information.
      *
      * @example
      * const wallet = await blockchain.treasury('wallet')
@@ -692,7 +691,7 @@ export class Blockchain {
     /**
      * Updates blockchain config
      *
-     * @param {BlockchainConfig} config - Maybe custom config in Cell format, or predefined `default` | `slim`
+     * @param {BlockchainConfig} config - Custom config in Cell format, or predefined `default` | `slim`
      */
     setConfig(config: BlockchainConfig) {
         this.networkConfig = blockchainConfigToBase64(config)
@@ -731,9 +730,9 @@ export class Blockchain {
     /**
      * Creates instance of sandbox blockchain.
      *
-     * @param [opts.executor] Custom contract executor. If omitted {@link Executor} used.
-     * @param [opts.config] Config used in blockchain. If omitted {@link defaultConfig} used.
-     * @param [opts.storage] Contracts storage used for blockchain. If omitted {@link LocalBlockchainStorage} used.
+     * @param [opts.executor] Custom contract executor. If omitted {@link Executor} is used.
+     * @param [opts.config] Config used in blockchain. If omitted {@link defaultConfig} is used.
+     * @param [opts.storage] Contracts storage used for blockchain. If omitted {@link LocalBlockchainStorage} is used.
      *
      * @example
      * const blockchain = await Blockchain.create({ config: 'slim' });
