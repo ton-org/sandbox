@@ -175,11 +175,10 @@ export class Blockchain {
 
     /**
      * Saves snapshot of current blockchain.
-     * ```ts
+     * @example
      * const snapshot = blockchain.snapshot();
      * // some operations
      * await blockchain.loadFrom(snapshot); // restores blockchain state
-     * ```
      */
     snapshot(): BlockchainSnapshot {
         return {
@@ -195,7 +194,7 @@ export class Blockchain {
 
     /**
      * Restores blockchain state from snapshot.
-     * Usage provided in {@link snapshot}.
+     * Usage provided in {@link Blockchain#snapshot}.
      *
      * @param snapshot Snapshot of blockchain
      */
@@ -219,6 +218,13 @@ export class Blockchain {
         return this.shouldRecordStorage
     }
 
+    /**
+     * If set to `true`, [BlockchainTransaction]{@link BlockchainTransaction} will have `oldStorage` and `newStorage` fields.
+     *
+     * Note that enabling this flag will disable a certain optimization, which will slow down contract emulation
+     *
+     * @param v
+     */
     set recordStorage(v: boolean) {
         this.shouldRecordStorage = v
     }
@@ -268,18 +274,18 @@ export class Blockchain {
 
     /**
      * Emulates the result of sending a message to this Blockchain. Emulates the whole chain of transactions before returning the result. Each transaction increases lt by 1000000.
-     * ```ts
+     *
+     * @param message Message to send
+     * @param params Optional params
+     * @returns Result of queue processing
+     *
+     * @example
      * const result = await blockchain.sendMessage(internal({
      *      from: sender.address,
      *      to: address,
      *      value: toNano('1'),
      *      body: beginCell().storeUint(0, 32).endCell(),
      * }));
-     * ```
-     *
-     * @param message Message to sent
-     * @param params Optional params
-     * @returns Result of queue processing
      */
     async sendMessage(message: Message | Cell, params?: MessageParams): Promise<SendMessageResult> {
         await this.pushMessage(message)
@@ -288,7 +294,12 @@ export class Blockchain {
 
     /**
      * Starts emulating the result of sending a message to this Blockchain (refer to {@link sendMessage}). Each iterator call emulates one transaction, so the whole chain is not emulated immediately, unlike in {@link sendMessage}.
-     * ```ts
+     *
+     * @param message Message to send
+     * @param params Optional params
+     * @returns Async iterable of {@link BlockchainTransaction}
+     *
+     * @example
      * const message = internal({
      *     from: sender.address,
      *     to: address,
@@ -298,11 +309,6 @@ export class Blockchain {
      * for await (const tx of await blockchain.sendMessageIter(message)) {
      *     // process transaction
      * }
-     * ```
-     *
-     * @param message Message to sent
-     * @param params Optional params
-     * @returns Async iterable of {@link BlockchainTransaction}
      */
     async sendMessageIter(message: Message | Cell, params?: MessageParams): Promise<AsyncIterator<BlockchainTransaction> & AsyncIterable<BlockchainTransaction>> {
         params = {
@@ -317,14 +323,14 @@ export class Blockchain {
 
     /**
      * Runs tick or tock transaction.
-     * ```ts
-     * let res = await blockchain.runTickTock(address, 'tock');
-     * ```
      *
      * @param on Address or addresses to run tick-tock
      * @param which Type of transaction (tick or tock)
      * @param [params] Params to run tick tock transaction
      * @returns Result of tick-tock transaction
+     *
+     * @example
+     * let res = await blockchain.runTickTock(address, 'tock');
      */
     async runTickTock(on: Address | Address[], which: TickOrTock, params?: MessageParams): Promise<SendMessageResult> {
         for (const addr of (Array.isArray(on) ? on : [on])) {
@@ -335,18 +341,18 @@ export class Blockchain {
 
     /**
      * Runs get method on contract.
-     * ```ts
-     * const { stackReader } = await blockchain.runGetMethod(address, 'get_now', [], {
-     *     now: 2,
-     * });
-     * const now = res.stackReader.readNumber();
-     * ```
      *
      * @param address Address or addresses to run get method
      * @param method MethodId or method name to run
      * @param stack Method params
      * @param [params] Params to run get method
      * @returns Result of get method
+     *
+     * @example
+     * const { stackReader } = await blockchain.runGetMethod(address, 'get_now', [], {
+     *     now: 2,
+     * });
+     * const now = res.stackReader.readNumber();
      */
     async runGetMethod(address: Address, method: number | string, stack: TupleItem[] = [], params?: GetMethodParams) {
         return await (await this.getContract(address)).get(method, stack, {
@@ -480,13 +486,12 @@ export class Blockchain {
 
     /**
      * Creates new {@link ContractProvider} for contract address.
-     * ```ts
-     * const contractProvider = blockchain.provider(address, init);
-     * const txs = await contractProvider.getTransactions(...);
-     * ```
      *
      * @param address Address to create contract provider for
      * @param init Initial state of contract
+     *
+     * @example
+     * const contractProvider = blockchain.provider(address, init);
      */
     provider(address: Address, init?: StateInit | null): ContractProvider {
         return new BlockchainContractProvider({
@@ -500,10 +505,13 @@ export class Blockchain {
 
     /**
      * Creates {@link Sender} for address.
-     * ```ts
+     *
+     * Note, that this sender pushes internal messages to Blockchain directly.
+     * No value is deducted from sender address, all the values are set to defaults. Use for test purposes only.
+     *
+     * @example
      * const sender = this.sender(address);
      * await contract.send(sender, ...);
-     * ```
      *
      * @param address Address to create sender for
      */
@@ -518,17 +526,17 @@ export class Blockchain {
     }
 
     /**
-     * Creates treasury wallet contract. This wallet is used as alternative to wallet-v4 smart contract.
-     * ```ts
+     * Creates treasury wallet contract. This wallet is used as alternative to wallet smart contract.
+     *
+     * @param {string} seed Initial seed for treasury. If the same seed is used to create a treasury, then these treasuries will be identical
+     * @param {TreasuryParams} params Params for treasury creation. See {@link TreasuryParams} for more information.
+     *
+     * @example
      * const wallet = await blockchain.treasury('wallet')
      * await wallet.send({
      *     to: someAddress,
      *     value: toNano('0.5'),
      * });
-     * ```
-     *
-     * @param {string} seed Initial seed for treasury. If the same seed is used to create a treasury, then these treasuries will be identical
-     * @param [params] Params for treasury creation. See {@link TreasuryParams} for more information.
      */
     async treasury(seed: string, params?: TreasuryParams) {
         const subwalletId = testSubwalletId(seed)
@@ -552,12 +560,12 @@ export class Blockchain {
 
     /**
      * Bulk variant of {@link treasury}.
-     * ```ts
-     * const [wallet1, wallet2, wallet3] = await blockchain.createWallets(3);
-     * ```
      * @param n Number of wallets to create
      * @param params Params for treasury creation. See {@link TreasuryParams} for more information.
      * @returns Array of opened treasury contracts
+     *
+     * @example
+     * const [wallet1, wallet2, wallet3] = await blockchain.createWallets(3);
      */
     async createWallets(n: number, params?: TreasuryParams) {
         const wallets: SandboxContract<TreasuryContract>[] = []
@@ -570,11 +578,11 @@ export class Blockchain {
 
     /**
      * Opens contract. Returns proxy that substitutes the blockchain Provider in methods starting with get and set.
-     * ```ts
-     * const contract = blockchain.openContract(new Contract(address));
-     * ```
      *
      * @param contract Contract to open.
+     *
+     * @example
+     * const contract = blockchain.openContract(new Contract(address));
      */
     openContract<T extends Contract>(contract: T) {
         let address: Address;
@@ -672,11 +680,19 @@ export class Blockchain {
         this.logsVerbosity = value
     }
 
+    /**
+     * Updates logs verbosity level for address.
+     */
     async setVerbosityForAddress(address: Address, verbosity: Partial<LogsVerbosity> | Verbosity | undefined) {
         const contract = await this.getContract(address)
         contract.setVerbosity(verbosity)
     }
 
+    /**
+     * Updates blockchain config
+     *
+     * @param {BlockchainConfig} config - Custom config in Cell format, or predefined `default` | `slim`
+     */
     setConfig(config: BlockchainConfig) {
         this.networkConfig = blockchainConfigToBase64(config)
     }
@@ -696,16 +712,16 @@ export class Blockchain {
 
     /**
      * Update global blockchain libs.
-     * ```ts
+     *
+     * @param value Cell in libs format: Dictionary<CellHash, Cell>
+     *
+     * @example
      * const code = await compile('Contract');
      *
      * const libsDict = Dictionary.empty(Dictionary.Keys.Buffer(32), Dictionary.Values.Cell());
      * libsDict.set(code.hash(), code);
      *
      * blockchain.libs = beginCell().storeDictDirect(libsDict).endCell();
-     * ```
-     *
-     * @param value Cell in libs format: Dictionary<CellHash, Cell>
      */
     set libs(value: Cell | undefined) {
         this.globalLibs = value
@@ -713,12 +729,15 @@ export class Blockchain {
 
     /**
      * Creates instance of sandbox blockchain.
-     * ```ts
-     * const blockchain = await Blockchain.create({ config: 'slim' });
-     * ```
      *
-     * Remote storage example:
-     * ```ts
+     * @param [opts.executor] Custom contract executor. If omitted {@link Executor} is used.
+     * @param [opts.config] Config used in blockchain. If omitted {@link defaultConfig} is used.
+     * @param [opts.storage] Contracts storage used for blockchain. If omitted {@link LocalBlockchainStorage} is used.
+     *
+     * @example
+     * const blockchain = await Blockchain.create({ config: 'slim' });
+     *
+     * @example Remote storage
      * let client = new TonClient4({
      *     endpoint: 'https://mainnet-v4.tonhubapi.com'
      * })
@@ -726,11 +745,6 @@ export class Blockchain {
      * let blockchain = await Blockchain.create({
      *     storage: new RemoteBlockchainStorage(wrapTonClient4ForRemote(client), 34892000)
      * });
-     * ```
-     *
-     * @param [opts.executor] Custom contract executor. If omitted {@link Executor} used.
-     * @param [opts.config] Config used in blockchain. If omitted {@link defaultConfig} used.
-     * @param [opts.storage] Contracts storage used for blockchain. If omitted {@link LocalBlockchainStorage} used.
      */
     static async create(opts?: { executor?: IExecutor, config?: BlockchainConfig, storage?: BlockchainStorage }) {
         return new Blockchain({

@@ -45,7 +45,7 @@ function senderArgsToMessageRelaxed(args: SenderArguments): MessageRelaxed {
 }
 
 /**
- * @class TreasuryContract is Wallet v4 alternative. For additional information see {@link Blockchain.treasury}
+ * @class TreasuryContract is a Wallet alternative. For additional information see {@link Blockchain#treasury}
  */
 export class TreasuryContract implements Contract {
     static readonly code = Cell.fromBase64('te6cckEBBAEARQABFP8A9KQT9LzyyAsBAgEgAwIAWvLT/+1E0NP/0RK68qL0BNH4AH+OFiGAEPR4b6UgmALTB9QwAfsAkTLiAbPmWwAE0jD+omUe')
