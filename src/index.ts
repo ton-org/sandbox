@@ -89,3 +89,5 @@ export {
 export {
     ExtraCurrency,
 } from './utils/ec';
+
+export * from './utils/collectMetric';
