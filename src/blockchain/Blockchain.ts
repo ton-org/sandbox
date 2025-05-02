@@ -26,6 +26,7 @@ import { AsyncLock } from "../utils/AsyncLock";
 import { internal } from "../utils/message";
 import { slimConfig } from "../config/slimConfig";
 import { testSubwalletId } from "../utils/testTreasurySubwalletId";
+import { collectMetric } from "../utils/collectMetric";
 
 const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS'
 
@@ -613,23 +614,24 @@ export class Blockchain {
 
                 const value = target[prop]
                 if (typeof prop === 'string' && typeof value === 'function') {
+                    const ctx = {
+                        contract,
+                        methodName: prop,
+                    }
                     if (prop.startsWith('get')) {
                         return (...args: any[]) => value.apply(target, [provider, ...args])
                     } else if (prop.startsWith('send')) {
                         return async (...args: any[]) => {
-                            const ret = value.apply(target, [provider, ...args])
+                            let ret = value.apply(target, [provider, ...args])
                             if (ret instanceof Promise) {
-                                const r = await ret
-                                return {
-                                    ...await blkch.runQueue(),
-                                    result: r,
-                                }
-                            } else {
-                                return {
-                                    ...await blkch.runQueue(),
-                                    result: ret,
-                                }
+                                ret = await ret
                             }
+                            const out = {
+                                ...await blkch.runQueue(),
+                                result: ret,
+                            }
+                            await collectMetric(blkch, ctx, out)
+                            return out
                         }
                     }
                 }
