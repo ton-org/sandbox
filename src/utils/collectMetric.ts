@@ -1,6 +1,6 @@
-import { Address, Cell, Contract } from '@ton/core';
+import { Address, beginCell, Cell, Contract } from '@ton/core';
+import { Dictionary, DictionaryKeyTypes, TransactionComputePhase } from '@ton/core';
 import { Blockchain, SendMessageResult } from '../blockchain/Blockchain';
-import { TransactionComputePhase } from '@ton/core/src/types/TransactionComputePhase';
 
 export type MetricContext<T extends Contract> = {
     contract: T;
@@ -12,7 +12,7 @@ export type State = {
     data: Cell;
 };
 
-export type StateMetric = {
+export type CellMetric = {
     cells: number;
     bits: number;
 };
@@ -42,7 +42,8 @@ export type Metric = {
     opCode: number;
     computePhase: ComputePhaseMetric;
     actionPhase: ActionPhaseMetric;
-    state: StateMetric;
+    outMessages: CellMetric;
+    state: CellMetric;
 };
 
 export type SnapshotMetric = {
@@ -80,6 +81,13 @@ export function createMetricStore(context: any = globalThis): Array<Metric> {
     return context[STORE_METRIC];
 }
 
+export function calcDictSize<K extends DictionaryKeyTypes, V>(dict: Dictionary<K, V>) {
+    if (dict.size > 0) {
+        return calcCellSize(beginCell().storeDict(dict).endCell().asSlice().loadRef());
+    }
+    return { cells: 0, bits: 0 };
+}
+
 export function calcCellSize(root: Cell, visited: Set<string> = new Set<string>()) {
     const hash = root.hash().toString('hex');
     if (visited.has(hash)) {
@@ -96,7 +104,7 @@ export function calcCellSize(root: Cell, visited: Set<string> = new Set<string>(
     return { cells, bits };
 }
 
-export function calcStateSize(state: State): StateMetric {
+export function calcStateSize(state: State): CellMetric {
     const codeSize = calcCellSize(state.code);
     const dataSize = calcCellSize(state.data);
     return {
@@ -129,7 +137,7 @@ export async function collectMetric<T extends Contract>(
     if (!Array.isArray(store)) {
         return;
     }
-    let state: StateMetric = { cells: 0, bits: 0 };
+    let state: CellMetric = { cells: 0, bits: 0 };
     if (ctx.contract.init && ctx.contract.init.code && ctx.contract.init.data) {
         state = calcStateSize({ code: ctx.contract.init.code, data: ctx.contract.init.data });
     } else {
@@ -166,6 +174,7 @@ export async function collectMetric<T extends Contract>(
                 totalActionFees: tx.description.actionPhase?.totalActions,
                 totalFwdFees: Number(tx.description.actionPhase?.totalFwdFees ?? 0),
             },
+            outMessages: calcDictSize(tx.outMessages),
             state,
         };
         store.push(metric);
