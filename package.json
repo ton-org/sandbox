@@ -6,6 +6,8 @@
   "license": "MIT",
   "author": "TonTech",
   "files": [
+    "jest-environment.js",
+    "jest-reporter.js",
     "dist/**/*"
   ],
   "repository": {
@@ -31,7 +33,7 @@
     "wasm:pack": "ts-node ./scripts/pack-wasm.ts",
     "wasm:copy": "cp src/executor/emulator-emscripten.js src/executor/emulator-emscripten.wasm.js ./dist/executor",
     "test": "yarn wasm:pack && yarn jest src",
-    "build": "rm -rf dist && yarn wasm:pack && yarn test && tsc && yarn wasm:copy",
+    "build": "rm -rf dist && yarn wasm:pack && tsc && yarn test && yarn wasm:copy",
     "config:pack": "ts-node ./scripts/pack-config.ts"
   },
   "packageManager": "yarn@3.6.1"
