@@ -2,6 +2,10 @@ import '@ton/test-utils';
 import { beginCell, toNano } from '@ton/core';
 import { Blockchain } from '../blockchain/Blockchain';
 import { createMetricStore, getMetricStore, makeSnapshotMetric } from './collectMetric';
+import { BenchmarkCommand } from '../jest/BenchmarkCommand';
+
+const bc = new BenchmarkCommand();
+const itIf = (condition: boolean) => (condition ? it : it.skip);
 
 async function simpleCase() {
     const blockchain = await Blockchain.create();
@@ -19,12 +23,13 @@ async function simpleCase() {
 }
 
 describe('collectMetric', () => {
-    it('should not collect metric', async () => {
+    itIf(!bc.doBenchmark)('should not collect metric', async () => {
+        let context: any = {};
         await simpleCase();
-        expect(getMetricStore()).toEqual(undefined);
+        expect(getMetricStore(context)).toEqual(undefined);
     });
 
-    it('should be collect metric', async () => {
+    itIf(!bc.doBenchmark)('should be collect metric', async () => {
         const store = createMetricStore();
         expect(store.length).toEqual(0);
         await simpleCase();
