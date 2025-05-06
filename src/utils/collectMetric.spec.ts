@@ -54,6 +54,10 @@ describe('collectMetric', () => {
                     totalActions: 1,
                     totalFwdFees: 400000,
                 },
+                outMessages: {
+                    bits: 744,
+                    cells: 2,
+                },
                 state: {
                     bits: 714,
                     cells: 5,
@@ -79,6 +83,10 @@ describe('collectMetric', () => {
                     totalActionFees: 0,
                     totalActions: 0,
                     totalFwdFees: 0,
+                },
+                outMessages: {
+                    bits: 0,
+                    cells: 0,
                 },
                 state: {
                     bits: 714,
