@@ -1,12 +1,14 @@
 import { dirname, join } from 'path';
-import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import chalk from 'chalk';
 import { BaseReporter } from '@jest/reporters';
 import type { Config } from '@jest/types';
 import { sandboxMetricRawFile } from './BenchmarkEnvironment';
-import { Metric, makeSnapshotMetric } from '../utils/collectMetric';
+import { Metric, makeSnapshotMetric, CodeHash } from '../utils/collectMetric';
 import { readJsonl } from '../utils/readJsonl';
 import { BenchmarkCommand } from './BenchmarkCommand';
+import { ContractDatabase } from '../utils/ContractDatabase';
+import { ContractABI } from '@ton/core';
 
 export const defaultReportName = '.benchmark';
 
@@ -23,6 +25,7 @@ export interface Options {
     reportName?: string;
     contractExcludes?: string[];
     removeRawResult?: boolean;
+    contractDatabase?: Record<CodeHash, ContractABI> | string;
 }
 
 export default class BenchmarkReporter extends BaseReporter {
@@ -49,6 +52,18 @@ export default class BenchmarkReporter extends BaseReporter {
         return this.options.removeRawResult || true;
     }
 
+    get contractDatabase() {
+        let value = this.options.contractDatabase || {};
+        if (typeof value === 'string') {
+            try {
+                value = JSON.parse(readFileSync(value, 'utf-8')) as Record<CodeHash, ContractABI>;
+            } catch (error) {
+                throw new Error(`Could not parse contract database: ${value}`);
+            }
+        }
+        return ContractDatabase.form(value);
+    }
+
     get contractExcludes() {
         return this.options.contractExcludes || [];
     }
@@ -58,9 +73,7 @@ export default class BenchmarkReporter extends BaseReporter {
     }
 
     get metricStore() {
-        return readJsonl<Metric>(this.sandboxMetricRawFile).then((list) =>
-            list.filter((it) => it.contractName == null || !this.contractExcludes.includes(it.contractName)),
-        );
+        return readJsonl<Metric>(this.sandboxMetricRawFile);
     }
 
     async onRunComplete(): Promise<void> {
@@ -94,7 +107,10 @@ export default class BenchmarkReporter extends BaseReporter {
     }
 
     async prepareOnlyMetricReport(comment: string) {
-        const snapshot = makeSnapshotMetric(comment, await this.metricStore);
+        const snapshot = makeSnapshotMetric(comment, await this.metricStore, {
+            contractDatabase: this.contractDatabase,
+            contractExcludes: this.contractExcludes,
+        });
         const file = join(this.rootDir, this.reportName, `${snapshot.createdAt.getTime()}.json`);
         const folder = dirname(file);
         if (!existsSync(folder)) {
