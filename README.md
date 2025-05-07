@@ -15,6 +15,7 @@ The key difference of this package from [ton-contract-executor](https://github.c
   * [Cross contract tests](#cross-contract-tests)
   * [Testing key points](#testing-key-points)
   * [Test examples](#test-examples)
+* [Benchmark contracts](#benchmark-contracts)
 * [Sandbox pitfalls](#sandbox-pitfalls)
 * [Viewing logs](#viewing-logs)
 * [Setting smart contract state directly](#setting-smart-contract-state-directly)
@@ -290,6 +291,73 @@ Learn more from examples:
 * [FunC Test Examples](https://docs.ton.org/develop/smart-contracts/examples#examples-of-tests-for-smart-contracts)
 * [Tact Test Examples](docs/tact-testing-examples.md) 
 
+## Benchmark contracts
+
+The `@ton/sandbox` package provides `@ton/sandbox/jest-environment` and `@ton/sandbox/jest-reporter` built-in support for benchmarking smart contract behavior during tests, including tracking gas usage, cell size, opcode execution, and action phases.
+This is especially useful for performance analysis, gas optimization, and regression checks on contract logic.
+
+> ℹ️ See also: [Collect metric API](docs/collect-metric-api.md) for low-level control and manual snapshots.
+
+### Features
+
+* Automatic metric collection from all transactions triggered during tests
+* Snapshot reporting with contract-level filters
+* Integration with [blueprint](https://github.com/ton-org/blueprint#benchmark-contracts)
+
+### Setup in `jest.config.ts`
+
+```ts
+import type { Config } from 'jest';
+
+const config: Config = {
+    preset: 'ts-jest',
+    testEnvironment: '@ton/sandbox/jest-environment',
+    reporters: [
+        'default',
+        ['@ton/sandbox/jest-reporter', {
+            // options
+            reportName: '.benchmark', // output folder for benchmark reports, default: '.benchmark'
+            removeRawResult: true,    // remove raw metric from reports, default: true
+            contractExcludes: [       // exclude specific contracts from snapshot, default: []
+                'TreasuryContract',
+            ],
+        }],
+    ],
+};
+
+export default config;
+```
+
+### How to run benchmarks
+
+To collect and save snapshot metrics:
+
+```bash
+BENCH_NEW="func v0.4.6" npx jest
+```
+
+This will:
+
+* Run your tests
+* Collect contract execution metrics
+* Save a snapshot in `.benchmark/<timestamp>.json`
+
+To compare with a previous snapshot:
+
+```bash
+BENCH_DIFF=do npx jest
+```
+
+### Output structure
+
+By default, the reporter generates:
+
+```
+.project-root/
+├── .benchmark/
+│   └── 4200000000000.json    // timestamped snapshot file
+└── .sandbox-metric-raw.jsonl // raw metric log (auto-deleted by default)
+```
 
 ## Sandbox pitfalls
 

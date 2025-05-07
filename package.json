@@ -30,6 +30,7 @@
     "@ton/crypto": ">=3.3.0"
   },
   "scripts": {
+    "metric": "BENCH_NEW=\"@ton/sandbox v$(npm view @ton/sandbox version)\" jest",
     "wasm:pack": "ts-node ./scripts/pack-wasm.ts",
     "wasm:copy": "cp src/executor/emulator-emscripten.js src/executor/emulator-emscripten.wasm.js ./dist/executor",
     "test": "yarn wasm:pack && yarn jest src",
