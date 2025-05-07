@@ -7,20 +7,50 @@ type Condition = {
     receiver: 'internal' | 'external-in' | 'external-out';
 };
 
-export class ContractDatabase extends Map<CodeHash, ContractABI> {
-    static form(data: Record<CodeHash, ContractABI>): ContractDatabase {
-        const self = new ContractDatabase();
-        for (const [hash, abi] of Object.entries(data) as [CodeHash, ContractABI][]) {
-            self.set(hash, abi);
-        }
-        return self;
+export type ContractDataKey = CodeHash | string;
+
+export type ContractData = Record<ContractDataKey, ContractABI | ContractDataKey>;
+
+function isCodeHash(value: unknown): value is CodeHash {
+    return typeof value === 'string' && /^0x[0-9a-fA-F]+$/.test(value);
+}
+
+export class ContractDatabase {
+    protected list: Map<ContractDataKey, ContractABI>;
+    protected match: Map<ContractDataKey, ContractDataKey>;
+
+    constructor(abiList: Map<ContractDataKey, ContractABI>, codeHashMatch: Map<ContractDataKey, ContractDataKey>) {
+        this.list = abiList;
+        this.match = codeHashMatch;
+    }
+
+    static from(data: ContractData): ContractDatabase {
+        const list = new Map<ContractDataKey, ContractABI>();
+        const match = new Map<ContractDataKey, ContractDataKey>();
+        (Object.entries(data) as [ContractDataKey, ContractABI | ContractDataKey][]).forEach(([key, value]) => {
+            if ((isCodeHash(key) && typeof value === 'string') || (isCodeHash(value) && typeof key === 'string')) {
+                match.set(key, value);
+            } else if (!isCodeHash(value) && typeof value !== 'string') {
+                list.set(key, value);
+            }
+        });
+        return new ContractDatabase(list, match);
+    }
+
+    origin(needle: CodeHash) {
+        return this.match.get(needle) || needle;
+    }
+
+    get(needle: CodeHash) {
+        return this.list.get(this.origin(needle));
     }
 
     extract(metric: Metric) {
         if (metric.codeHash === undefined) {
             return;
         }
-        const abi = this.get(metric.codeHash) || ({} as ContractABI);
+        const codeHash = this.origin(metric.codeHash);
+        const abi = this.list.get(codeHash) || ({} as ContractABI);
         if (metric.contractName) {
             abi.name = metric.contractName;
         }
@@ -43,7 +73,7 @@ export class ContractDatabase extends Map<CodeHash, ContractABI> {
                 },
             } as ABIReceiver);
         }
-        this.set(metric.codeHash, abi);
+        this.list.set(codeHash, abi);
     }
 
     by(where: Partial<Condition>): Partial<Metric> {
