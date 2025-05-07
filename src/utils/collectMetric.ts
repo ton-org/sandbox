@@ -76,7 +76,7 @@ export function makeSnapshotMetric(
     config: Partial<SnapshotMetricConfig> = {},
 ): SnapshotMetric {
     const contractExcludes = config.contractExcludes || new Array<ContractName>();
-    const contractDatabase = config.contractDatabase || ContractDatabase.form({});
+    const contractDatabase = config.contractDatabase || ContractDatabase.from({});
     const snapshot: SnapshotMetric = {
         comment,
         createdAt: new Date(),

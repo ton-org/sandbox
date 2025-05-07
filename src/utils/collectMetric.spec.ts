@@ -45,8 +45,9 @@ describe('collectMetric', () => {
         expect(store.length).toEqual(0);
         await simpleCase();
         expect(store.length).toEqual(4);
-        const contractDatabase = ContractDatabase.form({
-            '0xd992502b94ea96e7b34e5d62ffb0c6fc73d78b3e61f11f0848fb3a1eb1afc912': {
+        const contractDatabase = ContractDatabase.from({
+            '0xd992502b94ea96e7b34e5d62ffb0c6fc73d78b3e61f11f0848fb3a1eb1afc912': 'TreasuryContract',
+            TreasuryContract: {
                 name: 'TreasuryContract',
                 types: [{ name: 'foo', header: Number('0xdeadface'), fields: [] }],
                 receivers: [

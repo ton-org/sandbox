@@ -61,7 +61,7 @@ export default class BenchmarkReporter extends BaseReporter {
                 throw new Error(`Could not parse contract database: ${value}`);
             }
         }
-        return ContractDatabase.form(value);
+        return ContractDatabase.from(value);
     }
 
     get contractExcludes() {

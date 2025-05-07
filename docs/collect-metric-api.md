@@ -32,8 +32,9 @@ async function main() {
     body: beginCell().storeUint(0x706f6e67, 32).endCell(), // "pong"
   });
 
-  const contractDatabase = ContractDatabase.form({
-    '0xd992502b94ea96e7b34e5d62ffb0c6fc73d78b3e61f11f0848fb3a1eb1afc912': {
+  const contractDatabase = ContractDatabase.from({
+    '0xd992502b94ea96e7b34e5d62ffb0c6fc73d78b3e61f11f0848fb3a1eb1afc912': 'TreasuryContract',
+    'TreasuryContract': {
       name: 'TreasuryContract',
       types: [
         { name: 'ping', header: 0x70696e67, fields: [] },
@@ -95,17 +96,25 @@ You can exclude contracts from the snapshot using:
 
 ```ts
 makeSnapshotMetric('label', store, {
-  contractExcludes: ['UtilityContract'],
+  contractExcludes: [
+    'ContractName1',
+    'ContractName2',
+  ],
 });
 ```
 
 #### ABI auto-mapping
 
-Use `ContractDatabase.form()` to define a map of known `CodeHash` → [ContractABI](https://github.com/ton-org/ton-core/blob/c627c266030cb95d07dbea950dc8af36a3307d37/src/contract/ContractABI.ts), so method names and contract names are resolved automatically:
+Use `ContractDatabase.from()` to define a map of known `CodeHash` → [ContractABI](https://github.com/ton-org/ton-core/blob/c627c266030cb95d07dbea950dc8af36a3307d37/src/contract/ContractABI.ts), so method names and contract names are resolved automatically:
 
 ```ts
 makeSnapshotMetric('label', store, {
-  contractDatabase: ContractDatabase.form({'0xCodeHash': {...ContractABI}}),
+  contractDatabase: ContractDatabase.from({
+    '0xCodeHashv':  {...ContractABI}, // map CodeHash and ABI_1
+    'ContractName': {...ContractABI}, // map ContractName and ABI_2
+    '0xCodeHashN1': '0xCodeHash',     // aliase for ABI_1
+    '0xCodeHashN2': 'ContractName',   // aliase for ABI_2
+  }),
 });
 ```
 
