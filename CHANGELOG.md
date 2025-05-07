@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added methods for collect metric of run contracts
 - Added `@ton/sandbox/jest-environment` and `@ton/sandbox/jest-reporter` for write snapshot metric from run tests
+- Added contract method mapping mechanism for details benchmark metrics
 
 ## [0.30.0] - 2025-05-12
 

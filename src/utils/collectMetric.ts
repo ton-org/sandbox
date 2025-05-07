@@ -1,6 +1,7 @@
 import { Address, beginCell, Cell, Contract } from '@ton/core';
 import { Dictionary, DictionaryKeyTypes, TransactionComputePhase } from '@ton/core';
 import { Blockchain, SendMessageResult } from '../blockchain/Blockchain';
+import { ContractDatabase } from './ContractDatabase';
 
 export type MetricContext<T extends Contract> = {
     contract: T;
@@ -34,16 +35,26 @@ export type ActionPhaseMetric = {
     totalActionFees?: number;
 };
 
+export type ContractName = string;
+
+export type ContractMethodName = string;
+
+export type CodeHash = `0x${string}`;
+
+export type OpCode = `0x${string}`;
+
 export type Metric = {
     testName?: string;
     address: string;
-    contractName: string | null;
-    methodName: string | null;
-    opCode: number;
+    codeHash?: CodeHash;
+    state: CellMetric;
+    contractName?: ContractName;
+    methodName?: ContractMethodName;
+    receiver?: 'internal' | 'external-in' | 'external-out';
+    opCode: OpCode;
     computePhase: ComputePhaseMetric;
     actionPhase: ActionPhaseMetric;
     outMessages: CellMetric;
-    state: CellMetric;
 };
 
 export type SnapshotMetric = {
@@ -52,9 +63,20 @@ export type SnapshotMetric = {
     items: Metric[];
 };
 
+export type SnapshotMetricConfig = {
+    contractExcludes: ContractName[];
+    contractDatabase: ContractDatabase;
+};
+
 const STORE_METRIC = Symbol.for('ton-sandbox-metric-store');
 
-export function makeSnapshotMetric(comment: string, store: Metric[]): SnapshotMetric {
+export function makeSnapshotMetric(
+    comment: string,
+    store: Metric[],
+    config: Partial<SnapshotMetricConfig> = {},
+): SnapshotMetric {
+    const contractExcludes = config.contractExcludes || new Array<ContractName>();
+    const contractDatabase = config.contractDatabase || ContractDatabase.form({});
     const snapshot: SnapshotMetric = {
         comment,
         createdAt: new Date(),
@@ -66,6 +88,23 @@ export function makeSnapshotMetric(comment: string, store: Metric[]): SnapshotMe
         if (seen.has(key)) continue;
         snapshot.items.push(metric);
         seen.add(key);
+        if (metric.codeHash) {
+            contractDatabase.extract(metric);
+        }
+    }
+    for (const item of snapshot.items) {
+        const find = contractDatabase.by(item);
+        if (!item.contractName && find.contractName) {
+            item.contractName = find.contractName;
+        }
+        if (!item.methodName && find.methodName) {
+            item.methodName = find.methodName;
+        }
+    }
+    if (contractExcludes.length > 0) {
+        snapshot.items = snapshot.items.filter(
+            (it) => typeof it.contractName === 'undefined' || !contractExcludes.includes(it.contractName),
+        );
     }
     return snapshot;
 }
@@ -128,6 +167,12 @@ export function computePhase(phase: TransactionComputePhase): ComputePhaseMetric
     };
 }
 
+export enum OpCodeReserved {
+    send = 0x0,
+    notSupported = 0xffffffff,
+    notAllowed = 0xfffffffe,
+}
+
 export async function collectMetric<T extends Contract>(
     blockchain: Blockchain,
     ctx: MetricContext<T>,
@@ -138,7 +183,9 @@ export async function collectMetric<T extends Contract>(
         return;
     }
     let state: CellMetric = { cells: 0, bits: 0 };
+    let codeHash: CodeHash | undefined;
     if (ctx.contract.init && ctx.contract.init.code && ctx.contract.init.data) {
+        codeHash = `0x${ctx.contract.init.code.hash().toString('hex')}`;
         state = calcStateSize({ code: ctx.contract.init.code, data: ctx.contract.init.data });
     } else {
         const account = (await blockchain.getContract(ctx.contract.address)).accountState;
@@ -151,19 +198,28 @@ export async function collectMetric<T extends Contract>(
     if ((globalThis as any)['expect']) {
         testName = expect.getState().currentTestName;
     }
-    let contractName: string | null = ctx.contract.constructor.name;
-    let methodName: string | null = ctx.methodName;
+    let contractName: ContractName | undefined = ctx.contract.constructor.name;
+    let methodName: ContractMethodName | undefined = ctx.methodName;
 
     for (const tx of result.transactions) {
         if (tx.description.type !== 'generic') continue;
-        const body = tx.inMessage?.info.type === 'internal' ? tx.inMessage?.body.beginParse() : undefined;
-        const opCode = body && body.remainingBits >= 32 ? body.preloadUint(32) : 0;
-        const address = Address.parse(`0:${tx.address.toString(16)}`);
+        const receiver = tx.inMessage?.info.type;
+        const body = tx.inMessage?.body ? tx.inMessage.body.beginParse() : undefined;
+        let opCode: OpCode = '0x0';
+        if (receiver === 'internal') {
+            opCode = `0x${(body && body.remainingBits >= 32 ? body.preloadUint(32) : 0).toString(16)}`;
+        }
+        if (!methodName && Object.values(OpCodeReserved).includes(Number(opCode))) {
+            methodName = OpCodeReserved[Number(opCode)];
+        }
+        const address = Address.parseRaw(`0:${tx.address.toString(16).padStart(64, '0')}`);
         const metric: Metric = {
             testName,
             address: address.toString(),
+            codeHash,
             contractName,
             methodName,
+            receiver,
             opCode,
             computePhase: computePhase(tx.description.computePhase),
             actionPhase: {
@@ -178,11 +234,11 @@ export async function collectMetric<T extends Contract>(
             state,
         };
         store.push(metric);
-        methodName = null;
+        methodName = undefined;
         if (!address.equals(ctx.contract.address)) {
             contractName = ctx.contract.constructor.name;
         } else {
-            contractName = null;
+            contractName = undefined;
         }
     }
 }

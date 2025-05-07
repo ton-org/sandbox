@@ -316,6 +316,7 @@ const config: Config = {
         'default',
         ['@ton/sandbox/jest-reporter', {
             // options
+            contractDatabase: 'path or json', // a map of known contracts, see Collect metric API, default: '{}'
             reportName: '.benchmark', // output folder for benchmark reports, default: '.benchmark'
             removeRawResult: true,    // remove raw metric from reports, default: true
             contractExcludes: [       // exclude specific contracts from snapshot, default: []

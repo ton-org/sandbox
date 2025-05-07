@@ -2,13 +2,18 @@
 
 The `@ton/sandbox` package provides a built-in way to collect detailed metrics during contract execution. This is useful for benchmarking gas usage, VM steps, message forwarding, and storage impact of smart contracts.
 
-> ℹ️ See also: [Benchmark Contracts documentation](https://github.com/ton-org/sandbox#benchmark-contracts)
+> ℹ️ See also: [Benchmark Contracts documentation](../README.md#benchmark-contracts)
 
 ### Example
 
 ```ts
 import { beginCell, toNano } from '@ton/core';
-import { Blockchain, createMetricStore, makeSnapshotMetric } from '@ton/sandbox';
+import {
+  Blockchain,
+  createMetricStore,
+  makeSnapshotMetric,
+  ContractDatabase,
+} from '@ton/sandbox';
 
 async function main() {
   const store = createMetricStore(); // initialize metric store
@@ -27,7 +32,21 @@ async function main() {
     body: beginCell().storeUint(0x706f6e67, 32).endCell(), // "pong"
   });
 
-  const snapshot = makeSnapshotMetric('Sample Snapshot', store);
+  const contractDatabase = ContractDatabase.form({
+    '0xd992502b94ea96e7b34e5d62ffb0c6fc73d78b3e61f11f0848fb3a1eb1afc912': {
+      name: 'TreasuryContract',
+      types: [
+        { name: 'ping', header: 0x70696e67, fields: [] },
+        { name: 'pong', header: 0x706f6e67, fields: [] },
+      ],
+      receivers: [
+        { receiver: 'internal', message: { kind: 'typed', type: 'ping' } },
+        { receiver: 'internal', message: { kind: 'typed', type: 'pong' } },
+      ],
+    },
+  });
+
+  const snapshot = makeSnapshotMetric('Some label', store, { contractDatabase });
   console.log(JSON.stringify(snapshot, null, 2));
 }
 
@@ -44,6 +63,14 @@ main().catch((error) => {
 
 ### Snapshot Structure
 
+```ts
+type SnapshotMetric = {
+  comment: string;
+  createdAt: Date;
+  items: Metric[];
+}
+```
+
 A snapshot consists of:
 
 * `comment`: a user-defined label
@@ -54,9 +81,33 @@ Each `Metric` includes:
 
 * `testName` – the name of the current test (if available in Jest context)
 * `contractName`, `methodName`, `opCode` – for identifying the source
+* `codeHash` – `0x...` hex-formatted hash of contract code
+* `receiver` – `internal`, `external-in`, or `external-out`
 * `computePhase`, `actionPhase` – information from transaction phases
 * `outMessages` – total cell and bit usage of outbound messages
 * `state` – total cell and bit usage of the contract's code + data
+
+### Advanced Configuration
+
+#### Contract Exclusion (optional)
+
+You can exclude contracts from the snapshot using:
+
+```ts
+makeSnapshotMetric('label', store, {
+  contractExcludes: ['UtilityContract'],
+});
+```
+
+#### ABI auto-mapping
+
+Use `ContractDatabase.form()` to define a map of known `CodeHash` → [ContractABI](https://github.com/ton-org/ton-core/blob/c627c266030cb95d07dbea950dc8af36a3307d37/src/contract/ContractABI.ts), so method names and contract names are resolved automatically:
+
+```ts
+makeSnapshotMetric('label', store, {
+  contractDatabase: ContractDatabase.form({'0xCodeHash': {...ContractABI}}),
+});
+```
 
 ### Where to go next
 
