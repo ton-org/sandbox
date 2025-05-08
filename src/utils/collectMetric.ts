@@ -44,11 +44,16 @@ export type CodeHash = `0x${string}`;
 
 export type OpCode = `0x${string}`;
 
+export type StateMetric = {
+    code: CellMetric;
+    data: CellMetric;
+};
+
 export type Metric = {
     testName?: string;
     address: string;
     codeHash?: CodeHash;
-    state: CellMetric;
+    state: StateMetric;
     contractName?: ContractName;
     methodName?: ContractMethodName;
     receiver?: 'internal' | 'external-in' | 'external-out';
@@ -152,12 +157,12 @@ export function calcCellSize(root: Cell, visited: Set<string> = new Set<string>(
     return { cells, bits };
 }
 
-export function calcStateSize(state: State): CellMetric {
+export function calcStateSize(state: State): StateMetric {
     const codeSize = calcCellSize(state.code);
     const dataSize = calcCellSize(state.data);
     return {
-        cells: codeSize.cells + dataSize.cells,
-        bits: codeSize.bits + dataSize.bits,
+        code: codeSize,
+        data: dataSize,
     };
 }
 
@@ -191,7 +196,7 @@ export async function collectMetric<T extends Contract>(
     if (!Array.isArray(store)) {
         return;
     }
-    let state: CellMetric = { cells: 0, bits: 0 };
+    let state: StateMetric = { data: { cells: 0, bits: 0 }, code: { cells: 0, bits: 0 } };
     let codeHash: CodeHash | undefined;
     if (ctx.contract.init && ctx.contract.init.code && ctx.contract.init.data) {
         codeHash = `0x${ctx.contract.init.code.hash().toString('hex')}`;
