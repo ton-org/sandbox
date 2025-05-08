@@ -346,7 +346,7 @@ This will:
 To compare with a previous snapshot:
 
 ```bash
-BENCH_DIFF=do npx jest
+BENCH_DIFF=true npx jest
 ```
 
 ### Output structure
