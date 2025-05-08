@@ -1,7 +1,8 @@
-import { Address, beginCell, Cell, Contract } from '@ton/core';
+import { Address, beginCell, Cell, Contract, storeMessage, Message } from '@ton/core';
 import { Dictionary, DictionaryKeyTypes, TransactionComputePhase } from '@ton/core';
 import { Blockchain, SendMessageResult } from '../blockchain/Blockchain';
 import { ContractDatabase } from './ContractDatabase';
+import { Maybe } from '@ton/core/src/utils/maybe';
 
 export type MetricContext<T extends Contract> = {
     contract: T;
@@ -54,6 +55,7 @@ export type Metric = {
     opCode: OpCode;
     computePhase: ComputePhaseMetric;
     actionPhase: ActionPhaseMetric;
+    inMessages: CellMetric;
     outMessages: CellMetric;
 };
 
@@ -118,6 +120,13 @@ export function createMetricStore(context: any = globalThis): Array<Metric> {
         context[STORE_METRIC] = new Array<Metric>();
     }
     return context[STORE_METRIC];
+}
+
+export function calcMessageSize(msg: Maybe<Message>) {
+    if (msg) {
+        return calcCellSize(beginCell().store(storeMessage(msg)).endCell());
+    }
+    return { cells: 0, bits: 0 };
 }
 
 export function calcDictSize<K extends DictionaryKeyTypes, V>(dict: Dictionary<K, V>) {
@@ -230,6 +239,7 @@ export async function collectMetric<T extends Contract>(
                 totalActionFees: tx.description.actionPhase?.totalActions,
                 totalFwdFees: Number(tx.description.actionPhase?.totalFwdFees ?? 0),
             },
+            inMessages: calcMessageSize(tx.inMessage),
             outMessages: calcDictSize(tx.outMessages),
             state,
         };
