@@ -66,7 +66,7 @@ main().catch((error) => {
 
 ```ts
 type SnapshotMetric = {
-  comment: string;
+  label: string;
   createdAt: Date;
   items: Metric[];
 }
@@ -85,8 +85,9 @@ Each `Metric` includes:
 * `codeHash` – `0x...` hex-formatted hash of contract code
 * `receiver` – `internal`, `external-in`, or `external-out`
 * `computePhase`, `actionPhase` – information from transaction phases
-* `outMessages` – total cell and bit usage of outbound messages
-* `state` – total cell and bit usage of the contract's code + data
+* `inMessages` – total cells and bits usage of inbound messages
+* `outMessages` – total cells and bits usage of outbound messages
+* `state` – total cells and bits usage of the contract's code and data
 
 ### Advanced Configuration
 
