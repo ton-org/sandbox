@@ -65,10 +65,17 @@ export type Metric = {
 };
 
 export type SnapshotMetric = {
-    comment: string;
+    label: string;
     createdAt: Date;
     items: Metric[];
 };
+
+export type SnapshotMetricFile = {
+    name: string;
+    content: SnapshotMetric;
+};
+
+export type SnapshotMetricList = Record<string, SnapshotMetricFile>;
 
 export type SnapshotMetricConfig = {
     contractExcludes: ContractName[];
@@ -78,14 +85,14 @@ export type SnapshotMetricConfig = {
 const STORE_METRIC = Symbol.for('ton-sandbox-metric-store');
 
 export function makeSnapshotMetric(
-    comment: string,
+    label: string,
     store: Metric[],
     config: Partial<SnapshotMetricConfig> = {},
 ): SnapshotMetric {
     const contractExcludes = config.contractExcludes || new Array<ContractName>();
     const contractDatabase = config.contractDatabase || ContractDatabase.from({});
     const snapshot: SnapshotMetric = {
-        comment,
+        label,
         createdAt: new Date(),
         items: new Array<Metric>(),
     };
