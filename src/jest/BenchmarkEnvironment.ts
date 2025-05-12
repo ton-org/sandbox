@@ -2,8 +2,8 @@ import { join, dirname } from 'path';
 import { existsSync, mkdirSync, writeFileSync, appendFileSync } from 'node:fs';
 import { Circus, Global, Config } from '@jest/types';
 import type { EnvironmentContext } from '@jest/environment';
-import { createMetricStore, getMetricStore } from '../utils/collectMetric';
 import { BenchmarkCommand } from './BenchmarkCommand';
+import { createMetricStore, getMetricStore } from '../metric';
 
 export const sandboxMetricRawFile = '.sandbox-metric-raw.jsonl';
 

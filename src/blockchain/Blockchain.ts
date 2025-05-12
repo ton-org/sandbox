@@ -26,7 +26,7 @@ import { AsyncLock } from "../utils/AsyncLock";
 import { internal } from "../utils/message";
 import { slimConfig } from "../config/slimConfig";
 import { testSubwalletId } from "../utils/testTreasurySubwalletId";
-import { collectMetric } from "../utils/collectMetric";
+import { collectMetric } from "../metric/collectMetric";
 
 const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS'
 

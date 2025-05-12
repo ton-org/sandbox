@@ -13,28 +13,21 @@ import {
   createMetricStore,
   makeSnapshotMetric,
   ContractDatabase,
+  defaultColor,
+  makeGasReport,
+  gasReportTable,
+  SnapshotMetric,
+  resetMetricStore,
 } from '@ton/sandbox';
 
 async function main() {
-  const store = createMetricStore(); // initialize metric store
   const blockchain = await Blockchain.create();
   const [alice, bob] = await blockchain.createWallets(2);
 
-  await alice.send({
-    to: bob.address,
-    value: toNano(1),
-    body: beginCell().storeUint(0x70696e67, 32).endCell(), // "ping"
-  });
-
-  await bob.send({
-    to: alice.address,
-    value: toNano(1),
-    body: beginCell().storeUint(0x706f6e67, 32).endCell(), // "pong"
-  });
-
+  // describe knowledge contracts
   const contractDatabase = ContractDatabase.from({
     '0xd992502b94ea96e7b34e5d62ffb0c6fc73d78b3e61f11f0848fb3a1eb1afc912': 'TreasuryContract',
-    'TreasuryContract': {
+    TreasuryContract: {
       name: 'TreasuryContract',
       types: [
         { name: 'ping', header: 0x70696e67, fields: [] },
@@ -47,8 +40,39 @@ async function main() {
     },
   });
 
-  const snapshot = makeSnapshotMetric('Some label', store, { contractDatabase });
-  console.log(JSON.stringify(snapshot, null, 2));
+  // initialize metric store
+  let store = createMetricStore();
+  const list: SnapshotMetric[] = [];
+
+  // first snapshot
+  await alice.send({
+    to: bob.address,
+    value: toNano(1),
+    body: beginCell().storeUint(0x70696e67, 32).endCell(), // "ping"
+  });
+  await bob.send({
+    to: alice.address,
+    value: toNano(1),
+    body: beginCell().storeUint(0x706f6e67, 32).endCell(), // "pong"
+  });
+  list.push(makeSnapshotMetric(store, { contractDatabase, label: 'first' }));
+
+  // second snapshot
+  resetMetricStore();
+  await alice.send({
+    to: bob.address,
+    value: toNano(1),
+    body: beginCell().storeUint(0x70696e67, 32).endCell(), // "ping"
+  });
+  await bob.send({
+    to: alice.address,
+    value: toNano(1),
+    body: beginCell().storeUint(0x706f6e67, 32).endCell(), // "pong"
+  });
+  list.push(makeSnapshotMetric(store, { contractDatabase }));
+  // make report
+  const delta = makeGasReport(list);
+  console.log(gasReportTable(delta, defaultColor));
 }
 
 main().catch((error) => {
@@ -81,12 +105,12 @@ A snapshot consists of:
 Each `Metric` includes:
 
 * `testName` – the name of the current test (if available in Jest context)
+* `address` – address of contract
 * `contractName`, `methodName`, `opCode` – for identifying the source
 * `codeHash` – `0x...` hex-formatted hash of contract code
 * `receiver` – `internal`, `external-in`, or `external-out`
-* `computePhase`, `actionPhase` – information from transaction phases
-* `inMessages` – total cells and bits usage of inbound messages
-* `outMessages` – total cells and bits usage of outbound messages
+* `execute` – `computePhase` and `actionPhase` – information from transaction phases
+* `messages` – total cells and bits usage of inbound and outbound messages
 * `state` – total cells and bits usage of the contract's code and data
 
 ### Advanced Configuration

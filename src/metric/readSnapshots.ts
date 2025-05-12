@@ -7,14 +7,15 @@ export async function readSnapshots(snapshotDir: string) {
     if (!existsSync(snapshotDir)) {
         return list;
     }
-    const byTimestamp = (a: string, b: string) => Number(b.split('.')[0]) - Number(a.split('.')[0]);
-    const snapshotFiles = readdirSync(snapshotDir)
-        .filter((f) => f.endsWith('.json'))
-        .sort(byTimestamp);
+    const snapshotFiles = readdirSync(snapshotDir).filter((f) => f.endsWith('.json'));
     for (const snapshotFile of snapshotFiles) {
         const data = readFileSync(join(snapshotDir, snapshotFile), 'utf-8');
         try {
-            const snapshot = JSON.parse(data) as SnapshotMetric;
+            const raw = JSON.parse(data) as Omit<SnapshotMetric, 'createdAt'> & { createdAt: string };
+            const snapshot: SnapshotMetric = {
+                ...raw,
+                createdAt: new Date(raw.createdAt),
+            };
             if (!list[snapshot.label]) {
                 list[snapshot.label] = {
                     name: snapshotFile,

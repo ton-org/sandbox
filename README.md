@@ -316,11 +316,11 @@ const config: Config = {
         'default',
         ['@ton/sandbox/jest-reporter', {
             // options
-            outDir: '.benchmark',     // output folder for benchmark reports, default: '.benchmark'
+            snapshotDir: '.snapshot', // output folder for benchmark reports, default: '.snapshot'
             contractDatabase: 'path', // path or json a map of known contracts, see Collect metric API, default: '{}'
-            reportName: 'name',       // benchmark report name, default: 'benchmark-final'
-            benchmarkDepth: 2,        // benchmark report name, default: 2
-            removeRawResult: true,    // remove raw metric from reports, default: true
+            reportName: 'name',       // report name, default: 'gas-report'
+            depthCompare: 2,          // comparison depth, default: 2
+            removeRawResult: true,    // remove raw metric file, default: true
             contractExcludes: [       // exclude specific contracts from snapshot, default: []
                 'TreasuryContract',
             ],
@@ -336,7 +336,9 @@ export default config;
 To collect and save snapshot metrics:
 
 ```bash
-BENCH_NEW="func v0.4.6" npx jest
+BENCH_NEW="some" npx jest
+# or
+npx blueprint snapshot --label "some" 
 ```
 
 This will:
@@ -349,6 +351,8 @@ To compare with a previous snapshot:
 
 ```bash
 BENCH_DIFF=true npx jest
+# or
+npx blueprint test --gas-report
 ```
 
 ### Output structure
@@ -357,9 +361,10 @@ By default, the reporter generates:
 
 ```
 .project-root/
-├── .benchmark/
+├── .snapshot/
 │   └── 4200000000000.json    // timestamped snapshot file
-└── .sandbox-metric-raw.jsonl // raw metric log (auto-deleted by default)
+├── .sandbox-metric-raw.jsonl // raw metric log (auto-deleted by default)
+└── gas-report.json           // aggregate report in json format
 ```
 
 ## Sandbox pitfalls

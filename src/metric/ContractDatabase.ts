@@ -1,5 +1,5 @@
 import { ContractABI, ABIReceiver, ABIType } from '@ton/core';
-import { CodeHash, Metric, OpCode } from './collectMetric';
+import { CodeHash, Metric, OpCode, isCodeHash } from './collectMetric';
 
 type Condition = {
     codeHash: CodeHash;
@@ -10,10 +10,6 @@ type Condition = {
 export type ContractDataKey = CodeHash | string;
 
 export type ContractData = Record<ContractDataKey, ContractABI | ContractDataKey>;
-
-function isCodeHash(value: unknown): value is CodeHash {
-    return typeof value === 'string' && /^0x[0-9a-fA-F]+$/.test(value);
-}
 
 export class ContractDatabase {
     protected list: Map<ContractDataKey, ContractABI>;

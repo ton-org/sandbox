@@ -1,37 +1,10 @@
 import '@ton/test-utils';
-import { beginCell, toNano } from '@ton/core';
-import { Blockchain } from '../blockchain/Blockchain';
 import { createMetricStore, getMetricStore, makeSnapshotMetric } from './collectMetric';
 import { BenchmarkCommand } from '../jest/BenchmarkCommand';
 import { ContractDatabase } from './ContractDatabase';
+import { itIf, simpleCase } from './fixtures/data.fixture';
 
 const bc = new BenchmarkCommand();
-const itIf = (condition: boolean) => (condition ? it : it.skip);
-
-async function simpleCase() {
-    const blockchain = await Blockchain.create();
-    const [alice, bob] = await blockchain.createWallets(2);
-    const res1 = await alice.send({
-        to: bob.address,
-        value: toNano('1'),
-        body: beginCell().storeUint(0xdeadface, 32).endCell(),
-    });
-    expect(res1.transactions).toHaveTransaction({
-        from: alice.address,
-        to: bob.address,
-        success: true,
-    });
-    const res2 = await bob.send({
-        to: alice.address,
-        value: toNano('1'),
-        body: beginCell().storeUint(0xffffffff, 32).endCell(),
-    });
-    expect(res2.transactions).toHaveTransaction({
-        from: bob.address,
-        to: alice.address,
-        success: true,
-    });
-}
 
 describe('collectMetric', () => {
     itIf(!bc.doBenchmark)('should not collect metric', async () => {
@@ -58,7 +31,8 @@ describe('collectMetric', () => {
                 ],
             },
         });
-        const snapshot = makeSnapshotMetric('foo', store, {
+        const snapshot = makeSnapshotMetric(store, {
+            label: 'foo',
             contractDatabase,
         });
         expect(snapshot.label).toEqual('foo');

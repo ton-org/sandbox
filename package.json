@@ -37,5 +37,8 @@
     "build": "rm -rf dist && yarn wasm:pack && tsc && yarn test && yarn wasm:copy",
     "config:pack": "ts-node ./scripts/pack-config.ts"
   },
-  "packageManager": "yarn@3.6.1"
+  "packageManager": "yarn@3.6.1",
+  "dependencies": {
+    "table": "^6.9.0"
+  }
 }

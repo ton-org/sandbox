@@ -1,80 +1,102 @@
-import { dirname, join } from 'path';
+import { join } from 'path';
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
-import chalk from 'chalk';
+import chalk, { supportsColor } from 'chalk';
 import { BaseReporter } from '@jest/reporters';
 import type { Config } from '@jest/types';
-import { sandboxMetricRawFile } from './BenchmarkEnvironment';
-import { Metric, makeSnapshotMetric, CodeHash } from '../utils/collectMetric';
-import { readJsonl } from '../utils/readJsonl';
-import { BenchmarkCommand } from './BenchmarkCommand';
-import { ContractDatabase } from '../utils/ContractDatabase';
 import { ContractABI } from '@ton/core';
-import { readSnapshots } from '../utils/readSnapshots';
+import { BenchmarkCommand } from './BenchmarkCommand';
+import { sandboxMetricRawFile } from './BenchmarkEnvironment';
+import { readJsonl } from '../utils/readJsonl';
+import {
+    Metric,
+    makeSnapshotMetric,
+    CodeHash,
+    SnapshotMetric,
+    sortByCreatedAt,
+    ContractDatabase,
+    readSnapshots,
+    gasReportTable,
+    makeGasReport,
+    defaultColor,
+} from '../metric';
 
-export const defaultOutDir = '.benchmark';
-export const defaultReportName = 'benchmark-final';
-export const minComparisonDepth = 2;
+export const defaultSnapshotDir = '.snapshot';
+export const defaultReportName = 'gas-report';
+export const defaultDepthCompare = 2;
+export const minComparisonDepth = 1;
 
 const PASS_TEXT = 'PASS';
-const PASS = chalk.supportsColor ? chalk.reset.inverse.bold.green(` ${PASS_TEXT} `) : PASS_TEXT;
+const PASS = supportsColor ? chalk.reset.inverse.bold.green(` ${PASS_TEXT} `) : PASS_TEXT;
 
 const SKIP_TEXT = 'SKIP';
-const SKIP = chalk.supportsColor ? chalk.reset.inverse.bold.yellow(` ${SKIP_TEXT} `) : SKIP_TEXT;
+const SKIP = supportsColor ? chalk.reset.inverse.bold.yellow(` ${SKIP_TEXT} `) : SKIP_TEXT;
 
-type ReportMode = 'onlyMetric' | 'averageMetric';
+type ReportMode = 'gas' | 'average';
 
 export interface Options {
     reportMode?: ReportMode;
     reportName?: string;
-    outDir?: string;
-    benchmarkDepth?: number;
+    snapshotDir?: string;
+    depthCompare?: number;
     contractExcludes?: string[];
     removeRawResult?: boolean;
     contractDatabase?: Record<CodeHash, ContractABI> | string;
 }
 
 export default class BenchmarkReporter extends BaseReporter {
-    protected rootDir: string;
+    protected rootDirPath: string;
     protected options: Options;
     protected command: BenchmarkCommand;
 
     constructor(globalConfig: Config.GlobalConfig, options: Options = {}) {
         super();
-        this.rootDir = globalConfig.rootDir;
+        this.rootDirPath = globalConfig.rootDir;
         this.options = options;
         this.command = new BenchmarkCommand();
-        if (this.benchmarkDepth < minComparisonDepth) {
-            throw new Error(`The minimum comparison depth must be greater than or equal to ${minComparisonDepth}`);
+        if (this.depthCompare < minComparisonDepth) {
+            throw new Error(`The minimum depth compare must be greater than or equal to ${minComparisonDepth}`);
         }
     }
 
     get reportMode() {
-        return this.options.reportMode || 'onlyMetric';
+        return this.options.reportMode || 'gas';
     }
 
     get reportName() {
         return this.options.reportName || defaultReportName;
     }
 
-    get outDir() {
-        return this.options.outDir || defaultOutDir;
+    get snapshotDir() {
+        return this.options.snapshotDir || defaultSnapshotDir;
     }
 
-    get outDirPath() {
-        return join(this.rootDir, this.outDir);
+    get snapshotDirPath() {
+        const dirPath = join(this.rootDirPath, this.snapshotDir);
+        try {
+            if (!existsSync(dirPath)) {
+                mkdirSync(dirPath, { recursive: true });
+            }
+        } catch (_) {
+            throw new Error(`Can not create directory: ${dirPath}`);
+        }
+        return dirPath;
     }
 
-    get benchmarkDepth() {
-        return this.options.benchmarkDepth || 2;
+    get depthCompare() {
+        return this.options.depthCompare || defaultDepthCompare;
+    }
+
+    get snapshotFiles() {
+        return readSnapshots(this.snapshotDirPath);
     }
 
     get snapshots() {
-        return readSnapshots(this.outDir);
+        return this.snapshotFiles.then((list) => Object.values(list).map((item) => item.content));
     }
 
     get snapshotCurrent() {
         return this.metricStore.then((store) =>
-            makeSnapshotMetric('current', store, {
+            makeSnapshotMetric(store, {
                 contractDatabase: this.contractDatabase,
                 contractExcludes: this.contractExcludes,
             }),
@@ -102,7 +124,7 @@ export default class BenchmarkReporter extends BaseReporter {
     }
 
     get sandboxMetricRawFile() {
-        return join(this.rootDir, sandboxMetricRawFile);
+        return join(this.rootDirPath, sandboxMetricRawFile);
     }
 
     get metricStore() {
@@ -113,32 +135,27 @@ export default class BenchmarkReporter extends BaseReporter {
         const log = [];
         let status = SKIP;
         if (this.command.doBenchmark) {
-            if (this.command.doDiff) {
-                log.push(`Comparison metric mode: "${this.reportMode}"`);
-                const list = Object.values(await this.snapshots).map((it) => it.content);
-                const snapshots = [await this.snapshotCurrent, ...list];
+            const list = await this.snapshots;
+            const snapshots = [await this.snapshotCurrent, ...list];
+            let doDiff = this.command.doDiff;
+            const depthCompare = Math.min(snapshots.length, this.depthCompare);
+            if (doDiff) {
+                log.push(`Comparison metric mode: ${this.reportMode} depth: ${depthCompare}`);
                 switch (this.reportMode) {
-                    case 'onlyMetric':
-                        log.push(
-                            `${chalk.bold('Report:')} previous ${snapshots.length} on depth ${this.benchmarkDepth}`,
-                        );
-                        log.push(`Report mode "${this.reportMode}" not implemented yet`);
+                    case 'gas':
+                        log.push(...this.gasReportReport(snapshots, depthCompare));
                         status = PASS;
                         break;
                     default:
-                        throw new Error(`Report mode "${this.reportMode}" not implemented`);
+                        throw new Error(`Report mode ${this.reportMode} not supported`);
                 }
             } else if (this.command.label) {
                 log.push(`Collect metric mode: "${this.reportMode}"`);
-                switch (this.reportMode) {
-                    case 'onlyMetric':
-                        const file = await this.prepareOnlyMetricSnapshot(this.command.label);
-                        log.push(`Report write in '${file}'`);
-                        break;
-                    default:
-                        throw new Error(`Snapshot mode "${this.reportMode}" not implemented`);
-                }
+                const file = await this.saveSnapshot(this.command.label);
+                log.push(`Report write in '${file}'`);
                 status = PASS;
+            } else {
+                log.push(`Reporter mode: ${this.reportMode} depth: ${depthCompare}`);
             }
             if (this.removeRawResult) {
                 unlinkSync(this.sandboxMetricRawFile);
@@ -147,19 +164,40 @@ export default class BenchmarkReporter extends BaseReporter {
         this.log(`${status} ${log.join('\n')}`);
     }
 
-    async prepareOnlyMetricSnapshot(label: string) {
+    gasReportReport(data: SnapshotMetric[], benchmarkDepth: number) {
+        const log = [];
+        const reportFile = `${this.reportName}.json`;
+        const report = makeGasReport(data);
+        try {
+            const reportFilePath = join(this.rootDirPath, reportFile);
+            writeFileSync(reportFilePath, JSON.stringify(report, null, 2) + '\n', {
+                encoding: 'utf8',
+            });
+            log.push(`Gas report write in '${reportFile}'`);
+        } catch (_) {
+            throw new Error(`Can not write: ${reportFile}`);
+        }
+        const list = report.sort(sortByCreatedAt(true)).slice(0, benchmarkDepth);
+        log.push(gasReportTable(list, defaultColor));
+        return log;
+    }
+
+    async saveSnapshot(label: string) {
         const snapshot = await this.snapshotCurrent;
         snapshot.label = label;
-        const list = await this.snapshots;
+        const list = await this.snapshotFiles;
         let snapshotFile = `${snapshot.createdAt.getTime()}.json`;
         if (list[snapshot.label]) {
             snapshotFile = list[snapshot.label].name;
         }
-        const snapshotFilePath = join(this.outDirPath, snapshotFile);
-        if (!existsSync(this.outDirPath)) {
-            mkdirSync(this.outDirPath, { recursive: true });
+        const snapshotFilePath = join(this.snapshotDirPath, snapshotFile);
+        try {
+            writeFileSync(snapshotFilePath, JSON.stringify(snapshot, null, 2) + '\n', {
+                encoding: 'utf8',
+            });
+        } catch (_) {
+            throw new Error(`Can not write: ${join(this.snapshotDir, snapshotFile)}`);
         }
-        writeFileSync(snapshotFilePath, JSON.stringify(snapshot, null, 2) + '\n');
-        return join(this.outDir, snapshotFile);
+        return join(this.snapshotDir, snapshotFile);
     }
 }

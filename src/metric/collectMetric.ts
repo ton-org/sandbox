@@ -1,15 +1,15 @@
 import { Address, beginCell, Cell, Contract, storeMessage, Message } from '@ton/core';
 import { Dictionary, DictionaryKeyTypes, TransactionComputePhase } from '@ton/core';
+import { Maybe } from '@ton/core/src/utils/maybe';
 import { Blockchain, SendMessageResult } from '../blockchain/Blockchain';
 import { ContractDatabase } from './ContractDatabase';
-import { Maybe } from '@ton/core/src/utils/maybe';
 
 export type MetricContext<T extends Contract> = {
     contract: T;
     methodName: string;
 };
 
-export type State = {
+type StateShort = {
     code: Cell;
     data: Cell;
 };
@@ -28,13 +28,20 @@ export type ComputePhaseMetric = {
 };
 
 export type ActionPhaseMetric = {
-    success?: boolean;
-    totalActions?: number;
-    skippedActions?: number;
-    resultCode?: number;
+    success: boolean;
+    totalActions: number;
+    skippedActions: number;
+    resultCode: number;
     totalFwdFees?: number;
-    totalActionFees?: number;
+    totalActionFees: number;
+    totalMessageSize: CellMetric;
 };
+
+export type AddressFriendly = string;
+
+export function isAddressFriendly(value: unknown): value is AddressFriendly {
+    return typeof value === 'string' && Address.isFriendly(value);
+}
 
 export type ContractName = string;
 
@@ -44,6 +51,10 @@ export type CodeHash = `0x${string}`;
 
 export type OpCode = `0x${string}`;
 
+export function isCodeHash(value: unknown): value is CodeHash {
+    return typeof value === 'string' && value.length === 66 && /^0x[0-9a-fA-F]+$/.test(value);
+}
+
 export type StateMetric = {
     code: CellMetric;
     data: CellMetric;
@@ -51,17 +62,21 @@ export type StateMetric = {
 
 export type Metric = {
     testName?: string;
-    address: string;
+    address: AddressFriendly;
     codeHash?: CodeHash;
     state: StateMetric;
     contractName?: ContractName;
     methodName?: ContractMethodName;
     receiver?: 'internal' | 'external-in' | 'external-out';
     opCode: OpCode;
-    computePhase: ComputePhaseMetric;
-    actionPhase: ActionPhaseMetric;
-    inMessages: CellMetric;
-    outMessages: CellMetric;
+    execute: {
+        compute: ComputePhaseMetric;
+        action?: ActionPhaseMetric;
+    };
+    message: {
+        in: CellMetric;
+        out: CellMetric;
+    };
 };
 
 export type SnapshotMetric = {
@@ -69,6 +84,14 @@ export type SnapshotMetric = {
     createdAt: Date;
     items: Metric[];
 };
+
+interface HasCreatedAt {
+    createdAt: Date;
+}
+
+export function sortByCreatedAt(reverse = false) {
+    return (a: HasCreatedAt, b: HasCreatedAt) => (a.createdAt.getTime() - b.createdAt.getTime()) * (reverse ? -1 : 1);
+}
 
 export type SnapshotMetricFile = {
     name: string;
@@ -78,17 +101,15 @@ export type SnapshotMetricFile = {
 export type SnapshotMetricList = Record<string, SnapshotMetricFile>;
 
 export type SnapshotMetricConfig = {
+    label: string;
     contractExcludes: ContractName[];
     contractDatabase: ContractDatabase;
 };
 
 const STORE_METRIC = Symbol.for('ton-sandbox-metric-store');
 
-export function makeSnapshotMetric(
-    label: string,
-    store: Metric[],
-    config: Partial<SnapshotMetricConfig> = {},
-): SnapshotMetric {
+export function makeSnapshotMetric(store: Metric[], config: Partial<SnapshotMetricConfig> = {}): SnapshotMetric {
+    const label = config.label || 'current';
     const contractExcludes = config.contractExcludes || new Array<ContractName>();
     const contractDatabase = config.contractDatabase || ContractDatabase.from({});
     const snapshot: SnapshotMetric = {
@@ -96,6 +117,7 @@ export function makeSnapshotMetric(
         createdAt: new Date(),
         items: new Array<Metric>(),
     };
+    // remove duplicates and extract ABI
     const seen = new Set<string>();
     for (const metric of store) {
         const key = JSON.stringify(metric);
@@ -106,6 +128,7 @@ export function makeSnapshotMetric(
             contractDatabase.extract(metric);
         }
     }
+    // ABI auto-mapping
     for (const item of snapshot.items) {
         const find = contractDatabase.by(item);
         if (!item.contractName && find.contractName) {
@@ -134,6 +157,12 @@ export function createMetricStore(context: any = globalThis): Array<Metric> {
     return context[STORE_METRIC];
 }
 
+export function resetMetricStore(context: any = globalThis): Array<Metric> {
+    const store = getMetricStore(context);
+    if (store) store.length = 0;
+    return createMetricStore(context);
+}
+
 export function calcMessageSize(msg: Maybe<Message>) {
     if (msg) {
         return calcCellSize(beginCell().store(storeMessage(msg)).endCell());
@@ -154,17 +183,19 @@ export function calcCellSize(root: Cell, visited: Set<string> = new Set<string>(
         return { cells: 0, bits: 0 };
     }
     visited.add(hash);
-    let cells = 1;
-    let bits = root.bits.length;
+    const out = {
+        cells: 1,
+        bits: root.bits.length,
+    };
     for (const ref of root.refs) {
         const childRes = calcCellSize(ref, visited);
-        cells += childRes.cells;
-        bits += childRes.bits;
+        out.cells += childRes.cells;
+        out.bits += childRes.bits;
     }
-    return { cells, bits };
+    return out;
 }
 
-export function calcStateSize(state: State): StateMetric {
+export function calcStateSize(state: StateShort): StateMetric {
     const codeSize = calcCellSize(state.code);
     const dataSize = calcCellSize(state.data);
     return {
@@ -173,7 +204,7 @@ export function calcStateSize(state: State): StateMetric {
     };
 }
 
-export function computePhase(phase: TransactionComputePhase): ComputePhaseMetric {
+export function calcComputePhase(phase: TransactionComputePhase): ComputePhaseMetric {
     if (phase.type === 'vm') {
         return {
             type: phase.type,
@@ -234,6 +265,23 @@ export async function collectMetric<T extends Contract>(
             methodName = OpCodeReserved[Number(opCode)];
         }
         const address = Address.parseRaw(`0:${tx.address.toString(16).padStart(64, '0')}`);
+
+        const { computePhase, actionPhase, bouncePhase, storagePhase } = tx.description;
+        const action: ActionPhaseMetric | undefined = actionPhase
+            ? {
+                  success: actionPhase.success,
+                  totalActions: actionPhase.totalActions,
+                  skippedActions: actionPhase.skippedActions,
+                  resultCode: actionPhase.resultCode,
+                  totalActionFees: actionPhase.totalActions,
+                  totalFwdFees: actionPhase.totalFwdFees ? Number(actionPhase.totalFwdFees) : undefined,
+                  totalMessageSize: {
+                      cells: Number(actionPhase.totalMessageSize.cells),
+                      bits: Number(actionPhase.totalMessageSize.bits),
+                  },
+              }
+            : undefined;
+        const compute = calcComputePhase(computePhase);
         const metric: Metric = {
             testName,
             address: address.toString(),
@@ -242,17 +290,14 @@ export async function collectMetric<T extends Contract>(
             methodName,
             receiver,
             opCode,
-            computePhase: computePhase(tx.description.computePhase),
-            actionPhase: {
-                success: tx.description.actionPhase?.success,
-                totalActions: tx.description.actionPhase?.totalActions,
-                skippedActions: tx.description.actionPhase?.skippedActions,
-                resultCode: tx.description.actionPhase?.resultCode,
-                totalActionFees: tx.description.actionPhase?.totalActions,
-                totalFwdFees: Number(tx.description.actionPhase?.totalFwdFees ?? 0),
+            execute: {
+                compute,
+                action,
             },
-            inMessages: calcMessageSize(tx.inMessage),
-            outMessages: calcDictSize(tx.outMessages),
+            message: {
+                in: calcMessageSize(tx.inMessage),
+                out: calcDictSize(tx.outMessages),
+            },
             state,
         };
         store.push(metric);
