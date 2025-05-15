@@ -33,43 +33,63 @@ export class ContractDatabase {
         return new ContractDatabase(list, match);
     }
 
-    origin(needle: CodeHash) {
+    get data(): ContractData {
+        const out: ContractData = {};
+        for (const [key, value] of this.match) {
+            out[key] = value;
+        }
+        for (const [key, value] of this.list) {
+            out[key] = value;
+        }
+        return out;
+    }
+
+    origin(needle: ContractDataKey) {
         return this.match.get(needle) || needle;
     }
 
-    get(needle: CodeHash) {
+    get(needle: ContractDataKey) {
         return this.list.get(this.origin(needle));
     }
 
     extract(metric: Metric) {
-        if (metric.codeHash === undefined) {
+        const abiKeyNeedle = metric.contractName || metric.codeHash;
+        if (!abiKeyNeedle) {
             return;
         }
-        const codeHash = this.origin(metric.codeHash);
-        const abi = this.list.get(codeHash) || ({} as ContractABI);
-        if (metric.contractName) {
-            abi.name = metric.contractName;
+        const codeHash = metric.codeHash;
+        if (isCodeHash(codeHash) && abiKeyNeedle !== codeHash) {
+            this.match.set(codeHash, abiKeyNeedle);
         }
-        if (metric.methodName) {
-            if (!abi.receivers) {
-                abi.receivers = [];
-            }
-            if (!abi.types) {
-                abi.types = [];
-            }
-            abi.types.push({
-                name: metric.methodName,
-                header: Number(metric.opCode),
-            } as ABIType);
-            abi.receivers.push({
-                receiver: metric.receiver == 'internal' ? 'internal' : 'external',
-                message: {
-                    kind: 'typed',
-                    type: metric.methodName,
-                },
-            } as ABIReceiver);
+        const abiKey = this.origin(abiKeyNeedle);
+        const abi = this.list.get(abiKey) || ({} as ContractABI);
+
+        if (!abi.receivers) {
+            abi.receivers = [];
         }
-        this.list.set(codeHash, abi);
+        if (!abi.types) {
+            abi.types = [];
+        }
+        const find = this.by(metric);
+        if (!find.methodName) {
+            if (!abi.name) {
+                abi.name = metric.contractName || metric.codeHash;
+            }
+            if (metric.opCode !== '0x0') {
+                abi.types.push({
+                    name: metric.methodName || metric.opCode,
+                    header: Number(metric.opCode),
+                } as ABIType);
+                abi.receivers.push({
+                    receiver: metric.receiver == 'internal' ? 'internal' : 'external',
+                    message: {
+                        kind: 'typed',
+                        type: metric.methodName || metric.opCode,
+                    },
+                } as ABIReceiver);
+            }
+        }
+        this.list.set(abiKey, abi);
     }
 
     by(where: Partial<Condition>): Partial<Metric> {

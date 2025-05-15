@@ -18,10 +18,12 @@ import {
     gasReportTable,
     makeGasReport,
     defaultColor,
+    ContractData,
 } from '../metric';
 
 export const defaultSnapshotDir = '.snapshot';
 export const defaultReportName = 'gas-report';
+export const defaultContractDatabaseName = 'contract.abi.json';
 export const defaultDepthCompare = 2;
 export const minComparisonDepth = 1;
 
@@ -47,6 +49,7 @@ export default class BenchmarkReporter extends BaseReporter {
     protected rootDirPath: string;
     protected options: Options;
     protected command: BenchmarkCommand;
+    contractDatabase: ContractDatabase;
 
     constructor(globalConfig: Config.GlobalConfig, options: Options = {}) {
         super();
@@ -56,6 +59,7 @@ export default class BenchmarkReporter extends BaseReporter {
         if (this.depthCompare < minComparisonDepth) {
             throw new Error(`The minimum depth compare must be greater than or equal to ${minComparisonDepth}`);
         }
+        this.contractDatabase = this.readContractDatabase();
     }
 
     get reportMode() {
@@ -107,18 +111,6 @@ export default class BenchmarkReporter extends BaseReporter {
         return this.options.removeRawResult || true;
     }
 
-    get contractDatabase() {
-        let value = this.options.contractDatabase || {};
-        if (typeof value === 'string') {
-            try {
-                value = JSON.parse(readFileSync(value, 'utf-8')) as Record<CodeHash, ContractABI>;
-            } catch (error) {
-                throw new Error(`Could not parse contract database: ${value}`);
-            }
-        }
-        return ContractDatabase.from(value);
-    }
-
     get contractExcludes() {
         return this.options.contractExcludes || [];
     }
@@ -129,6 +121,34 @@ export default class BenchmarkReporter extends BaseReporter {
 
     get metricStore() {
         return readJsonl<Metric>(this.sandboxMetricRawFile);
+    }
+
+    readContractDatabase() {
+        let data: ContractData = {};
+        const filePath = this.options.contractDatabase || defaultContractDatabaseName;
+        if (typeof filePath === 'string') {
+            try {
+                if (existsSync(join(this.rootDirPath, filePath))) {
+                    data = JSON.parse(readFileSync(join(this.rootDirPath, filePath), 'utf-8'));
+                }
+            } catch (error) {
+                throw new Error(`Could not parse contract database: ${filePath}`);
+            }
+        }
+        return ContractDatabase.from(data);
+    }
+
+    saveContractDatabase(): void {
+        const contractDatabase = this.options.contractDatabase;
+        let filePath = typeof contractDatabase === 'string' ? contractDatabase : defaultContractDatabaseName;
+        try {
+            const content = JSON.stringify(this.contractDatabase.data, null, 2) + '\n';
+            writeFileSync(join(this.rootDirPath, filePath), content, {
+                encoding: 'utf8',
+            });
+        } catch (_) {
+            throw new Error(`Can not write: ${filePath}`);
+        }
     }
 
     async onRunComplete(): Promise<void> {
@@ -160,6 +180,7 @@ export default class BenchmarkReporter extends BaseReporter {
             if (this.removeRawResult) {
                 unlinkSync(this.sandboxMetricRawFile);
             }
+            this.saveContractDatabase();
         }
         this.log(`${status} ${log.join('\n')}`);
     }

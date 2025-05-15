@@ -72,6 +72,7 @@ async function main() {
   list.push(makeSnapshotMetric(store, { contractDatabase }));
   // make report
   const delta = makeGasReport(list);
+  console.log(JSON.stringify(contractDatabase.data, null, 2));
   console.log(gasReportTable(delta, defaultColor));
 }
 
@@ -84,7 +85,7 @@ main().catch((error) => {
 
 * `const store = createMetricStore()` initializes an in-memory global metric storage (per test context or worker)
 * The sandbox automatically collects metrics from each transaction triggered via the blockchain during test execution (via `collectMetric()`)
-* `const snapshot = makeSnapshotMetric('comment', store)` produces a de-duplicated, timestamped snapshot of collected metrics
+* `const snapshot = makeSnapshotMetric('comment', store)` produces a de-duplicated and ABI auto-mapping, timestamped snapshot of collected metrics
 
 ### Snapshot Structure
 

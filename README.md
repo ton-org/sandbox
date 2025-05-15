@@ -317,7 +317,7 @@ const config: Config = {
         ['@ton/sandbox/jest-reporter', {
             // options
             snapshotDir: '.snapshot', // output folder for benchmark reports, default: '.snapshot'
-            contractDatabase: 'path', // path or json a map of known contracts, see Collect metric API, default: '{}'
+            contractDatabase: 'path', // path or json a map of known contracts, see Collect metric API, default: 'contract.abi.json'
             reportName: 'name',       // report name, default: 'gas-report'
             depthCompare: 2,          // comparison depth, default: 2
             removeRawResult: true,    // remove raw metric file, default: true
@@ -389,6 +389,7 @@ By default, the reporter generates:
 ├── .snapshot/
 │   └── 4200000000000.json    // timestamped snapshot file
 ├── .sandbox-metric-raw.jsonl // raw metric log (auto-deleted by default)
+├── contract.abi.json         // map of known contracts, see Collect metric API
 └── gas-report.json           // aggregate report in json format
 ```
 

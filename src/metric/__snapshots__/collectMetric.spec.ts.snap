@@ -1,5 +1,40 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`collectMetric should be collect abi 1`] = `
+{
+  "0xd992502b94ea96e7b34e5d62ffb0c6fc73d78b3e61f11f0848fb3a1eb1afc912": "TreasuryContract",
+  "TreasuryContract": {
+    "name": "TreasuryContract",
+    "receivers": [
+      {
+        "message": {
+          "kind": "typed",
+          "type": "0xdeadface",
+        },
+        "receiver": "internal",
+      },
+      {
+        "message": {
+          "kind": "typed",
+          "type": "notSupported",
+        },
+        "receiver": "internal",
+      },
+    ],
+    "types": [
+      {
+        "header": 3735943886,
+        "name": "0xdeadface",
+      },
+      {
+        "header": 4294967295,
+        "name": "notSupported",
+      },
+    ],
+  },
+}
+`;
+
 exports[`collectMetric should be collect metric 1`] = `
 [
   {

@@ -1,5 +1,5 @@
 import '@ton/test-utils';
-import { createMetricStore, getMetricStore, makeSnapshotMetric } from './collectMetric';
+import { createMetricStore, getMetricStore, makeSnapshotMetric, resetMetricStore } from './collectMetric';
 import { BenchmarkCommand } from '../jest/BenchmarkCommand';
 import { ContractDatabase } from './ContractDatabase';
 import { itIf, simpleCase } from './fixtures/data.fixture';
@@ -15,6 +15,7 @@ describe('collectMetric', () => {
 
     itIf(!bc.doBenchmark)('should be collect metric', async () => {
         const store = createMetricStore();
+        resetMetricStore();
         expect(store.length).toEqual(0);
         await simpleCase();
         expect(store.length).toEqual(4);
@@ -38,5 +39,21 @@ describe('collectMetric', () => {
         expect(snapshot.label).toEqual('foo');
         expect(snapshot.createdAt.getTime()).toBeLessThanOrEqual(new Date().getTime());
         expect(snapshot.items).toMatchSnapshot();
+    });
+
+    itIf(!bc.doBenchmark)('should be collect abi', async () => {
+        const store = createMetricStore();
+        resetMetricStore();
+        expect(store.length).toEqual(0);
+        await simpleCase();
+        expect(store.length).toEqual(4);
+        const contractDatabase = ContractDatabase.from({});
+        const snapshot = makeSnapshotMetric(store, {
+            label: 'foo',
+            contractDatabase,
+        });
+        expect(snapshot.label).toEqual('foo');
+        expect(snapshot.createdAt.getTime()).toBeLessThanOrEqual(new Date().getTime());
+        expect(contractDatabase.data).toMatchSnapshot();
     });
 });
