@@ -345,7 +345,7 @@ This will:
 
 * Run your tests
 * Collect contract execution metrics
-* Save a snapshot in `.benchmark/<timestamp>.json`
+* Save a snapshot in `.snapshot/<timestamp>.json`
 
 To compare with a previous snapshot:
 
@@ -353,6 +353,31 @@ To compare with a previous snapshot:
 BENCH_DIFF=true npx jest
 # or
 npx blueprint test --gas-report
+```
+
+### Or setup in `gas-report.config.ts`
+
+```ts
+import config from './jest.config';
+
+config.testNamePattern = '^DescribeName .* - test name$'
+config.testEnvironment = '@ton/sandbox/jest-environment'
+config.reporters = [
+    ['@ton/sandbox/jest-reporter', {
+        contractDatabase: 'abi.json',
+        contractExcludes: [
+            'TreasuryContract',
+        ],
+    }],
+]
+export default config;
+```
+
+**Collect metric and get report:**
+
+```bash
+npx blueprint snapshot --label "some label" -- --config gas-report.config.ts
+npx blueprint test --gas-report -- --config gas-report.config.ts
 ```
 
 ### Output structure

@@ -109,7 +109,7 @@ Each `Metric` includes:
 * `contractName`, `methodName`, `opCode` – for identifying the source
 * `codeHash` – `0x...` hex-formatted hash of contract code
 * `receiver` – `internal`, `external-in`, or `external-out`
-* `execute` – `computePhase` and `actionPhase` – information from transaction phases
+* `execute` – `compute` and `action` – information from transaction phases
 * `messages` – total cells and bits usage of inbound and outbound messages
 * `state` – total cells and bits usage of the contract's code and data
 
