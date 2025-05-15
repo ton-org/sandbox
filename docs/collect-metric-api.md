@@ -104,14 +104,64 @@ A snapshot consists of:
 
 Each `Metric` includes:
 
-* `testName` – the name of the current test (if available in Jest context)
-* `address` – address of contract
-* `contractName`, `methodName`, `opCode` – for identifying the source
-* `codeHash` – `0x...` hex-formatted hash of contract code
-* `receiver` – `internal`, `external-in`, or `external-out`
-* `execute` – `compute` and `action` – information from transaction phases
-* `messages` – total cells and bits usage of inbound and outbound messages
-* `state` – total cells and bits usage of the contract's code and data
+```ts
+type Metric = {
+  // the name of the current test (if available in Jest context)
+  testName?: string
+  // address of contract in user friendly format
+  address: string
+  // hex-formatted hash of contract code
+  codeHash?: `0x${string}`
+  // total cells and bits usage of the contract's code and data
+  state: {
+    code: {
+      cells: number
+      bits: number
+    }
+    data: {
+      cells: number
+      bits: number
+    }
+  }
+  contractName?: string
+  methodName?: string
+  receiver?: 'internal' | 'external-in' | 'external-out'
+  opCode: `0x${string}`
+  // information from transaction phases
+  execute: {
+    compute: {
+      type: string
+      success?: boolean
+      gasUsed?: number
+      exitCode?: number
+      vmSteps?: number
+    };
+    action?: {
+      success: boolean
+      totalActions: number
+      skippedActions: number
+      resultCode: number
+      totalFwdFees?: number
+      totalActionFees: number
+      totalMessageSize: {
+        cells: number
+        bits: number
+      }
+    }
+  }
+  // total cells and bits usage of inbound and outbound messages
+  message: {
+    in: {
+      cells: number
+      bits: number
+    }
+    out: {
+      cells: number
+      bits: number
+    }
+  }
+}
+```
 
 ### Advanced Configuration
 

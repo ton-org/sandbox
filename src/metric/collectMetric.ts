@@ -61,18 +61,24 @@ export type StateMetric = {
 };
 
 export type Metric = {
+    // the name of the current test (if available in Jest context)
     testName?: string;
+    // address of contract
     address: AddressFriendly;
+    // hex-formatted hash of contract code
     codeHash?: CodeHash;
+    // total cells and bits usage of the contract's code and data
     state: StateMetric;
     contractName?: ContractName;
     methodName?: ContractMethodName;
     receiver?: 'internal' | 'external-in' | 'external-out';
     opCode: OpCode;
+    // information from transaction phases
     execute: {
         compute: ComputePhaseMetric;
         action?: ActionPhaseMetric;
     };
+    // total cells and bits usage of inbound and outbound messages
     message: {
         in: CellMetric;
         out: CellMetric;
