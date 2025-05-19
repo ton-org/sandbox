@@ -120,7 +120,10 @@ export default class BenchmarkReporter extends BaseReporter {
     }
 
     get metricStore() {
-        return readJsonl<Metric>(this.sandboxMetricRawFile);
+        if (existsSync(this.sandboxMetricRawFile)) {
+            return readJsonl<Metric>(this.sandboxMetricRawFile);
+        }
+        return new Promise<Metric[]>((resolve) => resolve([]));
     }
 
     readContractDatabase() {
