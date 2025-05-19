@@ -9,10 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added methods for collect metric of run contracts
-- Added `@ton/sandbox/jest-environment` and `@ton/sandbox/jest-reporter` for write snapshot metric from run tests
-- Added contract method ABI auto-mapping mechanism for details benchmark metrics
-- Added methods for generate delta reports by metric of run contracts
+- Added methods to collect metrics of contracts
+- Added `@ton/sandbox/jest-environment` and `@ton/sandbox/jest-reporter` to write metric snapshots from test run results
+- Added contract method ABI auto-mapping mechanism for detailed benchmark metrics
+- Added methods to generate delta reports from metrics of contracts
 
 ## [0.30.0] - 2025-05-12
 
