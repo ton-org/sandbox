@@ -3,8 +3,8 @@ export class BenchmarkCommand {
     readonly doDiff: boolean;
 
     constructor() {
-        this.label = process.env['BENCH_NEW'];
-        this.doDiff = !!process.env['BENCH_DIFF'];
+        this.label = process.env?.BENCH_NEW;
+        this.doDiff = process.env?.BENCH_DIFF === 'true' || false;
     }
 
     get doBenchmark() {
