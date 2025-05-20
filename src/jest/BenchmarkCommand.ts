@@ -1,10 +1,16 @@
+export interface BenchmarkCommandOption {
+    label: string;
+    doDiff: boolean;
+}
+
 export class BenchmarkCommand {
     readonly label?: string;
     readonly doDiff: boolean;
 
-    constructor() {
-        this.label = process.env['BENCH_NEW'];
-        this.doDiff = !!process.env['BENCH_DIFF'];
+    constructor(option?: Partial<BenchmarkCommandOption>) {
+        option = option || {};
+        this.label = option?.label ?? process.env?.BENCH_NEW;
+        this.doDiff = option?.doDiff ?? process.env?.BENCH_DIFF === 'true' ?? false;
     }
 
     get doBenchmark() {

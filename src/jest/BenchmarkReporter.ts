@@ -120,7 +120,10 @@ export default class BenchmarkReporter extends BaseReporter {
     }
 
     get metricStore() {
-        return readJsonl<Metric>(this.sandboxMetricRawFile);
+        if (existsSync(this.sandboxMetricRawFile)) {
+            return readJsonl<Metric>(this.sandboxMetricRawFile);
+        }
+        return new Promise<Metric[]>((resolve) => resolve([]));
     }
 
     readContractDatabase() {
@@ -174,13 +177,13 @@ export default class BenchmarkReporter extends BaseReporter {
                 const file = await this.saveSnapshot(this.command.label);
                 log.push(`Report write in '${file}'`);
                 status = PASS;
-            } else {
-                log.push(`Reporter mode: ${this.reportMode} depth: ${depthCompare}`);
             }
             if (this.removeRawResult) {
                 unlinkSync(this.sandboxMetricRawFile);
             }
             this.saveContractDatabase();
+        } else {
+            log.push(`Reporter mode: ${this.reportMode}`);
         }
         this.log(`${status} ${log.join('\n')}`);
     }

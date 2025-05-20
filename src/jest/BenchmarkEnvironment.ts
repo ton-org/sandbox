@@ -1,58 +1,32 @@
 import { join, dirname } from 'path';
 import { existsSync, mkdirSync, writeFileSync, appendFileSync } from 'node:fs';
-import { Circus, Global, Config } from '@jest/types';
 import type { EnvironmentContext } from '@jest/environment';
-import { BenchmarkCommand } from './BenchmarkCommand';
-import { createMetricStore, getMetricStore } from '../metric';
+import NodeEnvironment from 'jest-environment-node';
+import { Config } from '@jest/types';
+import { BenchmarkCommand, BenchmarkCommandOption } from './BenchmarkCommand';
+import { createMetricStore, getMetricStore, resetMetricStore } from '../metric';
 
 export const sandboxMetricRawFile = '.sandbox-metric-raw.jsonl';
 
-type ConstructorConfig = {
-    projectConfig: Config.ProjectConfig;
+export type BenchmarkEnvironmentConfig = {
+    projectConfig: Config.ProjectConfig & { testEnvironmentCommand?: Partial<BenchmarkCommandOption> };
     globalConfig: Config.GlobalConfig;
 };
 
-export default class BenchmarkEnvironment {
-    env: any;
-    global: Global.Global | null;
-    moduleMocker: any;
-    protected rootDir: string;
+export default class BenchmarkEnvironment extends NodeEnvironment {
     protected command: BenchmarkCommand;
+    protected rootDir: string;
 
-    constructor(config: ConstructorConfig, context?: EnvironmentContext) {
-        this.command = new BenchmarkCommand();
-        const clsImport = require('jest-environment-node');
-        const cls = clsImport.default ?? clsImport;
-        const env = new cls(config, context);
-        this.global = env.global || global;
+    constructor(config: BenchmarkEnvironmentConfig, context: EnvironmentContext) {
+        super(config, context);
+        this.command = new BenchmarkCommand(config.projectConfig.testEnvironmentCommand);
         this.rootDir = config.globalConfig.rootDir;
-        if (env.getVmContext) {
-            function getVmContext() {
-                return env.getVmContext();
-            }
-            Object.defineProperty(this, 'getVmContext', {
-                value: getVmContext.bind(this),
-                writable: false,
-            });
-        }
-        if (env.handleTestEvent) {
-            function handleTestEvent(event: Circus.Event, state: Circus.State) {
-                return env.handleTestEvent(event, state);
-            }
-            Object.defineProperty(this, 'handleTestEvent', {
-                value: handleTestEvent.bind(this),
-                writable: false,
-            });
-        }
-        this.env = env;
-        this.moduleMocker = env.moduleMocker || null;
     }
 
     async setup() {
         if (this.command.doBenchmark) {
             createMetricStore(this.global);
         }
-        await this.env.setup();
     }
 
     get resultFile() {
@@ -73,13 +47,8 @@ export default class BenchmarkEnvironment {
             for (const item of store) {
                 appendFileSync(fileName, JSON.stringify(item) + '\n');
             }
+            resetMetricStore(this.global);
         }
-        await this.env.teardown();
-        this.global = null;
-    }
-
-    runScript(script: any) {
-        console.log(`env runScript ${script}`);
-        return this.env.runScript(script);
+        await super.teardown();
     }
 }
