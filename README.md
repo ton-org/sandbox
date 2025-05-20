@@ -312,16 +312,18 @@ import type { Config } from 'jest';
 const config: Config = {
     preset: 'ts-jest',
     testEnvironment: '@ton/sandbox/jest-environment',
+    globalSetup: './jest.setup.ts',
+    testPathIgnorePatterns: ['/node_modules/', '/dist/'],
     reporters: [
         'default',
         ['@ton/sandbox/jest-reporter', {
             // options
-            snapshotDir: '.snapshot', // output folder for benchmark reports, default: '.snapshot'
-            contractDatabase: 'path', // path or json a map of known contracts, see Collect metric API, default: 'contract.abi.json'
-            reportName: 'name',       // report name, default: 'gas-report'
-            depthCompare: 2,          // comparison depth, default: 2
-            removeRawResult: true,    // remove raw metric file, default: true
-            contractExcludes: [       // exclude specific contracts from snapshot, default: []
+            snapshotDir: '.snapshot',              // output folder for benchmark reports, default: '.snapshot'
+            contractDatabase: 'contract.abi.json', // path or json a map of known contracts, see Collect metric API, default: 'contract.abi.json'
+            reportName: 'gas-report',              // report name, default: 'gas-report'
+            depthCompare: 2,                       // comparison depth, default: 2
+            removeRawResult: true,                 // remove raw metric file, default: true
+            contractExcludes: [                    // exclude specific contracts from snapshot, default: []
                 'TreasuryContract',
             ],
         }],
