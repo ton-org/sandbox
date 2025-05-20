@@ -177,13 +177,13 @@ export default class BenchmarkReporter extends BaseReporter {
                 const file = await this.saveSnapshot(this.command.label);
                 log.push(`Report write in '${file}'`);
                 status = PASS;
-            } else {
-                log.push(`Reporter mode: ${this.reportMode} depth: ${depthCompare}`);
             }
             if (this.removeRawResult) {
                 unlinkSync(this.sandboxMetricRawFile);
             }
             this.saveContractDatabase();
+        } else {
+            log.push(`Reporter mode: ${this.reportMode}`);
         }
         this.log(`${status} ${log.join('\n')}`);
     }
