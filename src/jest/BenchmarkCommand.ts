@@ -9,8 +9,8 @@ export class BenchmarkCommand {
 
     constructor(option?: Partial<BenchmarkCommandOption>) {
         option = option || {};
-        this.label = option.label || process.env?.BENCH_NEW;
-        this.doDiff = option.doDiff || process.env?.BENCH_DIFF === 'true' || false;
+        this.label = option?.label ?? process.env?.BENCH_NEW;
+        this.doDiff = option?.doDiff ?? process.env?.BENCH_DIFF === 'true' ?? false;
     }
 
     get doBenchmark() {
