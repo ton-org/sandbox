@@ -113,7 +113,7 @@ describe('Blockchain', () => {
         expect(tx1.transactions).toHaveTransaction({
             from: address,
             op: 0xfffffffe,
-            body: (x: Cell) => x.beginParse().skip(32).loadUint(32) === 1,
+            body: (x?: Cell) => x?.beginParse().skip(32).loadUint(32) === 1,
         })
 
         const res2 = await blockchain.runGetMethod(address, 'get_now', [], {
@@ -133,7 +133,7 @@ describe('Blockchain', () => {
         expect(tx2.transactions).toHaveTransaction({
             from: address,
             op: 0xfffffffe,
-            body: (x: Cell) => x.beginParse().skip(32).loadUint(32) === 2,
+            body: (x?: Cell) => x?.beginParse().skip(32).loadUint(32) === 2,
         })
 
         class NowTest implements Contract {
@@ -162,7 +162,7 @@ describe('Blockchain', () => {
         expect(txc.transactions).toHaveTransaction({
             from: address,
             op: 0xfffffffe,
-            body: (x: Cell) => x.beginParse().skip(32).loadUint(32) === 3,
+            body: (x?: Cell) => x?.beginParse().skip(32).loadUint(32) === 3,
         })
 
         // Current time in receiveMessage should match blockchain.now
