@@ -3,6 +3,51 @@ import {base64Decode} from "../utils/base64";
 import { ExtraCurrency } from "../utils/ec";
 const EmulatorModule = require('./emulator-emscripten.js');
 
+export type BlockId = {
+    workchain: number
+    shard: bigint
+    seqno: number
+    rootHash: Buffer
+    fileHash: Buffer
+}
+
+function blockIdToTuple(blockId: BlockId): TupleItem[] {
+    return [
+        { type: 'int', value: BigInt(blockId.workchain) },
+        { type: 'int', value: blockId.shard },
+        { type: 'int', value: BigInt(blockId.seqno) },
+        { type: 'int', value: BigInt('0x' + blockId.rootHash.toString('hex')) },
+        { type: 'int', value: BigInt('0x' + blockId.fileHash.toString('hex')) },
+    ]
+}
+
+export type PrevBlocksInfo = {
+    lastMcBlocks: BlockId[]
+    prevKeyBlock: BlockId
+    lastMcBlocks100?: BlockId[]
+}
+
+function prevBlocksInfoToTuple(prevBlocksInfo: PrevBlocksInfo): TupleItem[] {
+    const r: TupleItem[] = [
+        { type: 'tuple', items: prevBlocksInfo.lastMcBlocks.map(bid => ({ type: 'tuple', items: blockIdToTuple(bid) })) },
+        { type: 'tuple', items: blockIdToTuple(prevBlocksInfo.prevKeyBlock) },
+    ]
+
+    if (prevBlocksInfo.lastMcBlocks100) {
+        r.push({ type: 'tuple', items: prevBlocksInfo.lastMcBlocks100.map(bid => ({ type: 'tuple', items: blockIdToTuple(bid) })) })
+    }
+
+    return r
+}
+
+function serializeTupleAsStackEntry(tuple: TupleItem[]): Cell {
+    const c = serializeTuple([{ type: 'tuple', items: tuple }])
+    const s = c.beginParse()
+    s.skip(24)
+    s.loadRef()
+    return s.asCell()
+}
+
 export type GetMethodArgs = {
     code: Cell,
     data: Cell,
@@ -18,6 +63,7 @@ export type GetMethodArgs = {
     gasLimit: bigint
     debugEnabled: boolean
     extraCurrency?: ExtraCurrency
+    prevBlocksInfo?: PrevBlocksInfo
 }
 
 export type GetMethodResultSuccess = {
@@ -50,6 +96,7 @@ export type RunCommonArgs = {
     randomSeed: Buffer | null
     ignoreChksig: boolean
     debugEnabled: boolean
+    prevBlocksInfo?: PrevBlocksInfo
 }
 
 export type RunTransactionArgs = {
@@ -75,6 +122,7 @@ type GetMethodInternalParams = {
     method_id: number
     debug_enabled: boolean
     extra_currencies?: { [k: string]: string }
+    prev_blocks_info?: string
 };
 
 type EmulationInternalParams = {
@@ -85,6 +133,7 @@ type EmulationInternalParams = {
     debug_enabled: boolean
     is_tick_tock?: boolean
     is_tock?: boolean
+    prev_blocks_info?: string
 };
 
 export type ExecutorVerbosity = 'short' | 'full' | 'full_location' | 'full_location_gas' | 'full_location_stack' | 'full_location_stack_verbose'
@@ -140,13 +189,19 @@ const verbosityToNum: Record<ExecutorVerbosity, number> = {
 }
 
 function runCommonArgsToInternalParams(args: RunCommonArgs): EmulationInternalParams {
-    return {
+    const p: EmulationInternalParams = {
         utime: args.now,
         lt: args.lt.toString(),
         rand_seed: args.randomSeed === null ? '' : args.randomSeed.toString('hex'),
         ignore_chksig: args.ignoreChksig,
         debug_enabled: args.debugEnabled,
     }
+
+    if (args.prevBlocksInfo !== undefined) {
+        p.prev_blocks_info = serializeTupleAsStackEntry(prevBlocksInfoToTuple(args.prevBlocksInfo)).toBoc().toString('base64')
+    }
+
+    return p
 }
 
 class Pointer {
@@ -257,6 +312,10 @@ export class Executor implements IExecutor {
             for (const [k, v] of Object.entries(args.extraCurrency)) {
                 params.extra_currencies[k] = v.toString();
             }
+        }
+
+        if (args.prevBlocksInfo !== undefined) {
+            params.prev_blocks_info = serializeTupleAsStackEntry(prevBlocksInfoToTuple(args.prevBlocksInfo)).toBoc().toString('base64')
         }
 
         let stack = serializeTuple(args.stack)

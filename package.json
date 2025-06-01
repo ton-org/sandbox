@@ -18,6 +18,7 @@
     "@ton/core": "^0.60.1",
     "@ton/crypto": "3.3.0",
     "@ton/test-utils": "^0.3.1",
+    "@ton/tolk-js": "^0.13.0",
     "@ton/ton": "^15.2.1",
     "@types/jest": "^29.5.0",
     "@types/node": "^18.15.11",
