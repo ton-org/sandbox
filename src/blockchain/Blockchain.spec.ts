@@ -819,17 +819,9 @@ describe('Blockchain', () => {
                 rootHash: Buffer.alloc(32),
                 fileHash: Buffer.alloc(32),
             },
-            lastMcBlocks100: [],
         }
 
         const smc = await blockchain.getContract(addr)
-
-        blockchain.verbosity = {
-            print: true,
-            debugLogs: true,
-            vmLogs: 'vm_logs',
-            blockchainLogs: false,
-        }
 
         const res = await smc.get('prevBlockSeqnos')
         expect(res.stackReader.readNumber()).toBe(1)
