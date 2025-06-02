@@ -15,6 +15,7 @@
     ],
     "exclude": [
         "**/*.fixture.ts",
-        "**/*.spec.ts"
+        "**/*.spec.ts",
+        "**/test_utils/**/*"
     ]
 }
