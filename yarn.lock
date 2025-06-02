@@ -875,7 +875,7 @@ __metadata:
     typescript: ^4.9.5
   peerDependencies:
     "@ton/crypto": ">=3.3.0"
-    "@ton/test-utils": ">=0.6.0"
+    "@ton/test-utils": ">=0.7.0"
     jest: ^29.5.0
   peerDependenciesMeta:
     "@ton/test-utils":
