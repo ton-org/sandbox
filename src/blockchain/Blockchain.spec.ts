@@ -767,7 +767,8 @@ describe('Blockchain', () => {
         expect(res2.transactions).toHaveTransaction({
             from: addr,
             on: sender,
-            body: (x: Cell) => {
+            body: (x?: Cell) => {
+                if (!x) return false;
                 const s = x.beginParse()
                 return s.loadUint(32) === 1 && s.loadUint(32) === 1 && s.loadUint(32) === 2
             },
