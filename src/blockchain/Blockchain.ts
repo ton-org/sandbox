@@ -27,6 +27,7 @@ import { internal } from "../utils/message";
 import { slimConfig } from "../config/slimConfig";
 import { testSubwalletId } from "../utils/testTreasurySubwalletId";
 import { collectMetric } from "../metric/collectMetric";
+import { ContractsMeta } from "../meta/ContractsMeta";
 
 const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS'
 
@@ -171,6 +172,7 @@ export class Blockchain {
     protected contractFetches = new Map<string, Promise<SmartContract>>()
     protected nextCreateWalletIndex = 0
     protected shouldRecordStorage = false
+    protected meta?: ContractsMeta
     protected prevBlocksInfo?: PrevBlocksInfo
 
     readonly executor: IExecutor
@@ -253,10 +255,11 @@ export class Blockchain {
         return this.currentLt
     }
 
-    protected constructor(opts: { executor: IExecutor, config?: BlockchainConfig, storage: BlockchainStorage }) {
+    protected constructor(opts: { executor: IExecutor, config?: BlockchainConfig, storage: BlockchainStorage; meta?: ContractsMeta }) {
         this.networkConfig = blockchainConfigToBase64(opts.config)
         this.executor = opts.executor
         this.storage = opts.storage
+        this.meta = opts.meta
     }
 
     /**
@@ -571,6 +574,8 @@ export class Blockchain {
             contract.balance = params?.balance ?? toNano(TREASURY_INIT_BALANCE_TONS)
         }
 
+        this.meta?.upsert(wallet.address, { treasurySeed: seed })
+
         return wallet
     }
 
@@ -617,6 +622,8 @@ export class Blockchain {
             }
             init = contract.init;
         }
+
+        this.meta?.upsert(address, { wrapperName: contract?.constructor?.name, abi: contract.abi });
 
         const provider = this.provider(address, init)
         const blkch = this
@@ -750,7 +757,7 @@ export class Blockchain {
      * @param [opts.executor] Custom contract executor. If omitted {@link Executor} is used.
      * @param [opts.config] Config used in blockchain. If omitted {@link defaultConfig} is used.
      * @param [opts.storage] Contracts storage used for blockchain. If omitted {@link LocalBlockchainStorage} is used.
-     *
+     * @param [opts.meta] Optional contracts metadata provider. If not provided, {@link @ton/test-utils.contractsMeta} will be used to accumulate contracts metadata.
      * @example
      * const blockchain = await Blockchain.create({ config: 'slim' });
      *
@@ -763,10 +770,11 @@ export class Blockchain {
      *     storage: new RemoteBlockchainStorage(wrapTonClient4ForRemote(client), 34892000)
      * });
      */
-    static async create(opts?: { executor?: IExecutor, config?: BlockchainConfig, storage?: BlockchainStorage }) {
+    static async create(opts?: { executor?: IExecutor, config?: BlockchainConfig, storage?: BlockchainStorage; meta?: ContractsMeta }) {
         return new Blockchain({
             executor: opts?.executor ?? await Executor.create(),
             storage: opts?.storage ?? new LocalBlockchainStorage(),
+            meta: opts?.meta ?? require('@ton/test-utils')?.contractsMeta,
             ...opts
         })
     }
