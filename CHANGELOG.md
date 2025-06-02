@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-### Added contract meta gathering via meta field in blockchain
+### Added
+
+- Added contract meta gathering via meta field in blockchain
+- Added ability to set `PREVBLOCKS` information
 
 ## [0.31.0] - 2025-05-20
 

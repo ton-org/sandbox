@@ -285,6 +285,7 @@ export class SmartContract {
             randomSeed: params?.randomSeed ?? Buffer.alloc(32),
             ignoreChksig: params?.ignoreChksig ?? false,
             debugEnabled: this.verbosity.debugLogs,
+            prevBlocksInfo: this.blockchain.prevBlocks,
         }
     }
 
@@ -378,6 +379,7 @@ export class SmartContract {
             gasLimit: params?.gasLimit ?? 10_000_000n,
             debugEnabled: this.verbosity.debugLogs,
             extraCurrency: this.ec,
+            prevBlocksInfo: this.blockchain.prevBlocks,
         })
 
         if (this.verbosity.print && this.verbosity.blockchainLogs && res.logs.length > 0) {

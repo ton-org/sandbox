@@ -15,7 +15,7 @@ import {
     StateInit,
     OpenedContract
 } from "@ton/core";
-import {IExecutor, Executor, TickOrTock} from "../executor/Executor";
+import {IExecutor, Executor, TickOrTock, PrevBlocksInfo} from "../executor/Executor";
 import {BlockchainStorage, LocalBlockchainStorage} from "./BlockchainStorage";
 import { extractEvents, Event } from "../event/Event";
 import { BlockchainContractProvider, SandboxContractProvider } from "./BlockchainContractProvider";
@@ -173,6 +173,7 @@ export class Blockchain {
     protected nextCreateWalletIndex = 0
     protected shouldRecordStorage = false
     protected meta?: ContractsMeta
+    protected prevBlocksInfo?: PrevBlocksInfo
 
     readonly executor: IExecutor
 
@@ -275,6 +276,20 @@ export class Blockchain {
         return this.networkConfig
     }
 
+    /**
+     * @returns Current PrevBlocksInfo
+     */
+    get prevBlocks(): PrevBlocksInfo | undefined {
+        return this.prevBlocksInfo
+    }
+
+    /**
+     * Sets PrevBlocksInfo.
+     * @param value PrevBlocksInfo to set
+     */
+    set prevBlocks(value: PrevBlocksInfo | undefined) {
+        this.prevBlocksInfo = value
+    }
 
     /**
      * Emulates the result of sending a message to this Blockchain. Emulates the whole chain of transactions before returning the result. Each transaction increases lt by 1000000.
