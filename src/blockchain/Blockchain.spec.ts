@@ -5,26 +5,9 @@ import { createShardAccount, GetMethodError, TimeError } from "./SmartContract";
 import { internal } from "../utils/message";
 import { SandboxContractProvider } from "./BlockchainContractProvider";
 import { TickOrTock } from "../executor/Executor";
-import { runTolkCompiler } from "@ton/tolk-js";
-
-async function compileTolk(source: string) {
-    const r = await runTolkCompiler({
-        entrypointFileName: 'main.tolk',
-        fsReadCallback: (path) => {
-            if (path === 'main.tolk') {
-                return source
-            }
-
-            throw new Error(`File ${path} not found`)
-        },
-    });
-
-    if (r.status === 'error') {
-        throw new Error(r.message);
-    }
-
-    return Cell.fromBase64(r.codeBoc64);
-}
+import { compileTolk } from "./test_utils/compileTolk";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 describe('Blockchain', () => {
     it('should print debug logs', async () => {
@@ -721,61 +704,7 @@ describe('Blockchain', () => {
     });
 
     it('should process prev blocks correctly', async () => {
-        const code = await compileTolk(`
-            @pure
-            fun prevKeyBlock(): tuple
-                asm "PREVKEYBLOCK";
-
-            @pure
-            fun prevMcBlocks(): tuple
-                asm "PREVMCBLOCKS";
-
-            @pure
-            fun blockIdSeqno(blockId: tuple): int {
-                return blockId.get(2);
-            }
-
-            fun onInternalMessage(myBalance: int, msgValue: int, msgFull: cell, msgBody: slice) {
-                if (msgBody.isEnd()) {
-                    return;
-                }
-
-                var cs = msgFull.beginParse();
-                val flags = cs.loadMessageFlags();
-                if (isMessageBounced(flags)) {
-                    return;
-                }
-
-                val sender = cs.loadAddress();
-
-                val op = msgBody.loadMessageOp();
-
-                if (op == 1) {
-                    sendRawMessage(
-                        beginCell()
-                        .storeUint(0x18, 6)
-                        .storeAddress(sender)
-                        .storeCoins(0)
-                        .storeUint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1)
-                        .storeUint(1, 32)
-                        .storeUint(blockIdSeqno(prevKeyBlock()), 32)
-                        .storeUint(blockIdSeqno(prevMcBlocks().get(0)), 32)
-                        .endCell(),
-                        SEND_MODE_CARRY_ALL_REMAINING_MESSAGE_VALUE
-                    );
-                    return;
-                }
-
-                throw 0xffff;
-            }
-
-            get prevBlockSeqnos(): (int, int) {
-                return (
-                    blockIdSeqno(prevKeyBlock()),
-                    blockIdSeqno(prevMcBlocks().get(0))
-                );
-            }
-        `);
+        const code = await compileTolk(readFileSync(join(__dirname, 'test_utils', 'contracts', 'prevblocks.tolk'), 'utf-8'));
 
         const blockchain = await Blockchain.create()
 
