@@ -43,45 +43,45 @@ export async function fetchConfig(network: 'mainnet' | 'testnet', maxRetries: nu
 }
 
 export function setGlobalVersion(config: Cell, version: number, capabilites?: bigint) {
-        const parsedConfig = Dictionary.loadDirect(
-            Dictionary.Keys.Int(32),
-            Dictionary.Values.Cell(),
-            config
-        );
+    const parsedConfig = Dictionary.loadDirect(
+        Dictionary.Keys.Int(32),
+        Dictionary.Values.Cell(),
+        config
+    );
 
-        let changed = false;
+    let changed = false;
 
-        const param8 = parsedConfig.get(8);
-        if(!param8) {
-            throw new Error("[setTvmVersion] parameter 8 is not found!");
-        }
+    const param8 = parsedConfig.get(8);
+    if(!param8) {
+        throw new Error("[setGlobalVersion] parameter 8 is not found!");
+    }
 
-        const ds = param8.beginParse();
-        const tag = ds.loadUint(8);
-        const curVersion = ds.loadUint(32);
+    const ds = param8.beginParse();
+    const tag = ds.loadUint(8);
+    const curVersion = ds.loadUint(32);
 
-        const newValue = beginCell().storeUint(tag, 8);
+    const newValue = beginCell().storeUint(tag, 8);
 
-        if (curVersion != version) {
+    if (curVersion != version) {
+        changed = true;
+    }
+    newValue.storeUint(version, 32);
+
+    if(capabilites) {
+        const curCapabilities = ds.loadUintBig(64);
+        if(capabilites != curCapabilities) {
             changed = true;
         }
-        newValue.storeUint(version, 32);
+        newValue.storeUint(capabilites, 64);
+    } else {
+        newValue.storeSlice(ds);
+    }
 
-        if(capabilites) {
-            const curCapabilities = ds.loadUintBig(64);
-            if(capabilites != curCapabilities) {
-                changed = true;
-            }
-            newValue.storeUint(capabilites, 64);
-        } else {
-            newValue.storeSlice(ds);
-        }
+    // If any changes, serialize
+    if(changed) {
+        parsedConfig.set(8, newValue.endCell());
+        return beginCell().storeDictDirect(parsedConfig).endCell();
+    }
 
-        // If any changes, serialize
-        if(changed) {
-            parsedConfig.set(8, newValue.endCell());
-            return beginCell().storeDictDirect(parsedConfig).endCell();
-        }
-
-        return config;
+    return config;
 }
