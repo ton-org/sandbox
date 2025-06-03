@@ -5,6 +5,9 @@ import { createShardAccount, GetMethodError, TimeError } from "./SmartContract";
 import { internal } from "../utils/message";
 import { SandboxContractProvider } from "./BlockchainContractProvider";
 import { TickOrTock } from "../executor/Executor";
+import { compileTolk } from "./test_utils/compileTolk";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 describe('Blockchain', () => {
     it('should print debug logs', async () => {
@@ -113,7 +116,7 @@ describe('Blockchain', () => {
         expect(tx1.transactions).toHaveTransaction({
             from: address,
             op: 0xfffffffe,
-            body: (x: Cell) => x.beginParse().skip(32).loadUint(32) === 1,
+            body: (x?: Cell) => x?.beginParse().skip(32).loadUint(32) === 1,
         })
 
         const res2 = await blockchain.runGetMethod(address, 'get_now', [], {
@@ -133,7 +136,7 @@ describe('Blockchain', () => {
         expect(tx2.transactions).toHaveTransaction({
             from: address,
             op: 0xfffffffe,
-            body: (x: Cell) => x.beginParse().skip(32).loadUint(32) === 2,
+            body: (x?: Cell) => x?.beginParse().skip(32).loadUint(32) === 2,
         })
 
         class NowTest implements Contract {
@@ -162,7 +165,7 @@ describe('Blockchain', () => {
         expect(txc.transactions).toHaveTransaction({
             from: address,
             op: 0xfffffffe,
-            body: (x: Cell) => x.beginParse().skip(32).loadUint(32) === 3,
+            body: (x?: Cell) => x?.beginParse().skip(32).loadUint(32) === 3,
         })
 
         // Current time in receiveMessage should match blockchain.now
@@ -698,5 +701,77 @@ describe('Blockchain', () => {
 
         smc = await blockchain.getContract(bob.address);
         expect(smc.ec[1]).toBe(10n);
+    });
+
+    it('should process prev blocks correctly', async () => {
+        const code = await compileTolk(readFileSync(join(__dirname, 'test_utils', 'contracts', 'prevblocks.tolk'), 'utf-8'));
+
+        const blockchain = await Blockchain.create()
+
+        const addr = randomAddress()
+        const data = new Cell()
+
+        await blockchain.setShardAccount(addr, createShardAccount({
+            address: addr,
+            code,
+            data,
+            balance: toNano('1'),
+        }))
+
+        blockchain.prevBlocks = {
+            lastMcBlocks: [
+                {
+                    workchain: 0,
+                    shard: 0n,
+                    seqno: 2,
+                    rootHash: Buffer.alloc(32),
+                    fileHash: Buffer.alloc(32),
+                }, {
+                    workchain: 0,
+                    shard: 0n,
+                    seqno: 123,
+                    rootHash: Buffer.alloc(32),
+                    fileHash: Buffer.alloc(32),
+                },
+                {
+                    workchain: 0,
+                    shard: 0n,
+                    seqno: 246,
+                    rootHash: Buffer.alloc(32),
+                    fileHash: Buffer.alloc(32),
+                },
+            ],
+            prevKeyBlock: {
+                workchain: 0,
+                shard: 0n,
+                seqno: 1,
+                rootHash: Buffer.alloc(32),
+                fileHash: Buffer.alloc(32),
+            },
+        }
+
+        const smc = await blockchain.getContract(addr)
+
+        const res = await smc.get('prevBlockSeqnos')
+        expect(res.stackReader.readNumber()).toBe(1)
+        expect(res.stackReader.readNumber()).toBe(2)
+
+        const sender = randomAddress()
+
+        const res2 = await blockchain.sendMessage(internal({
+            from: sender,
+            to: addr,
+            value: toNano('1'),
+            body: beginCell().storeUint(1, 32).endCell(),
+        }))
+        expect(res2.transactions).toHaveTransaction({
+            from: addr,
+            on: sender,
+            body: (x?: Cell) => {
+                if (!x) return false;
+                const s = x.beginParse()
+                return s.loadUint(32) === 1 && s.loadUint(32) === 1 && s.loadUint(32) === 2
+            },
+        })
     });
 })

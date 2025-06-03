@@ -59,6 +59,8 @@ export {
     EmulationResult as ExecutorEmulationResult,
     RunTransactionArgs as ExecutorRunTransactionArgs,
     ExecutorVerbosity,
+    BlockId,
+    PrevBlocksInfo,
 } from './executor/Executor';
 
 export {

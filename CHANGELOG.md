@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added `fetchConfig` and `setGlobalVersion` utility functions
 
+## [0.32.0] - 2025-06-02
+
+### Added
+
+- Added contract meta gathering via meta field in blockchain
+- Added ability to set `PREVBLOCKS` information
+
 ## [0.31.0] - 2025-05-20
 
 ### Added
