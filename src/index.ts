@@ -89,6 +89,11 @@ export {
 } from './utils/message';
 
 export {
+    fetchConfig,
+    setGlobalVersion
+} from './utils/config';
+
+export {
     ExtraCurrency,
 } from './utils/ec';
 
