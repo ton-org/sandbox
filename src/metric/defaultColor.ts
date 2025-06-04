@@ -1,5 +1,6 @@
-import { DeltaMetric } from './deltaResult';
 import chalk, { supportsColor } from 'chalk';
+
+import { DeltaMetric } from './deltaResult';
 
 export function defaultColor(metric: DeltaMetric) {
     if (!supportsColor) {

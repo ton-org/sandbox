@@ -1,5 +1,6 @@
 import { join } from 'path';
 import { existsSync, readdirSync, readFileSync } from 'fs';
+
 import { SnapshotMetric, SnapshotMetricList } from './collectMetric';
 
 export async function readSnapshots(snapshotDir: string) {

@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+
 import { simpleSnapshot } from './fixtures/data.fixture';
 import { readSnapshots } from './readSnapshots';
 

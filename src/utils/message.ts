@@ -1,32 +1,33 @@
-import { Address, Cell, Dictionary, Message, StateInit } from "@ton/core";
-import { ExtraCurrency, packEc } from "./ec";
+import { Address, Cell, Dictionary, Message, StateInit } from '@ton/core';
+
+import { ExtraCurrency, packEc } from './ec';
 
 /**
  * Creates {@link Message} from params.
  */
 export function internal(params: {
-    from: Address
-    to: Address
-    value: bigint
-    body?: Cell
-    stateInit?: StateInit
-    bounce?: boolean
-    bounced?: boolean
-    ihrDisabled?: boolean
-    ihrFee?: bigint
-    forwardFee?: bigint
-    createdAt?: number
-    createdLt?: bigint
-    ec?: Dictionary<number, bigint> | [number, bigint][] | ExtraCurrency
+    from: Address;
+    to: Address;
+    value: bigint;
+    body?: Cell;
+    stateInit?: StateInit;
+    bounce?: boolean;
+    bounced?: boolean;
+    ihrDisabled?: boolean;
+    ihrFee?: bigint;
+    forwardFee?: bigint;
+    createdAt?: number;
+    createdLt?: bigint;
+    ec?: Dictionary<number, bigint> | [number, bigint][] | ExtraCurrency;
 }): Message {
-    let ecd: Dictionary<number, bigint> | undefined = undefined
+    let ecd: Dictionary<number, bigint> | undefined = undefined;
     if (params.ec !== undefined) {
         if (Array.isArray(params.ec)) {
-            ecd = packEc(params.ec)
+            ecd = packEc(params.ec);
         } else if (params.ec instanceof Dictionary) {
-            ecd = params.ec
+            ecd = params.ec;
         } else {
-            ecd = packEc(Object.entries(params.ec).map(([k, v]) => [Number(k), v]))
+            ecd = packEc(Object.entries(params.ec).map(([k, v]) => [Number(k), v]));
         }
     }
     return {
@@ -45,5 +46,5 @@ export function internal(params: {
         },
         body: params.body ?? new Cell(),
         init: params.stateInit,
-    }
+    };
 }

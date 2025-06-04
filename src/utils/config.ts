@@ -4,56 +4,54 @@ export async function fetchConfig(network: 'mainnet' | 'testnet', maxRetries: nu
     let apiDomain: string;
     let retryLeft = maxRetries;
 
-    if(network == 'testnet') {
+    if (network == 'testnet') {
         apiDomain = 'testnet.toncenter.com';
-    } else if(network == 'mainnet') {
+    } else if (network == 'mainnet') {
         apiDomain = 'toncenter.com';
     } else {
         throw new RangeError(`Unknown network: ${network}`);
     }
 
-    const sleep = (timeout: number) => new Promise((resolve) => {
-        setTimeout(resolve, timeout);
-    });
+    const sleep = (timeout: number) =>
+        new Promise((resolve) => {
+            setTimeout(resolve, timeout);
+        });
 
     const headers = new Headers();
-    headers.append("Accept", "application/json");
+    headers.append('Accept', 'application/json');
 
     do {
         try {
             const resp = await fetch(`https://${apiDomain}/api/v2/getConfigAll`, {
                 method: 'GET',
-                headers
+                headers,
             });
 
             const jsonResp = await resp.json();
-            if(jsonResp.ok) {
+            if (jsonResp.ok) {
                 return Cell.fromBase64(jsonResp.result.config.bytes);
             } else {
                 throw new Error(JSON.stringify(jsonResp));
             }
-        } catch(e: any) {
+        } catch (e) {
             retryLeft--;
-            console.error(`Error fetching config:${e.toString()}`);
+            // eslint-disable-next-line no-console
+            console.error(`Error fetching config:${(e as Error).toString()}`);
             await sleep(1000);
         }
-    } while(retryLeft > 0);
+    } while (retryLeft > 0);
 
     throw new Error(`Failed to fetch config after ${maxRetries} attempts`);
 }
 
 export function setGlobalVersion(config: Cell, version: number, capabilites?: bigint) {
-    const parsedConfig = Dictionary.loadDirect(
-        Dictionary.Keys.Int(32),
-        Dictionary.Values.Cell(),
-        config
-    );
+    const parsedConfig = Dictionary.loadDirect(Dictionary.Keys.Int(32), Dictionary.Values.Cell(), config);
 
     let changed = false;
 
     const param8 = parsedConfig.get(8);
-    if(!param8) {
-        throw new Error("[setGlobalVersion] parameter 8 is not found!");
+    if (!param8) {
+        throw new Error('[setGlobalVersion] parameter 8 is not found!');
     }
 
     const ds = param8.beginParse();
@@ -67,9 +65,9 @@ export function setGlobalVersion(config: Cell, version: number, capabilites?: bi
     }
     newValue.storeUint(version, 32);
 
-    if(capabilites) {
+    if (capabilites) {
         const curCapabilities = ds.loadUintBig(64);
-        if(capabilites != curCapabilities) {
+        if (capabilites != curCapabilities) {
             changed = true;
         }
         newValue.storeUint(capabilites, 64);
@@ -78,7 +76,7 @@ export function setGlobalVersion(config: Cell, version: number, capabilites?: bi
     }
 
     // If any changes, serialize
-    if(changed) {
+    if (changed) {
         parsedConfig.set(8, newValue.endCell());
         return beginCell().storeDictDirect(parsedConfig).endCell();
     }

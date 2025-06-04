@@ -1,54 +1,61 @@
 import {
-    AccountState, Address, Cell, comment, Contract,
+    AccountState,
+    Address,
+    Cell,
+    comment,
+    Contract,
     ContractGetMethodResult,
     ContractProvider,
     ContractState,
     ExtraCurrency,
-    Message, openContract,
+    Message,
     OpenedContract,
     Sender,
-    SendMode, StateInit,
+    SendMode,
+    StateInit,
     toNano,
     Transaction,
-    TupleItem
-} from "@ton/core";
-import {TickOrTock} from "../executor/Executor";
-import {GetMethodResult, SmartContract} from "./SmartContract";
+    TupleItem,
+} from '@ton/core';
+
+import { TickOrTock } from '../executor/Executor';
+import { GetMethodResult, SmartContract } from './SmartContract';
 
 function bigintToBuffer(x: bigint, n = 32): Buffer {
-    const b = Buffer.alloc(n)
+    const b = Buffer.alloc(n);
     for (let i = 0; i < n; i++) {
-        b[n - i - 1] = Number((x >> BigInt(i * 8)) & 0xffn)
+        b[n - i - 1] = Number((x >> BigInt(i * 8)) & 0xffn);
     }
-    return b
+    return b;
 }
 
 function convertState(state: AccountState | undefined): ContractState['state'] {
-    if (state === undefined) return {
-        type: 'uninit'
-    }
+    if (state === undefined)
+        return {
+            type: 'uninit',
+        };
 
     switch (state.type) {
         case 'uninit':
             return {
-                type: 'uninit'
-            }
+                type: 'uninit',
+            };
         case 'active':
             return {
                 type: 'active',
                 code: state.state.code?.toBoc(),
                 data: state.state.data?.toBoc(),
-            }
+            };
         case 'frozen':
             return {
                 type: 'frozen',
-                stateHash: bigintToBuffer(state.stateHash)
-            }
+                stateHash: bigintToBuffer(state.stateHash),
+            };
     }
 }
 
 export interface SandboxContractProvider extends ContractProvider {
-    tickTock(which: TickOrTock): Promise<void>
+    tickTock(which: TickOrTock): Promise<void>;
 }
 
 /**
@@ -57,11 +64,11 @@ export interface SandboxContractProvider extends ContractProvider {
 export class BlockchainContractProvider implements SandboxContractProvider {
     constructor(
         private readonly blockchain: {
-            getContract(address: Address): Promise<SmartContract>
-            pushMessage(message: Message): Promise<void>
-            runGetMethod(address: Address, method: string, args: TupleItem[]): Promise<GetMethodResult>
-            pushTickTock(on: Address, which: TickOrTock): Promise<void>,
-            openContract<T extends Contract>(contract: T): OpenedContract<T>
+            getContract(address: Address): Promise<SmartContract>;
+            pushMessage(message: Message): Promise<void>;
+            runGetMethod(address: Address, method: string, args: TupleItem[]): Promise<GetMethodResult>;
+            pushTickTock(on: Address, which: TickOrTock): Promise<void>;
+            openContract<T extends Contract>(contract: T): OpenedContract<T>;
         },
         private readonly address: Address,
         private readonly init?: StateInit | null,
@@ -75,7 +82,7 @@ export class BlockchainContractProvider implements SandboxContractProvider {
     }
 
     async getState(): Promise<ContractState> {
-        const contract = await this.blockchain.getContract(this.address)
+        const contract = await this.blockchain.getContract(this.address);
         return {
             balance: contract.balance,
             extracurrency: contract.ec,
@@ -84,7 +91,7 @@ export class BlockchainContractProvider implements SandboxContractProvider {
                 hash: bigintToBuffer(contract.lastTransactionHash),
             },
             state: convertState(contract.accountState),
-        }
+        };
     }
 
     /**
@@ -93,15 +100,15 @@ export class BlockchainContractProvider implements SandboxContractProvider {
      * @param args Args to invoke get method.
      */
     async get(name: string, args: TupleItem[]): Promise<ContractGetMethodResult> {
-        const result = await this.blockchain.runGetMethod(this.address, name, args)
+        const result = await this.blockchain.runGetMethod(this.address, name, args);
         const ret = {
             ...result,
             stack: result.stackReader,
             stackItems: result.stack,
             logs: result.vmLogs,
-        }
-        delete (ret as any).stackReader
-        return ret
+        };
+        delete (ret as any).stackReader;
+        return ret;
     }
 
     /**
@@ -110,8 +117,15 @@ export class BlockchainContractProvider implements SandboxContractProvider {
      *
      * @throws {Error}
      */
-    getTransactions(address: Address, lt: bigint, hash: Buffer, limit?: number | undefined): Promise<Transaction[]> {
-        throw new Error("`getTransactions` is not implemented in `BlockchainContractProvider`, do not use it in the tests")
+    getTransactions(
+        _address: Address,
+        _lt: bigint,
+        _hash: Buffer,
+        _limit?: number | undefined,
+    ): Promise<Transaction[]> {
+        throw new Error(
+            '`getTransactions` is not implemented in `BlockchainContractProvider`, do not use it in the tests',
+        );
     }
 
     /**
@@ -119,7 +133,7 @@ export class BlockchainContractProvider implements SandboxContractProvider {
      * @param message Message to push
      */
     async external(message: Cell) {
-        const init = ((await this.getState()).state.type !== 'active' && this.init) ? this.init : undefined
+        const init = (await this.getState()).state.type !== 'active' && this.init ? this.init : undefined;
 
         await this.blockchain.pushMessage({
             info: {
@@ -129,20 +143,29 @@ export class BlockchainContractProvider implements SandboxContractProvider {
             },
             init,
             body: message,
-        })
+        });
     }
 
     /**
      * Pushes internal message to message queue.
      */
-    async internal(via: Sender, args: { value: string | bigint; extracurrency?: ExtraCurrency, bounce?: boolean | null; sendMode?: SendMode; body?: string | Cell | null; }) {
-        const init = ((await this.getState()).state.type !== 'active' && this.init) ? this.init : undefined
+    async internal(
+        via: Sender,
+        args: {
+            value: string | bigint;
+            extracurrency?: ExtraCurrency;
+            bounce?: boolean | null;
+            sendMode?: SendMode;
+            body?: string | Cell | null;
+        },
+    ) {
+        const init = (await this.getState()).state.type !== 'active' && this.init ? this.init : undefined;
 
-        const bounce = (args.bounce !== null && args.bounce !== undefined) ? args.bounce : true
+        const bounce = args.bounce !== null && args.bounce !== undefined ? args.bounce : true;
 
-        const value = typeof args.value === 'string' ? toNano(args.value) : args.value
+        const value = typeof args.value === 'string' ? toNano(args.value) : args.value;
 
-        const body = typeof args.body === 'string' ? comment(args.body) : args.body
+        const body = typeof args.body === 'string' ? comment(args.body) : args.body;
 
         await via.send({
             to: this.address,
@@ -152,13 +175,13 @@ export class BlockchainContractProvider implements SandboxContractProvider {
             sendMode: args.sendMode,
             init,
             body,
-        })
+        });
     }
 
     /**
      * Pushes tick-tock message to message queue.
      */
     async tickTock(which: TickOrTock) {
-        await this.blockchain.pushTickTock(this.address, which)
+        await this.blockchain.pushTickTock(this.address, which);
     }
 }

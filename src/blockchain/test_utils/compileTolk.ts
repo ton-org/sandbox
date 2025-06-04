@@ -1,15 +1,15 @@
-import { Cell } from "@ton/core";
-import { runTolkCompiler } from "@ton/tolk-js";
+import { Cell } from '@ton/core';
+import { runTolkCompiler } from '@ton/tolk-js';
 
 export async function compileTolk(source: string) {
     const r = await runTolkCompiler({
         entrypointFileName: 'main.tolk',
         fsReadCallback: (path) => {
             if (path === 'main.tolk') {
-                return source
+                return source;
             }
 
-            throw new Error(`File ${path} not found`)
+            throw new Error(`File ${path} not found`);
         },
     });
 
