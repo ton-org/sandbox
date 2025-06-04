@@ -1,25 +1,37 @@
-import {Blockchain} from "./Blockchain";
 import {
     Account,
     Address,
     beginCell,
     Cell,
-    contractAddress, Dictionary, loadShardAccount, loadTransaction,
+    contractAddress,
+    Dictionary,
+    loadShardAccount,
+    loadTransaction,
     Message,
     parseTuple,
     ShardAccount,
-    storeMessage, storeShardAccount,
+    storeMessage,
+    storeShardAccount,
     Transaction,
-    TupleItem, TupleReader
-} from "@ton/core";
-import { ExtraCurrency, extractEc, packEc } from "../utils/ec";
-import {getSelectorForMethod} from "../utils/selector";
-import { EmulationResult, ExecutorVerbosity, RunCommonArgs, TickOrTock } from "../executor/Executor";
+    TupleItem,
+    TupleReader,
+} from '@ton/core';
 
-export function createShardAccount(args: { address?: Address, code: Cell, data: Cell, balance: bigint, workchain?: number }): ShardAccount {
-    let wc = args.workchain ?? 0
-    let address = args.address ?? contractAddress(wc, { code: args.code, data: args.data })
-    let balance = args.balance ?? 0n
+import { Blockchain } from './Blockchain';
+import { ExtraCurrency, extractEc, packEc } from '../utils/ec';
+import { getSelectorForMethod } from '../utils/selector';
+import { EmulationResult, ExecutorVerbosity, RunCommonArgs, TickOrTock } from '../executor/Executor';
+
+export function createShardAccount(args: {
+    address?: Address;
+    code: Cell;
+    data: Cell;
+    balance: bigint;
+    workchain?: number;
+}): ShardAccount {
+    let wc = args.workchain ?? 0;
+    let address = args.address ?? contractAddress(wc, { code: args.code, data: args.data });
+    let balance = args.balance ?? 0n;
 
     return {
         account: {
@@ -31,23 +43,23 @@ export function createShardAccount(args: { address?: Address, code: Cell, data: 
                     type: 'active',
                     state: {
                         code: args.code,
-                        data: args.data
-                    }
-                }
+                        data: args.data,
+                    },
+                },
             },
             storageStats: {
                 used: {
                     cells: 0n,
                     bits: 0n,
-                    publicCells: 0n
+                    publicCells: 0n,
                 },
                 lastPaid: 0,
-                duePayment: null
-            }
+                duePayment: null,
+            },
         },
         lastTransactionLt: 0n,
-        lastTransactionHash: 0n
-    }
+        lastTransactionHash: 0n,
+    };
 }
 
 function createEmptyAccount(address: Address): Account {
@@ -56,69 +68,69 @@ function createEmptyAccount(address: Address): Account {
         storage: {
             lastTransLt: 0n,
             balance: { coins: 0n },
-            state: { type: 'uninit' }
+            state: { type: 'uninit' },
         },
         storageStats: {
             used: { cells: 0n, bits: 0n, publicCells: 0n },
             lastPaid: 0,
-        }
-    }
+        },
+    };
 }
 
 export function createEmptyShardAccount(address: Address): ShardAccount {
     return {
         account: createEmptyAccount(address),
         lastTransactionLt: 0n,
-        lastTransactionHash: 0n
-    }
+        lastTransactionHash: 0n,
+    };
 }
 
-export type Verbosity = 'none' | 'vm_logs' | 'vm_logs_location' | 'vm_logs_gas' | 'vm_logs_full' | 'vm_logs_verbose'
+export type Verbosity = 'none' | 'vm_logs' | 'vm_logs_location' | 'vm_logs_gas' | 'vm_logs_full' | 'vm_logs_verbose';
 
 const verbosityToExecutorVerbosity: Record<Verbosity, ExecutorVerbosity> = {
-    'none': 'short',
-    'vm_logs': 'full',
-    'vm_logs_location': 'full_location',
-    'vm_logs_gas': 'full_location_gas',
-    'vm_logs_full': 'full_location_stack',
-    'vm_logs_verbose': 'full_location_stack_verbose',
-}
+    none: 'short',
+    vm_logs: 'full',
+    vm_logs_location: 'full_location',
+    vm_logs_gas: 'full_location_gas',
+    vm_logs_full: 'full_location_stack',
+    vm_logs_verbose: 'full_location_stack_verbose',
+};
 
 export type LogsVerbosity = {
-    print: boolean
-    blockchainLogs: boolean
-    vmLogs: Verbosity
-    debugLogs: boolean
-}
+    print: boolean;
+    blockchainLogs: boolean;
+    vmLogs: Verbosity;
+    debugLogs: boolean;
+};
 
 export type SmartContractTransaction = Transaction & {
-    blockchainLogs: string
-    vmLogs: string
-    debugLogs: string
-    oldStorage?: Cell
-    newStorage?: Cell
-}
+    blockchainLogs: string;
+    vmLogs: string;
+    debugLogs: string;
+    oldStorage?: Cell;
+    newStorage?: Cell;
+};
 export type MessageParams = Partial<{
-    now: number,
-    randomSeed: Buffer,
-    ignoreChksig: boolean,
-}>
+    now: number;
+    randomSeed: Buffer;
+    ignoreChksig: boolean;
+}>;
 
 export type GetMethodParams = Partial<{
-    now: number,
-    randomSeed: Buffer,
-    gasLimit: bigint,
-}>
+    now: number;
+    randomSeed: Buffer;
+    gasLimit: bigint;
+}>;
 
 export type GetMethodResult = {
-    stack: TupleItem[],
-    stackReader: TupleReader,
-    exitCode: number,
-    gasUsed: bigint,
-    blockchainLogs: string,
-    vmLogs: string,
-    debugLogs: string,
-}
+    stack: TupleItem[];
+    stackReader: TupleReader;
+    exitCode: number;
+    gasUsed: bigint;
+    blockchainLogs: string;
+    vmLogs: string;
+    debugLogs: string;
+};
 
 export class GetMethodError extends Error {
     constructor(
@@ -138,7 +150,9 @@ export class TimeError extends Error {
         public previousTxTime: number,
         public currentTime: number,
     ) {
-        super(`Cannot run a transaction on account ${address} at unix timestamp ${currentTime} because it already had a transaction executed on it at unix timestamp ${previousTxTime}`)
+        super(
+            `Cannot run a transaction on account ${address} at unix timestamp ${currentTime} because it already had a transaction executed on it at unix timestamp ${previousTxTime}`,
+        );
     }
 }
 
@@ -150,44 +164,44 @@ export class EmulationError extends Error {
         public blockchainLogs?: string,
         public debugLogs?: string,
     ) {
-        let errMsg = `Error while executing transaction: ${error}`
+        let errMsg = `Error while executing transaction: ${error}`;
         if (exitCode !== undefined) {
-            errMsg += `\nExit code: ${exitCode}`
+            errMsg += `\nExit code: ${exitCode}`;
         }
         if (vmLogs !== undefined) {
-            errMsg += `\nVM logs:\n${vmLogs}`
+            errMsg += `\nVM logs:\n${vmLogs}`;
         }
         if (blockchainLogs !== undefined) {
-            errMsg += `\nBlockchain logs:\n${blockchainLogs}`
+            errMsg += `\nBlockchain logs:\n${blockchainLogs}`;
         }
         if (debugLogs !== undefined) {
-            errMsg += `\nDebug logs:\n${debugLogs}`
+            errMsg += `\nDebug logs:\n${debugLogs}`;
         }
-        super(errMsg)
+        super(errMsg);
     }
 }
 
 export type SmartContractSnapshot = {
-    address: Address
-    account: ShardAccount
-    lastTxTime: number
-    verbosity?: Partial<LogsVerbosity>
-}
+    address: Address;
+    account: ShardAccount;
+    lastTxTime: number;
+    verbosity?: Partial<LogsVerbosity>;
+};
 
 export class SmartContract {
-    readonly address: Address
-    readonly blockchain: Blockchain
-    #account: string
-    #parsedAccount?: ShardAccount
-    #lastTxTime: number
-    #verbosity?: Partial<LogsVerbosity>
+    readonly address: Address;
+    readonly blockchain: Blockchain;
+    #account: string;
+    #parsedAccount?: ShardAccount;
+    #lastTxTime: number;
+    #verbosity?: Partial<LogsVerbosity>;
 
     constructor(shardAccount: ShardAccount, blockchain: Blockchain) {
-        this.address = shardAccount.account!.addr
-        this.#account = beginCell().store(storeShardAccount(shardAccount)).endCell().toBoc().toString('base64')
-        this.#parsedAccount = shardAccount
-        this.#lastTxTime = shardAccount.account?.storageStats.lastPaid ?? 0
-        this.blockchain = blockchain
+        this.address = shardAccount.account!.addr;
+        this.#account = beginCell().store(storeShardAccount(shardAccount)).endCell().toBoc().toString('base64');
+        this.#parsedAccount = shardAccount;
+        this.#lastTxTime = shardAccount.account?.storageStats.lastPaid ?? 0;
+        this.blockchain = blockchain;
     }
 
     snapshot(): SmartContractSnapshot {
@@ -196,83 +210,86 @@ export class SmartContract {
             account: this.account,
             lastTxTime: this.#lastTxTime,
             verbosity: this.#verbosity === undefined ? undefined : { ...this.#verbosity },
-        }
+        };
     }
 
     loadFrom(snapshot: SmartContractSnapshot) {
         if (snapshot.address !== this.address) {
-            throw new Error('Wrong snapshot address')
+            throw new Error('Wrong snapshot address');
         }
 
-        this.account = snapshot.account
-        this.#lastTxTime = snapshot.lastTxTime
-        this.#verbosity = snapshot.verbosity === undefined ? undefined : { ...snapshot.verbosity }
+        this.account = snapshot.account;
+        this.#lastTxTime = snapshot.lastTxTime;
+        this.#verbosity = snapshot.verbosity === undefined ? undefined : { ...snapshot.verbosity };
     }
 
     get ec() {
-        return extractEc(this.account.account?.storage.balance.other ?? Dictionary.empty(Dictionary.Keys.Uint(32), Dictionary.Values.BigVarUint(5)))
+        return extractEc(
+            this.account.account?.storage.balance.other ??
+                Dictionary.empty(Dictionary.Keys.Uint(32), Dictionary.Values.BigVarUint(5)),
+        );
     }
 
     set ec(nv: ExtraCurrency) {
-        const acc = this.account
+        const acc = this.account;
         if (acc.account === undefined) {
-            acc.account = createEmptyAccount(this.address)
+            acc.account = createEmptyAccount(this.address);
         }
-        acc.account!.storage.balance.other = packEc(Object.entries(nv).map(([k, v]) => [Number(k), v]))
-        this.account = acc
+        acc.account!.storage.balance.other = packEc(Object.entries(nv).map(([k, v]) => [Number(k), v]));
+        this.account = acc;
     }
 
     get balance() {
-        return this.account.account?.storage.balance.coins ?? 0n
+        return this.account.account?.storage.balance.coins ?? 0n;
     }
 
     set balance(v: bigint) {
-        const acc = this.account
+        const acc = this.account;
         if (acc.account === undefined) {
-            acc.account = createEmptyAccount(this.address)
+            acc.account = createEmptyAccount(this.address);
         }
-        acc.account!.storage.balance.coins = v
-        this.account = acc
+        acc.account!.storage.balance.coins = v;
+        this.account = acc;
     }
 
     get lastTransactionHash() {
-        return this.account.lastTransactionHash
+        return this.account.lastTransactionHash;
     }
 
     get lastTransactionLt() {
-        return this.account.lastTransactionLt
+        return this.account.lastTransactionLt;
     }
 
     get accountState() {
-        return this.account.account?.storage.state
+        return this.account.account?.storage.state;
     }
 
     get account() {
         if (this.#parsedAccount === undefined) {
-            this.#parsedAccount = loadShardAccount(Cell.fromBase64(this.#account).beginParse())
+            this.#parsedAccount = loadShardAccount(Cell.fromBase64(this.#account).beginParse());
         }
-        return this.#parsedAccount
+        return this.#parsedAccount;
     }
 
     set account(account: ShardAccount) {
-        this.#account = beginCell().store(storeShardAccount(account)).endCell().toBoc().toString('base64')
-        this.#parsedAccount = account
-        this.#lastTxTime = account.account?.storageStats.lastPaid ?? 0
+        this.#account = beginCell().store(storeShardAccount(account)).endCell().toBoc().toString('base64');
+        this.#parsedAccount = account;
+        this.#lastTxTime = account.account?.storageStats.lastPaid ?? 0;
     }
 
-    static create(blockchain: Blockchain, args: { address: Address, code: Cell, data: Cell, balance: bigint }) {
-        return new SmartContract(createShardAccount(args), blockchain)
+    static create(blockchain: Blockchain, args: { address: Address; code: Cell; data: Cell; balance: bigint }) {
+        return new SmartContract(createShardAccount(args), blockchain);
     }
 
     static empty(blockchain: Blockchain, address: Address) {
-        return new SmartContract(createEmptyShardAccount(address), blockchain)
+        return new SmartContract(createEmptyShardAccount(address), blockchain);
     }
 
     protected createCommonArgs(params?: MessageParams): RunCommonArgs {
-        const now = params?.now ?? Math.floor(Date.now() / 1000)
+        const now = params?.now ?? Math.floor(Date.now() / 1000);
 
         if (now < this.#lastTxTime) {
-            throw new TimeError(this.address, this.#lastTxTime, now)
+            throw new TimeError(this.address, this.#lastTxTime, now);
         }
 
         return {
@@ -286,7 +303,7 @@ export class SmartContract {
             ignoreChksig: params?.ignoreChksig ?? false,
             debugEnabled: this.verbosity.debugLogs,
             prevBlocksInfo: this.blockchain.prevBlocks,
-        }
+        };
     }
 
     async receiveMessage(message: Message, params?: MessageParams) {
@@ -294,30 +311,34 @@ export class SmartContract {
         params = {
             now: this.blockchain.now,
             ...params,
-        }
-        return await this.runCommon(() => this.blockchain.executor.runTransaction({
-            ...this.createCommonArgs(params),
-            message: beginCell().store(storeMessage(message)).endCell(),
-        }))
+        };
+        return await this.runCommon(() =>
+            this.blockchain.executor.runTransaction({
+                ...this.createCommonArgs(params),
+                message: beginCell().store(storeMessage(message)).endCell(),
+            }),
+        );
     }
 
     async runTickTock(which: TickOrTock, params?: MessageParams) {
-        return await this.runCommon(() => this.blockchain.executor.runTickTock({
-            ...this.createCommonArgs(params),
-            which,
-        }))
+        return await this.runCommon(() =>
+            this.blockchain.executor.runTickTock({
+                ...this.createCommonArgs(params),
+                which,
+            }),
+        );
     }
 
     protected async runCommon(run: () => Promise<EmulationResult>): Promise<SmartContractTransaction> {
-        let oldStorage: Cell | undefined = undefined
+        let oldStorage: Cell | undefined = undefined;
         if (this.blockchain.recordStorage && this.account.account?.storage.state.type === 'active') {
-            oldStorage = this.account.account?.storage.state.state.data ?? undefined
+            oldStorage = this.account.account?.storage.state.state.data ?? undefined;
         }
 
-        const res = await run()
+        const res = await run();
 
         if (this.verbosity.print && this.verbosity.blockchainLogs && res.logs.length > 0) {
-            console.log(res.logs)
+            console.log(res.logs);
         }
 
         if (!res.result.success) {
@@ -327,26 +348,26 @@ export class SmartContract {
                 res.result.vmResults?.vmExitCode,
                 res.logs.length === 0 ? undefined : res.logs,
                 res.debugLogs.length === 0 ? undefined : res.debugLogs,
-            )
+            );
         }
 
         if (this.verbosity.print && this.verbosity.vmLogs !== 'none' && res.result.vmLog.length > 0) {
-            console.log(res.result.vmLog)
+            console.log(res.result.vmLog);
         }
 
         if (this.verbosity.print && this.verbosity.debugLogs && res.debugLogs.length > 0) {
-            console.log(res.debugLogs)
+            console.log(res.debugLogs);
         }
 
-        const tx = loadTransaction(Cell.fromBase64(res.result.transaction).beginParse())
+        const tx = loadTransaction(Cell.fromBase64(res.result.transaction).beginParse());
 
-        this.#account = res.result.shardAccount
-        this.#parsedAccount = undefined
-        this.#lastTxTime = tx.now
+        this.#account = res.result.shardAccount;
+        this.#parsedAccount = undefined;
+        this.#lastTxTime = tx.now;
 
-        let newStorage: Cell | undefined = undefined
+        let newStorage: Cell | undefined = undefined;
         if (this.blockchain.recordStorage && this.account.account?.storage.state.type === 'active') {
-            newStorage = this.account.account?.storage.state.state.data ?? undefined
+            newStorage = this.account.account?.storage.state.state.data ?? undefined;
         }
 
         return {
@@ -356,12 +377,12 @@ export class SmartContract {
             debugLogs: res.debugLogs,
             oldStorage,
             newStorage,
-        }
+        };
     }
 
     async get(method: string | number, stack: TupleItem[] = [], params?: GetMethodParams): Promise<GetMethodResult> {
         if (this.account.account?.storage.state.type !== 'active') {
-            throw new Error('Trying to run get method on non-active contract')
+            throw new Error('Trying to run get method on non-active contract');
         }
 
         const res = await this.blockchain.executor.runGetMethod({
@@ -380,22 +401,22 @@ export class SmartContract {
             debugEnabled: this.verbosity.debugLogs,
             extraCurrency: this.ec,
             prevBlocksInfo: this.blockchain.prevBlocks,
-        })
+        });
 
         if (this.verbosity.print && this.verbosity.blockchainLogs && res.logs.length > 0) {
-            console.log(res.logs)
+            console.log(res.logs);
         }
 
         if (!res.output.success) {
-            throw new Error('Error invoking get method: ' + res.output.error)
+            throw new Error('Error invoking get method: ' + res.output.error);
         }
 
         if (this.verbosity.print && this.verbosity.vmLogs !== 'none' && res.output.vm_log.length > 0) {
-            console.log(res.output.vm_log)
+            console.log(res.output.vm_log);
         }
 
         if (this.verbosity.print && this.verbosity.debugLogs && res.debugLogs.length > 0) {
-            console.log(res.debugLogs)
+            console.log(res.debugLogs);
         }
 
         if (res.output.vm_exit_code !== 0 && res.output.vm_exit_code !== 1) {
@@ -408,7 +429,7 @@ export class SmartContract {
             );
         }
 
-        const resStack = parseTuple(Cell.fromBase64(res.output.stack))
+        const resStack = parseTuple(Cell.fromBase64(res.output.stack));
 
         return {
             stack: resStack,
@@ -418,18 +439,18 @@ export class SmartContract {
             blockchainLogs: res.logs,
             vmLogs: res.output.vm_log,
             debugLogs: res.debugLogs,
-        }
+        };
     }
 
     get verbosity() {
         return {
             ...this.blockchain.verbosity,
             ...this.#verbosity,
-        }
+        };
     }
 
     set verbosity(value: LogsVerbosity) {
-        this.setVerbosity(value)
+        this.setVerbosity(value);
     }
 
     setVerbosity(verbosity: Partial<LogsVerbosity> | Verbosity | undefined) {
@@ -438,9 +459,9 @@ export class SmartContract {
                 ...this.#verbosity,
                 vmLogs: verbosity,
                 blockchainLogs: verbosity !== 'none',
-            }
+            };
         } else {
-            this.#verbosity = verbosity
+            this.#verbosity = verbosity;
         }
     }
 }

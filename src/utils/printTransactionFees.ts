@@ -1,4 +1,4 @@
-import { Transaction } from "@ton/core";
+import { Transaction } from '@ton/core';
 
 const decimalCount = 9;
 const decimal = pow10(decimalCount);
@@ -16,7 +16,8 @@ export function formatCoinsPure(value: bigint, precision = 6): string {
 
     let frac = value % decimal;
     const precisionDecimal = pow10(decimalCount - precision);
-    if (frac % precisionDecimal > 0n) { // round up
+    if (frac % precisionDecimal > 0n) {
+        // round up
         frac += precisionDecimal;
         if (frac >= decimal) {
             frac -= decimal;
@@ -25,7 +26,7 @@ export function formatCoinsPure(value: bigint, precision = 6): string {
     }
     frac /= precisionDecimal;
 
-    return `${whole.toString()}${frac !== 0n ? ('.' + frac.toString().padStart(precision, '0').replace(/0+$/, '')) : ''}`;
+    return `${whole.toString()}${frac !== 0n ? '.' + frac.toString().padStart(precision, '0').replace(/0+$/, '') : ''}`;
 }
 
 function formatCoins(value: bigint | undefined, precision = 6): string {
@@ -50,50 +51,51 @@ function formatCoins(value: bigint | undefined, precision = 6): string {
 export function printTransactionFees(transactions: Transaction[]) {
     console.table(
         transactions
-        .map((tx) => {
-            if (tx.description.type !== 'generic') return undefined;
+            .map((tx) => {
+                if (tx.description.type !== 'generic') return undefined;
 
-            const body = tx.inMessage?.info.type === 'internal' ? tx.inMessage?.body.beginParse() : undefined;
-            const op = body === undefined ? 'N/A' : (body.remainingBits >= 32 ? body.preloadUint(32) : 'no body');
+                const body = tx.inMessage?.info.type === 'internal' ? tx.inMessage?.body.beginParse() : undefined;
+                const op = body === undefined ? 'N/A' : body.remainingBits >= 32 ? body.preloadUint(32) : 'no body';
 
-            const totalFees = formatCoins(tx.totalFees.coins);
+                const totalFees = formatCoins(tx.totalFees.coins);
 
-            const computeFees = formatCoins(
-                tx.description.computePhase.type === 'vm' ? tx.description.computePhase.gasFees : undefined,
-            );
+                const computeFees = formatCoins(
+                    tx.description.computePhase.type === 'vm' ? tx.description.computePhase.gasFees : undefined,
+                );
 
-            const totalFwdFees = formatCoins(tx.description.actionPhase?.totalFwdFees ?? undefined);
+                const totalFwdFees = formatCoins(tx.description.actionPhase?.totalFwdFees ?? undefined);
 
-            const valueIn = formatCoins(
-                tx.inMessage?.info.type === 'internal' ? tx.inMessage.info.value.coins : undefined,
-            );
+                const valueIn = formatCoins(
+                    tx.inMessage?.info.type === 'internal' ? tx.inMessage.info.value.coins : undefined,
+                );
 
-            const valueOut = formatCoins(
-                tx.outMessages
-                .values()
-                .reduce(
-                    (total, message) => total + (message.info.type === 'internal' ? message.info.value.coins : 0n),
-                    0n,
-                ),
-            );
+                const valueOut = formatCoins(
+                    tx.outMessages
+                        .values()
+                        .reduce(
+                            (total, message) =>
+                                total + (message.info.type === 'internal' ? message.info.value.coins : 0n),
+                            0n,
+                        ),
+                );
 
-            const forwardIn = formatCoins(
-                tx.inMessage?.info.type === 'internal' ? tx.inMessage.info.forwardFee : undefined,
-            );
+                const forwardIn = formatCoins(
+                    tx.inMessage?.info.type === 'internal' ? tx.inMessage.info.forwardFee : undefined,
+                );
 
-            return {
-                op: typeof op === 'number' ? ('0x' + op.toString(16)) : op,
-                valueIn,
-                valueOut,
-                totalFees: totalFees,
-                inForwardFee: forwardIn,
-                outForwardFee: totalFwdFees,
-                outActions: tx.description.actionPhase?.totalActions ?? 'N/A',
-                computeFee: computeFees,
-                exitCode: tx.description.computePhase.type === 'vm' ? tx.description.computePhase.exitCode : 'N/A',
-                actionCode: tx.description.actionPhase?.resultCode ?? 'N/A',
-            };
-        })
-        .filter((v) => v !== undefined),
+                return {
+                    op: typeof op === 'number' ? '0x' + op.toString(16) : op,
+                    valueIn,
+                    valueOut,
+                    totalFees: totalFees,
+                    inForwardFee: forwardIn,
+                    outForwardFee: totalFwdFees,
+                    outActions: tx.description.actionPhase?.totalActions ?? 'N/A',
+                    computeFee: computeFees,
+                    exitCode: tx.description.computePhase.type === 'vm' ? tx.description.computePhase.exitCode : 'N/A',
+                    actionCode: tx.description.actionPhase?.resultCode ?? 'N/A',
+                };
+            })
+            .filter((v) => v !== undefined),
     );
 }

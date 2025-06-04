@@ -1,6 +1,7 @@
 import { Address, beginCell, Cell, Contract, storeMessage, Message } from '@ton/core';
 import { Dictionary, DictionaryKeyTypes, TransactionComputePhase } from '@ton/core';
 import { Maybe } from '@ton/core/src/utils/maybe';
+
 import { Blockchain, SendMessageResult } from '../blockchain/Blockchain';
 import { ContractDatabase } from './ContractDatabase';
 
@@ -254,6 +255,7 @@ export async function collectMetric<T extends Contract>(
     }
     let testName;
     if ((globalThis as any)['expect']) {
+        // eslint-disable-next-line no-undef
         testName = expect.getState().currentTestName;
     }
     let contractName: ContractName | undefined = ctx.contract.constructor.name;

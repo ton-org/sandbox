@@ -1,4 +1,4 @@
-import { formatCoinsPure } from "./printTransactionFees";
+import { formatCoinsPure } from './printTransactionFees';
 
 describe('formatCoins', () => {
     it('should format coins correctly', () => {

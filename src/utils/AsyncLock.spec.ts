@@ -1,14 +1,15 @@
-import { AsyncLock } from "./AsyncLock";
+import { AsyncLock } from './AsyncLock';
 
 describe('AsyncLock', () => {
     it('should work', async () => {
-        const sleep = (ms: number): Promise<void> => new Promise((resolve) => {
-            setTimeout(resolve, ms);
-        });
+        const sleep = (ms: number): Promise<void> =>
+            new Promise((resolve) => {
+                setTimeout(resolve, ms);
+            });
 
         const lock = new AsyncLock();
 
-        let events: { id: number, when: 'pre' | 'post' }[] = [];
+        let events: { id: number; when: 'pre' | 'post' }[] = [];
 
         const deferredAction = async (id: number) => {
             await lock.with(async () => {
@@ -26,6 +27,11 @@ describe('AsyncLock', () => {
 
         await sleep(100);
 
-        expect(events).toEqual(ids.flatMap(id => [{ id, when: 'pre' }, { id, when: 'post' }]));
-    })
-})
+        expect(events).toEqual(
+            ids.flatMap((id) => [
+                { id, when: 'pre' },
+                { id, when: 'post' },
+            ]),
+        );
+    });
+});

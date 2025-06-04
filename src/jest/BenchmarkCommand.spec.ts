@@ -1,5 +1,4 @@
 import { BenchmarkCommand } from './BenchmarkCommand';
-import { before } from 'node:test';
 
 describe('BenchmarkCommand', () => {
     it.each([

@@ -1,1 +1,1 @@
-module.exports = require("./dist/jest/BenchmarkReporter").default;
+module.exports = require('./dist/jest/BenchmarkReporter').default;
