@@ -1,4 +1,6 @@
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const base = require('@ton/toolchain');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const tsEslint = require('@ton/toolchain').tsEslint;
 
 module.exports = [
@@ -16,15 +18,10 @@ module.exports = [
             'no-useless-escape': 'warn',
             'no-console': 'warn',
             '@typescript-eslint/no-non-null-asserted-optional-chain': 'warn',
-            '@typescript-eslint/no-explicit-any': 'warn',
+            '@typescript-eslint/no-explicit-any': 'off',
             '@typescript-eslint/no-this-alias': 'warn',
             '@typescript-eslint/no-empty-object-type': 'warn',
-        },
-    },
-    {
-        files: ['src/executor/Executor.ts', 'src/blockchain/Blockchain.ts'],
-        rules: {
-            '@typescript-eslint/no-require-imports': 'off',
+            '@typescript-eslint/no-require-imports': 'warn',
         },
     },
     {
@@ -39,7 +36,7 @@ module.exports = [
             '@typescript-eslint': tsEslint,
         },
         rules: {
-            '@typescript-eslint/no-unused-expressions': 'off',
+            '@typescript-eslint/no-unused-expressions': 'warn',
         },
     },
 ];

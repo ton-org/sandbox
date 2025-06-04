@@ -274,7 +274,7 @@ export async function collectMetric<T extends Contract>(
         }
         const address = Address.parseRaw(`0:${tx.address.toString(16).padStart(64, '0')}`);
 
-        const { computePhase, actionPhase, bouncePhase, storagePhase } = tx.description;
+        const { computePhase, actionPhase } = tx.description;
         const action: ActionPhaseMetric | undefined = actionPhase
             ? {
                   success: actionPhase.success,

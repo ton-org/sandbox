@@ -5,7 +5,7 @@ import { Transaction, fromNano } from '@ton/core';
  * @returns Transaction log string
  */
 export function prettyLogTransaction(tx: Transaction) {
-    let res = `${tx.inMessage?.info.src!}  ➡️  ${tx.inMessage?.info.dest}\n`;
+    let res = `${tx.inMessage?.info.src}  ➡️  ${tx.inMessage?.info.dest}\n`;
 
     for (let message of tx.outMessages.values()) {
         if (message.info.type === 'internal') {
@@ -35,5 +35,6 @@ export function prettyLogTransactions(txs: Transaction[]) {
         out += prettyLogTransaction(tx) + '\n\n';
     }
 
+    // eslint-disable-next-line no-console
     console.log(out);
 }

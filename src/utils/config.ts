@@ -33,9 +33,10 @@ export async function fetchConfig(network: 'mainnet' | 'testnet', maxRetries: nu
             } else {
                 throw new Error(JSON.stringify(jsonResp));
             }
-        } catch (e: any) {
+        } catch (e) {
             retryLeft--;
-            console.error(`Error fetching config:${e.toString()}`);
+            // eslint-disable-next-line no-console
+            console.error(`Error fetching config:${(e as Error).toString()}`);
             await sleep(1000);
         }
     } while (retryLeft > 0);

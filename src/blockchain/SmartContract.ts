@@ -338,6 +338,7 @@ export class SmartContract {
         const res = await run();
 
         if (this.verbosity.print && this.verbosity.blockchainLogs && res.logs.length > 0) {
+            // eslint-disable-next-line no-console
             console.log(res.logs);
         }
 
@@ -352,10 +353,12 @@ export class SmartContract {
         }
 
         if (this.verbosity.print && this.verbosity.vmLogs !== 'none' && res.result.vmLog.length > 0) {
+            // eslint-disable-next-line no-console
             console.log(res.result.vmLog);
         }
 
         if (this.verbosity.print && this.verbosity.debugLogs && res.debugLogs.length > 0) {
+            // eslint-disable-next-line no-console
             console.log(res.debugLogs);
         }
 
@@ -386,7 +389,9 @@ export class SmartContract {
         }
 
         const res = await this.blockchain.executor.runGetMethod({
+            // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
             code: this.account.account?.storage.state.state.code!,
+            // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
             data: this.account.account?.storage.state.state.data!,
             methodId: typeof method === 'string' ? getSelectorForMethod(method) : method,
             stack,
@@ -404,6 +409,7 @@ export class SmartContract {
         });
 
         if (this.verbosity.print && this.verbosity.blockchainLogs && res.logs.length > 0) {
+            // eslint-disable-next-line no-console
             console.log(res.logs);
         }
 
@@ -412,10 +418,12 @@ export class SmartContract {
         }
 
         if (this.verbosity.print && this.verbosity.vmLogs !== 'none' && res.output.vm_log.length > 0) {
+            // eslint-disable-next-line no-console
             console.log(res.output.vm_log);
         }
 
         if (this.verbosity.print && this.verbosity.debugLogs && res.debugLogs.length > 0) {
+            // eslint-disable-next-line no-console
             console.log(res.debugLogs);
         }
 

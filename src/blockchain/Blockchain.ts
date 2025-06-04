@@ -682,10 +682,9 @@ export class Blockchain {
         this.meta?.upsert(address, { wrapperName: contract?.constructor?.name, abi: contract.abi });
 
         const provider = this.provider(address, init);
-        const blkch = this;
 
         return new Proxy<any>(contract as any, {
-            get(target, prop) {
+            get: (target, prop) => {
                 if (prop === SANDBOX_CONTRACT_SYMBOL) {
                     return true;
                 }
@@ -705,10 +704,10 @@ export class Blockchain {
                                 ret = await ret;
                             }
                             const out = {
-                                ...(await blkch.runQueue()),
+                                ...(await this.runQueue()),
                                 result: ret,
                             };
-                            await collectMetric(blkch, ctx, out);
+                            await collectMetric(this, ctx, out);
                             return out;
                         };
                     }
@@ -737,8 +736,6 @@ export class Blockchain {
         try {
             const contract = await this.startFetchingContract(address);
             return contract;
-        } catch (e) {
-            throw e;
         } finally {
             this.contractFetches.delete(address.toRawString());
         }
@@ -833,6 +830,7 @@ export class Blockchain {
         return new Blockchain({
             executor: opts?.executor ?? (await Executor.create()),
             storage: opts?.storage ?? new LocalBlockchainStorage(),
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
             meta: opts?.meta ?? require('@ton/test-utils')?.contractsMeta,
             ...opts,
         });

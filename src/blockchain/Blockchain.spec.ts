@@ -39,6 +39,7 @@ describe('Blockchain', () => {
             }),
         );
 
+        // eslint-disable-next-line no-console
         console.log('transaction');
 
         await blockchain.sendMessage({
@@ -58,6 +59,7 @@ describe('Blockchain', () => {
             body: beginCell().endCell(),
         });
 
+        // eslint-disable-next-line no-console
         console.log('get method');
 
         await blockchain.runGetMethod(testAddress, 'test_dump', [

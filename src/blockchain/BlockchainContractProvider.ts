@@ -9,7 +9,6 @@ import {
     ContractState,
     ExtraCurrency,
     Message,
-    openContract,
     OpenedContract,
     Sender,
     SendMode,
@@ -118,7 +117,12 @@ export class BlockchainContractProvider implements SandboxContractProvider {
      *
      * @throws {Error}
      */
-    getTransactions(address: Address, lt: bigint, hash: Buffer, limit?: number | undefined): Promise<Transaction[]> {
+    getTransactions(
+        _address: Address,
+        _lt: bigint,
+        _hash: Buffer,
+        _limit?: number | undefined,
+    ): Promise<Transaction[]> {
         throw new Error(
             '`getTransactions` is not implemented in `BlockchainContractProvider`, do not use it in the tests',
         );

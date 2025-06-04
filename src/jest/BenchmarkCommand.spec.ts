@@ -9,8 +9,12 @@ describe('BenchmarkCommand', () => {
         [undefined, 'true', [undefined, true, true]],
         ['some', 'true', ['some', true, true]],
     ])('command variant label:%s & diff:%s ', (label, diff, expected) => {
-        label && (process.env['BENCH_NEW'] = label);
-        diff && (process.env['BENCH_DIFF'] = diff);
+        if (label) {
+            process.env['BENCH_NEW'] = label;
+        }
+        if (diff) {
+            process.env['BENCH_DIFF'] = diff;
+        }
         const actual = new BenchmarkCommand();
         expect([actual.label, actual.doDiff, actual.doBenchmark]).toEqual(expected);
     });

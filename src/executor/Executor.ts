@@ -3,6 +3,7 @@ import { Address, Cell, serializeTuple, TupleItem } from '@ton/core';
 import { base64Decode } from '../utils/base64';
 import { ExtraCurrency } from '../utils/ec';
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const EmulatorModule = require('./emulator-emscripten.js');
 
 export type BlockId = {
@@ -168,6 +169,7 @@ type ResultError = {
           vm_log: string;
           vm_exit_code: number;
       }
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
     | {}
 );
 
@@ -309,6 +311,7 @@ export class Executor implements IExecutor {
     static async create() {
         const ex = new Executor(
             await EmulatorModule({
+                // eslint-disable-next-line @typescript-eslint/no-require-imports
                 wasmBinary: base64Decode(require('./emulator-emscripten.wasm.js').EmulatorEmscriptenWasm),
                 printErr: (text: string) => ex.debugLogs.push(text),
             }),
@@ -355,6 +358,7 @@ export class Executor implements IExecutor {
         const debugLogs = this.debugLogs.join('\n');
 
         if (resp.fail) {
+            // eslint-disable-next-line no-console
             console.error(resp);
             throw new Error('Unknown emulation error');
         }
@@ -372,6 +376,7 @@ export class Executor implements IExecutor {
         const debugLogs = this.debugLogs.join('\n');
 
         if (resp.fail) {
+            // eslint-disable-next-line no-console
             console.error(resp);
             throw new Error('Unknown emulation error');
         }

@@ -49,6 +49,7 @@ function formatCoins(value: bigint | undefined, precision = 6): string {
  * @param transactions List of transaction to print fees
  */
 export function printTransactionFees(transactions: Transaction[]) {
+    // eslint-disable-next-line no-console
     console.table(
         transactions
             .map((tx) => {
