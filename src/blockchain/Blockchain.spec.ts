@@ -1,6 +1,3 @@
-import { readFileSync } from 'fs';
-import { join } from 'path';
-
 import {
     Address,
     beginCell,
@@ -15,13 +12,16 @@ import {
     toNano,
 } from '@ton/core';
 import { compareTransaction, flattenTransaction, randomAddress } from '@ton/test-utils';
+import { getSecureRandomBytes } from '@ton/crypto';
 
 import { Blockchain, BlockchainTransaction } from './Blockchain';
 import { createShardAccount, GetMethodError, TimeError } from './SmartContract';
 import { internal } from '../utils/message';
 import { SandboxContractProvider } from './BlockchainContractProvider';
-import { TickOrTock } from '../executor/Executor';
-import { compileTolk } from './test_utils/compileTolk';
+import { PrevBlocksInfo, TickOrTock } from '../executor/Executor';
+import { compileLocal } from './test_utils/compileTolk';
+import { prepareRandSeed } from './test_utils/randomSeed';
+import { createBlockId } from './test_utils/blockId';
 
 describe('Blockchain', () => {
     it('should print debug logs', async () => {
@@ -793,9 +793,7 @@ describe('Blockchain', () => {
     });
 
     it('should process prev blocks correctly', async () => {
-        const code = await compileTolk(
-            readFileSync(join(__dirname, 'test_utils', 'contracts', 'prevblocks.tolk'), 'utf-8'),
-        );
+        const code = await compileLocal('prevblocks.tolk');
 
         const blockchain = await Blockchain.create();
 
@@ -869,6 +867,100 @@ describe('Blockchain', () => {
                 const s = x.beginParse();
                 return s.loadUint(32) === 1 && s.loadUint(32) === 1 && s.loadUint(32) === 2;
             },
+        });
+    });
+
+    it('should process random seed correctly', async () => {
+        const code = await compileLocal('random_seed.tolk');
+        const data = new Cell();
+
+        const blockchain = await Blockchain.create();
+        const addr = randomAddress();
+
+        await blockchain.setShardAccount(
+            addr,
+            createShardAccount({
+                address: addr,
+                code,
+                data,
+                balance: toNano('1'),
+            }),
+        );
+
+        const randomBuffer = await getSecureRandomBytes(32);
+        blockchain.random = randomBuffer;
+
+        const smc = await blockchain.getContract(addr);
+
+        const res = await smc.get('randomSeed');
+
+        expect(
+            beginCell()
+                .storeUint(res.stackReader.readBigNumber(), 256)
+                .endCell()
+                .beginParse()
+                .loadBuffer(32)
+                .equals(randomBuffer),
+        ).toBeTruthy();
+
+        const sender = randomAddress();
+
+        const res2 = await blockchain.sendMessage(
+            internal({
+                from: sender,
+                to: addr,
+                value: toNano('0.5'),
+                body: beginCell().storeUint(1, 32).endCell(),
+            }),
+        );
+
+        expect(res2.transactions).toHaveTransaction({
+            from: addr,
+            on: sender,
+            body: beginCell().storeBuffer(prepareRandSeed(randomBuffer, addr)).endCell(),
+        });
+    });
+
+    describe('snapshots', () => {
+        it('should not affect blockchain while modifying snapshot.prevBlocksInfo', async () => {
+            const blockchain = await Blockchain.create();
+
+            const blockA = createBlockId(100);
+            const blockB = createBlockId(200);
+            blockB.rootHash[0] = 10;
+
+            blockchain.prevBlocks = {
+                lastMcBlocks: [blockA],
+                prevKeyBlock: blockB,
+            };
+
+            const snapshot = blockchain.snapshot();
+
+            snapshot.prevBlocksInfo!.lastMcBlocks[0].seqno = 999;
+            snapshot.prevBlocksInfo!.prevKeyBlock.rootHash[0] = 20;
+            expect(blockchain.prevBlocks!.lastMcBlocks[0].seqno).toBe(100);
+            expect(blockchain.prevBlocks!.prevKeyBlock.rootHash[0]).toBe(10);
+        });
+
+        it('should not affect blockchain while modifying snapshot randomSeed', async () => {
+            const blockchain = await Blockchain.create();
+
+            const randomBuffer = await getSecureRandomBytes(32);
+            randomBuffer[0] = 1;
+            blockchain.random = randomBuffer;
+
+            const snapshot = await blockchain.snapshot();
+
+            snapshot.randomSeed![0] = 2;
+
+            // should not modify
+            expect(blockchain.random[0]).toBe(1);
+
+            await blockchain.loadFrom(snapshot);
+            expect(blockchain.random[0]).toBe(2);
+
+            snapshot.randomSeed![0] = 3;
+            expect(blockchain.random[0]).toBe(2);
         });
     });
 });

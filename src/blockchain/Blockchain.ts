@@ -14,6 +14,7 @@ import {
     StateInit,
     OpenedContract,
 } from '@ton/core';
+import { getSecureRandomBytes } from '@ton/crypto';
 
 import { defaultConfig } from '../config/defaultConfig';
 import { IExecutor, Executor, TickOrTock, PrevBlocksInfo } from '../executor/Executor';
@@ -37,6 +38,7 @@ import { slimConfig } from '../config/slimConfig';
 import { testSubwalletId } from '../utils/testTreasurySubwalletId';
 import { collectMetric } from '../metric/collectMetric';
 import { ContractsMeta } from '../meta/ContractsMeta';
+import { deepcopy } from '../utils/deepcopy';
 
 const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS';
 
@@ -175,6 +177,8 @@ export type BlockchainSnapshot = {
     verbosity: LogsVerbosity;
     libs?: Cell;
     nextCreateWalletIndex: number;
+    prevBlocksInfo?: PrevBlocksInfo;
+    randomSeed?: Buffer;
 };
 
 export class Blockchain {
@@ -196,6 +200,7 @@ export class Blockchain {
     protected shouldRecordStorage = false;
     protected meta?: ContractsMeta;
     protected prevBlocksInfo?: PrevBlocksInfo;
+    protected randomSeed?: Buffer;
 
     readonly executor: IExecutor;
 
@@ -215,6 +220,8 @@ export class Blockchain {
             verbosity: { ...this.logsVerbosity },
             libs: this.globalLibs,
             nextCreateWalletIndex: this.nextCreateWalletIndex,
+            prevBlocksInfo: deepcopy(this.prevBlocksInfo),
+            randomSeed: deepcopy(this.randomSeed),
         };
     }
 
@@ -238,6 +245,8 @@ export class Blockchain {
         this.logsVerbosity = { ...snapshot.verbosity };
         this.globalLibs = snapshot.libs;
         this.nextCreateWalletIndex = snapshot.nextCreateWalletIndex;
+        this.prevBlocksInfo = deepcopy(snapshot.prevBlocksInfo);
+        this.randomSeed = deepcopy(snapshot.randomSeed);
     }
 
     get recordStorage() {
@@ -307,7 +316,7 @@ export class Blockchain {
      * @returns Current PrevBlocksInfo
      */
     get prevBlocks(): PrevBlocksInfo | undefined {
-        return this.prevBlocksInfo;
+        return deepcopy(this.prevBlocksInfo);
     }
 
     /**
@@ -315,7 +324,30 @@ export class Blockchain {
      * @param value PrevBlocksInfo to set
      */
     set prevBlocks(value: PrevBlocksInfo | undefined) {
-        this.prevBlocksInfo = value;
+        this.prevBlocksInfo = deepcopy(value);
+    }
+
+    /**
+     * @returns The current random seed
+     */
+    get random(): Buffer | undefined {
+        return deepcopy(this.randomSeed);
+    }
+
+    /**
+     * Sets the random seed
+     * @param value A Buffer containing the new random seed
+     */
+    set random(value: Buffer | undefined) {
+        this.randomSeed = deepcopy(value);
+    }
+
+    /**
+     * Generates and sets a new random seed using secure random bytes.
+     */
+    async randomize(): Promise<Buffer> {
+        this.randomSeed = await getSecureRandomBytes(32);
+        return this.randomSeed;
     }
 
     /**
