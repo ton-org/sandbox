@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added `fetchConfig` and `setGlobalVersion` utility functions
+- Added `blockchain.randomSeed` property
+- Added `prevBlocksInfo` to snapshot
 
 ## [0.32.0] - 2025-06-02
 
