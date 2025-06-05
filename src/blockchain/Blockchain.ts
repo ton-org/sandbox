@@ -118,7 +118,9 @@ export type SandboxContract<F> = {
  * @throws Error if contract not a sandbox contract
  */
 export function toSandboxContract<T>(contract: OpenedContract<T>): SandboxContract<T> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((contract as any)[SANDBOX_CONTRACT_SYMBOL] === true) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return contract as any;
     }
 
@@ -683,6 +685,7 @@ export class Blockchain {
 
         const provider = this.provider(address, init);
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return new Proxy<any>(contract as any, {
             get: (target, prop) => {
                 if (prop === SANDBOX_CONTRACT_SYMBOL) {
@@ -696,8 +699,10 @@ export class Blockchain {
                         methodName: prop,
                     };
                     if (prop.startsWith('get')) {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         return (...args: any[]) => value.apply(target, [provider, ...args]);
                     } else if (prop.startsWith('send')) {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         return async (...args: any[]) => {
                             let ret = value.apply(target, [provider, ...args]);
                             if (ret instanceof Promise) {

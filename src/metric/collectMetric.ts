@@ -153,10 +153,12 @@ export function makeSnapshotMetric(store: Metric[], config: Partial<SnapshotMetr
     return snapshot;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function getMetricStore(context: any = globalThis): Array<Metric> | undefined {
     return context[STORE_METRIC];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createMetricStore(context: any = globalThis): Array<Metric> {
     if (!Array.isArray(context[STORE_METRIC])) {
         context[STORE_METRIC] = new Array<Metric>();
@@ -164,6 +166,7 @@ export function createMetricStore(context: any = globalThis): Array<Metric> {
     return context[STORE_METRIC];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function resetMetricStore(context: any = globalThis): Array<Metric> {
     const store = getMetricStore(context);
     if (store) store.length = 0;
@@ -254,6 +257,7 @@ export async function collectMetric<T extends Contract>(
         }
     }
     let testName;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((globalThis as any)['expect']) {
         // eslint-disable-next-line no-undef
         testName = expect.getState().currentTestName;

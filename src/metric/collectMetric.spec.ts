@@ -8,6 +8,7 @@ const bc = new BenchmarkCommand();
 
 describe('collectMetric', () => {
     itIf(!bc.doBenchmark)('should not collect metric', async () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let context: any = {};
         await simpleCase();
         expect(getMetricStore(context)).toEqual(undefined);
