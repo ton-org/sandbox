@@ -51,8 +51,8 @@
     "test": "yarn wasm:pack && yarn jest src",
     "build": "rm -rf dist && yarn wasm:pack && tsc && yarn wasm:copy",
     "bt": "yarn build && yarn test",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --max-warnings 0 --fix",
     "config:pack": "ts-node ./scripts/pack-config.ts"
   },
   "packageManager": "yarn@3.6.1",

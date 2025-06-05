@@ -1,11 +1,11 @@
 type Waiter = { promise: Promise<void>; resolve: () => void };
 
 function createWaiter(): Waiter {
-    const w: Waiter = { promise: undefined, resolve: undefined } as any;
-    w.promise = new Promise((res) => {
-        w.resolve = res;
+    let resolveFn!: () => void;
+    const promise = new Promise<void>((res) => {
+        resolveFn = res;
     });
-    return w;
+    return { promise, resolve: resolveFn };
 }
 
 export class AsyncLock {

@@ -9,6 +9,7 @@ const mockedFs = fs as jest.Mocked<typeof fs>;
 
 function mockFsFiles(value: string) {
     mockedFs.existsSync.mockReturnValue(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockedFs.readdirSync.mockReturnValue(['001.json'] as unknown as any);
     mockedFs.readFileSync.mockReturnValue(value);
 }

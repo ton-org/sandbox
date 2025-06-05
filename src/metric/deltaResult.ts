@@ -146,7 +146,9 @@ export function aggregatedCompareMetric(before: Metric, after: Metric, basePath:
     keys.forEach((key) => {
         if (!deltaTarget.includes(key)) return;
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const prev = (before as any)[key];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const next = (after as any)[key];
         const path = [...basePath, key];
 

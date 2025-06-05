@@ -246,9 +246,11 @@ class Pointer {
 
 class Heap {
     private pointers: Pointer[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private module: any;
     private maxPtrs: number = 0;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     constructor(module: any) {
         this.module = module;
     }
@@ -294,6 +296,7 @@ export interface IExecutor {
 }
 
 export class Executor implements IExecutor {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private module: any;
     private heap: Heap;
     private emulator?: {
@@ -303,6 +306,7 @@ export class Executor implements IExecutor {
     };
     private debugLogs: string[] = [];
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private constructor(module: any) {
         this.module = module;
         this.heap = new Heap(module);
