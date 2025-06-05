@@ -1,8 +1,8 @@
-import { Dictionary } from "@ton/core";
+import { Dictionary } from '@ton/core';
 
 export type ExtraCurrency = {
-    [key: number]: bigint
-}
+    [key: number]: bigint;
+};
 
 export function extractEc(cc: Dictionary<number, bigint>): ExtraCurrency {
     const r: ExtraCurrency = {};

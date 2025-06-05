@@ -4,20 +4,20 @@ function b64ToUint6(nChr: number) {
     return nChr > 64 && nChr < 91
         ? nChr - 65
         : nChr > 96 && nChr < 123
-            ? nChr - 71
-            : nChr > 47 && nChr < 58
-                ? nChr + 4
-                : nChr === 43
-                    ? 62
-                    : nChr === 47
-                        ? 63
-                        : 0;
+          ? nChr - 71
+          : nChr > 47 && nChr < 58
+            ? nChr + 4
+            : nChr === 43
+              ? 62
+              : nChr === 47
+                ? 63
+                : 0;
 }
 
 export function base64Decode(sBase64: string) {
-    const sB64Enc = sBase64.replace(/[^A-Za-z0-9+/]/g, "");
+    const sB64Enc = sBase64.replace(/[^A-Za-z0-9+/]/g, '');
     const nInLen = sB64Enc.length;
-    const nOutLen = (nInLen * 3 + 1) >> 2
+    const nOutLen = (nInLen * 3 + 1) >> 2;
     const taBytes = new Uint8Array(nOutLen);
 
     let nMod3;

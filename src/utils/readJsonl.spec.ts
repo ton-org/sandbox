@@ -1,5 +1,6 @@
 import fs, { ReadStream } from 'fs';
 import { Readable } from 'stream';
+
 import { readJsonl } from './readJsonl';
 
 function mockReadStream(chunk: string): ReadStream {

@@ -1,7 +1,7 @@
-import { sha256_sync } from "@ton/crypto";
+import { sha256_sync } from '@ton/crypto';
 
-const prefix = 'TESTSEED'
+const prefix = 'TESTSEED';
 
 export function testSubwalletId(seed: string): bigint {
-    return BigInt('0x' + sha256_sync(prefix + seed).toString('hex'))
+    return BigInt('0x' + sha256_sync(prefix + seed).toString('hex'));
 }

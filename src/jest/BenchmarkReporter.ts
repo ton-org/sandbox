@@ -1,9 +1,11 @@
 import { join } from 'path';
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
+
 import chalk, { supportsColor } from 'chalk';
 import { BaseReporter } from '@jest/reporters';
 import type { Config } from '@jest/types';
 import { ContractABI } from '@ton/core';
+
 import { BenchmarkCommand } from './BenchmarkCommand';
 import { sandboxMetricRawFile } from './BenchmarkEnvironment';
 import { readJsonl } from '../utils/readJsonl';
@@ -134,7 +136,7 @@ export default class BenchmarkReporter extends BaseReporter {
                 if (existsSync(join(this.rootDirPath, filePath))) {
                     data = JSON.parse(readFileSync(join(this.rootDirPath, filePath), 'utf-8'));
                 }
-            } catch (error) {
+            } catch (_) {
                 throw new Error(`Could not parse contract database: ${filePath}`);
             }
         }

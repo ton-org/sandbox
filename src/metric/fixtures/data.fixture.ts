@@ -1,7 +1,9 @@
-import { makeSnapshotMetric, Metric, SnapshotMetric } from '../collectMetric';
-import { Blockchain } from '../../blockchain/Blockchain';
 import { beginCell, toNano } from '@ton/core';
 
+import { makeSnapshotMetric, Metric, SnapshotMetric } from '../collectMetric';
+import { Blockchain } from '../../blockchain/Blockchain';
+
+// eslint-disable-next-line no-undef
 export const itIf = (condition: boolean) => (condition ? it : it.skip);
 
 export const zero: Metric = {

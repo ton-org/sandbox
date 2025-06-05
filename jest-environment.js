@@ -1,1 +1,1 @@
-module.exports = require("./dist/jest/BenchmarkEnvironment").default;
+module.exports = require('./dist/jest/BenchmarkEnvironment').default;

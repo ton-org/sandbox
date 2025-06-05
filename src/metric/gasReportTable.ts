@@ -1,4 +1,5 @@
 import { table, TableUserConfig, ColumnUserConfig, SpanningCellConfig } from 'table';
+
 import { ColorDelta, DeltaResult, toFlatDeltaResult } from './deltaResult';
 import { sortByCreatedAt } from './collectMetric';
 

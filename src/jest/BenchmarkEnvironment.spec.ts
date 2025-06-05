@@ -1,9 +1,11 @@
-import { EnvironmentContext } from '@jest/environment';
-import { readConfig } from 'jest-config';
-import { Config } from '@jest/types';
 import { mkdtempSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
+
+import { EnvironmentContext } from '@jest/environment';
+import { readConfig } from 'jest-config';
+import { Config } from '@jest/types';
+
 import BenchmarkEnvironment, { BenchmarkEnvironmentConfig } from './BenchmarkEnvironment';
 import { BenchmarkCommandOption } from './BenchmarkCommand';
 import { simpleCase } from '../metric/fixtures/data.fixture';

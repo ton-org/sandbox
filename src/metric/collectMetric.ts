@@ -1,6 +1,7 @@
 import { Address, beginCell, Cell, Contract, storeMessage, Message } from '@ton/core';
 import { Dictionary, DictionaryKeyTypes, TransactionComputePhase } from '@ton/core';
 import { Maybe } from '@ton/core/src/utils/maybe';
+
 import { Blockchain, SendMessageResult } from '../blockchain/Blockchain';
 import { ContractDatabase } from './ContractDatabase';
 
@@ -152,10 +153,12 @@ export function makeSnapshotMetric(store: Metric[], config: Partial<SnapshotMetr
     return snapshot;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function getMetricStore(context: any = globalThis): Array<Metric> | undefined {
     return context[STORE_METRIC];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createMetricStore(context: any = globalThis): Array<Metric> {
     if (!Array.isArray(context[STORE_METRIC])) {
         context[STORE_METRIC] = new Array<Metric>();
@@ -163,6 +166,7 @@ export function createMetricStore(context: any = globalThis): Array<Metric> {
     return context[STORE_METRIC];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function resetMetricStore(context: any = globalThis): Array<Metric> {
     const store = getMetricStore(context);
     if (store) store.length = 0;
@@ -253,7 +257,9 @@ export async function collectMetric<T extends Contract>(
         }
     }
     let testName;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((globalThis as any)['expect']) {
+        // eslint-disable-next-line no-undef
         testName = expect.getState().currentTestName;
     }
     let contractName: ContractName | undefined = ctx.contract.constructor.name;
@@ -272,7 +278,7 @@ export async function collectMetric<T extends Contract>(
         }
         const address = Address.parseRaw(`0:${tx.address.toString(16).padStart(64, '0')}`);
 
-        const { computePhase, actionPhase, bouncePhase, storagePhase } = tx.description;
+        const { computePhase, actionPhase } = tx.description;
         const action: ActionPhaseMetric | undefined = actionPhase
             ? {
                   success: actionPhase.success,

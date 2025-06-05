@@ -1,18 +1,18 @@
-type Waiter = { promise: Promise<void>, resolve: () => void };
+type Waiter = { promise: Promise<void>; resolve: () => void };
 
 function createWaiter(): Waiter {
-    const w: Waiter = { promise: undefined, resolve: undefined } as any;
-    w.promise = new Promise((res) => {
-        w.resolve = res;
+    let resolveFn!: () => void;
+    const promise = new Promise<void>((res) => {
+        resolveFn = res;
     });
-    return w;
+    return { promise, resolve: resolveFn };
 }
 
 export class AsyncLock {
     #waiters: Waiter[] = [];
 
     async acquire() {
-        const waiters = this.#waiters.map(w => w.promise);
+        const waiters = this.#waiters.map((w) => w.promise);
         this.#waiters.push(createWaiter());
         if (waiters.length > 0) {
             await Promise.all(waiters);
