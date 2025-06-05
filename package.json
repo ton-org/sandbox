@@ -55,7 +55,7 @@
     "lint:fix": "eslint . --max-warnings 20 --fix",
     "config:pack": "ts-node ./scripts/pack-config.ts"
   },
-  "packageManager": "yarn@3.6.1",
+  "packageManager": "yarn@4.9.2",
   "dependencies": {
     "table": "^6.9.0"
   }
