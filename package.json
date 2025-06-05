@@ -1,6 +1,6 @@
 {
   "name": "@ton/sandbox",
-  "version": "0.32.0",
+  "version": "0.32.1",
   "description": "TON transaction emulator",
   "main": "dist/index.js",
   "license": "MIT",
@@ -52,6 +52,7 @@
   },
   "packageManager": "yarn@3.6.1",
   "dependencies": {
+    "chalk": "^4.1.2",
     "table": "^6.9.0"
   }
 }
