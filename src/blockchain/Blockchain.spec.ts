@@ -18,7 +18,7 @@ import { Blockchain, BlockchainTransaction } from './Blockchain';
 import { createShardAccount, GetMethodError, TimeError } from './SmartContract';
 import { internal } from '../utils/message';
 import { SandboxContractProvider } from './BlockchainContractProvider';
-import { PrevBlocksInfo, TickOrTock } from '../executor/Executor';
+import { TickOrTock } from '../executor/Executor';
 import { compileLocal } from './test_utils/compileTolk';
 import { prepareRandSeed } from './test_utils/randomSeed';
 import { createBlockId } from './test_utils/blockId';
