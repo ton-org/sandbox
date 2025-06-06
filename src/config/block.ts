@@ -7,6 +7,7 @@ import { Cell } from '@ton/core'
 import { Address } from '@ton/core'
 import { ExternalAddress } from '@ton/core'
 import { Dictionary } from '@ton/core'
+import { DictionaryValue } from '@ton/core'
 import { TupleItem } from '@ton/core'
 import { parseTuple } from '@ton/core'
 import { serializeTuple } from '@ton/core'
@@ -36,6 +37,32 @@ export function storeBool(bool: Bool): (builder: Builder) => void {
         builder.storeUint(bool.value ? 1: 0, 1);
     })
 
+}
+
+
+
+export function loadBoolFalse(slice: Slice): Bool {
+  if (((slice.remainingBits >= 1) && (slice.preloadUint(1) == 0b0))) {
+      slice.loadUint(1);
+      return {
+          kind: 'Bool',
+          value: false
+      }
+
+  }
+  throw new Error('Expected one of "BoolFalse" in loading "BoolFalse", but data does not satisfy any constructor');
+}
+
+export function loadBoolTrue(slice: Slice): Bool {
+  if (((slice.remainingBits >= 1) && (slice.preloadUint(1) == 0b1))) {
+      slice.loadUint(1);
+      return {
+          kind: 'Bool',
+          value: true
+      }
+
+  }
+  throw new Error('Expected one of "BoolTrue" in loading "BoolTrue", but data does not satisfy any constructor');
 }
 
 export function copyCellToBuilder(from: Cell, to: Builder): void {
@@ -89,6 +116,12 @@ export interface Either_right<X, Y> {
 }
 
 // pair$_ {X:Type} {Y:Type} first:X second:Y = Both X Y;
+
+export interface Both<X, Y> {
+    readonly kind: 'Both';
+    readonly first: X;
+    readonly second: Y;
+}
 
 /*
 hm_edge#_ {n:#} {X:Type} {l:#} {m:#} label:(HmLabel ~l n)
@@ -172,6 +205,12 @@ export interface Unary_unary_succ {
 }
 
 // _ {n:#} _:(Hashmap n True) = BitstringSet n;
+
+export interface BitstringSet {
+    readonly kind: 'BitstringSet';
+    readonly n: number;
+    readonly _: Dictionary<bigint, True>;
+}
 
 /*
 ahm_edge#_ {n:#} {X:Type} {Y:Type} {l:#} {m:#}
@@ -270,6 +309,19 @@ vhme_root$1 {n:#} {X:Type} root:^(VarHashmap n X)
             = VarHashmapE n X;
 */
 
+export type VarHashmapE<X> = VarHashmapE_vhme_empty<X> | VarHashmapE_vhme_root<X>;
+
+export interface VarHashmapE_vhme_empty<X> {
+    readonly kind: 'VarHashmapE_vhme_empty';
+    readonly n: number;
+}
+
+export interface VarHashmapE_vhme_root<X> {
+    readonly kind: 'VarHashmapE_vhme_root';
+    readonly n: number;
+    readonly root: VarHashmap<X>;
+}
+
 /*
 phm_edge#_ {n:#} {X:Type} {l:#} {m:#} label:(HmLabel ~l n)
            {n = (~m) + l} node:(PfxHashmapNode m X)
@@ -314,12 +366,36 @@ phme_root$1 {n:#} {X:Type} root:^(PfxHashmap n X)
             = PfxHashmapE n X;
 */
 
+export type PfxHashmapE<X> = PfxHashmapE_phme_empty<X> | PfxHashmapE_phme_root<X>;
+
+export interface PfxHashmapE_phme_empty<X> {
+    readonly kind: 'PfxHashmapE_phme_empty';
+    readonly n: number;
+}
+
+export interface PfxHashmapE_phme_root<X> {
+    readonly kind: 'PfxHashmapE_phme_root';
+    readonly n: number;
+    readonly root: PfxHashmap<X>;
+}
+
 /*
 anycast_info$_ depth:(#<= 30) { depth >= 1 }
    rewrite_pfx:(bits depth) = Anycast;
 */
 
+export interface Anycast {
+    readonly kind: 'Anycast';
+    readonly depth: number;
+    readonly rewrite_pfx: BitString;
+}
+
 // _ grams:Grams = Coins;
+
+export interface Coins {
+    readonly kind: 'Coins';
+    readonly grams: bigint;
+}
 
 /*
 extra_currencies$_ dict:(HashmapE 32 (VarUInteger 32))
@@ -455,7 +531,22 @@ _ fixed_prefix_length:(Maybe (## 5)) special:(Maybe TickTock)
   library:(HashmapE 256 SimpleLib) = StateInitWithLibs;
 */
 
+export interface StateInitWithLibs {
+    readonly kind: 'StateInitWithLibs';
+    readonly fixed_prefix_length: Maybe<number>;
+    readonly special: Maybe<TickTock>;
+    readonly code: Maybe<Cell>;
+    readonly data: Maybe<Cell>;
+    readonly library: Dictionary<bigint, SimpleLib>;
+}
+
 // simple_lib$_ public:Bool root:^Cell = SimpleLib;
+
+export interface SimpleLib {
+    readonly kind: 'SimpleLib';
+    readonly public0: Bool;
+    readonly root: Cell;
+}
 
 /*
 message$_ {X:Type} info:CommonMsgInfo
@@ -484,6 +575,11 @@ export interface MessageRelaxed<X> {
 }
 
 // _ (Message Any) = MessageAny;
+
+export interface MessageAny {
+    readonly kind: 'MessageAny';
+    readonly anon0: Message<Cell>;
+}
 
 /*
 interm_addr_regular$0 use_dest_bits:(#<= 96)
@@ -842,7 +938,17 @@ export interface ProcessedInfo {
 
 // ihr_pending$_ import_lt:uint64 = IhrPendingSince;
 
+export interface IhrPendingSince {
+    readonly kind: 'IhrPendingSince';
+    readonly import_lt: bigint;
+}
+
 // _ (HashmapE 320 IhrPendingSince) = IhrPendingInfo;
+
+export interface IhrPendingInfo {
+    readonly kind: 'IhrPendingInfo';
+    readonly anon0: Dictionary<bigint, IhrPendingSince>;
+}
 
 // _ messages:(HashmapE 64 EnqueuedMsg) count:uint48 = AccountDispatchQueue;
 
@@ -1054,6 +1160,16 @@ export interface Transaction {
 !merkle_update#04 {X:Type} old_hash:bits256 new_hash:bits256 old_depth:uint16 new_depth:uint16
   old:^X new:^X = MERKLE_UPDATE X;
 */
+
+export interface MERKLE_UPDATE<X> {
+    readonly kind: 'MERKLE_UPDATE';
+    readonly old_hash: Buffer;
+    readonly new_hash: Buffer;
+    readonly old_depth: number;
+    readonly new_depth: number;
+    readonly old: X;
+    readonly new0: X;
+}
 
 /*
 update_hashes#72 {X:Type} old_hash:bits256 new_hash:bits256
@@ -1403,6 +1519,19 @@ smc_info#076ef1ea actions:uint16 msgs_sent:uint16
   myself:MsgAddressInt global_config:(Maybe Cell) = SmartContractInfo;
 */
 
+export interface SmartContractInfo {
+    readonly kind: 'SmartContractInfo';
+    readonly actions: number;
+    readonly msgs_sent: number;
+    readonly unixtime: number;
+    readonly block_lt: bigint;
+    readonly trans_lt: bigint;
+    readonly rand_seed: Buffer;
+    readonly balance_remaining: CurrencyCollection;
+    readonly myself: Address;
+    readonly global_config: Maybe<Cell>;
+}
+
 // out_list_empty$_ = OutList 0;
 
 /*
@@ -1483,6 +1612,12 @@ export interface LibRef_libref_ref {
 
 // out_list_node$_ prev:^Cell action:OutAction = OutListNode;
 
+export interface OutListNode {
+    readonly kind: 'OutListNode';
+    readonly prev: Cell;
+    readonly action: OutAction;
+}
+
 /*
 shard_ident$00 shard_pfx_bits:(#<= 60)
   workchain_id:int32 shard_prefix:uint64 = ShardIdent;
@@ -1513,6 +1648,14 @@ export interface ExtBlkRef {
 block_id_ext$_ shard_id:ShardIdent seq_no:uint32
   root_hash:bits256 file_hash:bits256 = BlockIdExt;
 */
+
+export interface BlockIdExt {
+    readonly kind: 'BlockIdExt';
+    readonly shard_id: ShardIdent;
+    readonly seq_no: number;
+    readonly root_hash: Buffer;
+    readonly file_hash: Buffer;
+}
 
 // master_info$_ master:ExtBlkRef = BlkMasterInfo;
 
@@ -2091,6 +2234,11 @@ export interface Certificate {
 
 // certificate_env#a419b7d certificate:Certificate = CertificateEnv;
 
+export interface CertificateEnv {
+    readonly kind: 'CertificateEnv';
+    readonly certificate: Certificate;
+}
+
 /*
 signed_certificate$_ certificate:Certificate certificate_signature:CryptoSignature
   = SignedCertificate;
@@ -2568,11 +2716,31 @@ cfg_proposal#f3 param_id:int32 param_value:(Maybe ^Cell) if_hash_equal:(Maybe ui
   = ConfigProposal;
 */
 
+export interface ConfigProposal {
+    readonly kind: 'ConfigProposal';
+    readonly param_id: number;
+    readonly param_value: Maybe<Cell>;
+    readonly if_hash_equal: Maybe<bigint>;
+}
+
 /*
 cfg_proposal_status#ce expires:uint32 proposal:^ConfigProposal is_critical:Bool
   voters:(HashmapE 16 True) remaining_weight:int64 validator_set_id:uint256
   rounds_remaining:uint8 wins:uint8 losses:uint8 = ConfigProposalStatus;
 */
+
+export interface ConfigProposalStatus {
+    readonly kind: 'ConfigProposalStatus';
+    readonly expires: number;
+    readonly proposal: ConfigProposal;
+    readonly is_critical: Bool;
+    readonly voters: Dictionary<number, True>;
+    readonly remaining_weight: bigint;
+    readonly validator_set_id: bigint;
+    readonly rounds_remaining: number;
+    readonly wins: number;
+    readonly losses: number;
+}
 
 // wfmt_basic#1 vm_version:int32 vm_mode:uint64 = WorkchainFormat 1;
 
@@ -3084,7 +3252,20 @@ export interface BlockSignaturesPure {
 
 // block_signatures#11 validator_info:ValidatorBaseInfo pure_signatures:BlockSignaturesPure = BlockSignatures;
 
+export interface BlockSignatures {
+    readonly kind: 'BlockSignatures';
+    readonly validator_info: ValidatorBaseInfo;
+    readonly pure_signatures: BlockSignaturesPure;
+}
+
 // block_proof#c3 proof_for:BlockIdExt root:^Cell signatures:(Maybe ^BlockSignatures) = BlockProof;
+
+export interface BlockProof {
+    readonly kind: 'BlockProof';
+    readonly proof_for: BlockIdExt;
+    readonly root: Cell;
+    readonly signatures: Maybe<BlockSignatures>;
+}
 
 // chain_empty$_ = ProofChain 0;
 
@@ -3108,7 +3289,20 @@ top_block_descr#d5 proof_for:BlockIdExt signatures:(Maybe ^BlockSignatures)
   len:(## 8) { len >= 1 } { len <= 8 } chain:(ProofChain len) = TopBlockDescr;
 */
 
+export interface TopBlockDescr {
+    readonly kind: 'TopBlockDescr';
+    readonly proof_for: BlockIdExt;
+    readonly signatures: Maybe<BlockSignatures>;
+    readonly len: number;
+    readonly chain: ProofChain;
+}
+
 // top_block_descr_set#4ac789f3 collection:(HashmapE 96 ^TopBlockDescr) = TopBlockDescrSet;
+
+export interface TopBlockDescrSet {
+    readonly kind: 'TopBlockDescrSet';
+    readonly collection: Dictionary<bigint, TopBlockDescr>;
+}
 
 /*
 prod_info#34 utime:uint32 mc_blk_ref:ExtBlkRef state_proof:^(MERKLE_PROOF Block)
@@ -3127,6 +3321,8 @@ export interface ProducerInfo {
 
 // no_blk_gen_diff prod_info_old:^ProducerInfo prod_info_new:^ProducerInfo = ComplaintDescr;
 
+export type ComplaintDescr = ComplaintDescr_no_blk_gen | ComplaintDescr_no_blk_gen_diff;
+
 export interface ComplaintDescr_no_blk_gen {
     readonly kind: 'ComplaintDescr_no_blk_gen';
     readonly from_utime: number;
@@ -3141,7 +3337,27 @@ export interface ComplaintDescr_no_blk_gen_diff {
 
 // validator_complaint#bc validator_pubkey:bits256 description:^ComplaintDescr created_at:uint32 severity:uint8 reward_addr:uint256 paid:Grams suggested_fine:Grams suggested_fine_part:uint32 = ValidatorComplaint;
 
+export interface ValidatorComplaint {
+    readonly kind: 'ValidatorComplaint';
+    readonly validator_pubkey: Buffer;
+    readonly description: ComplaintDescr;
+    readonly created_at: number;
+    readonly severity: number;
+    readonly reward_addr: bigint;
+    readonly paid: bigint;
+    readonly suggested_fine: bigint;
+    readonly suggested_fine_part: number;
+}
+
 // complaint_status#2d complaint:^ValidatorComplaint voters:(HashmapE 16 True) vset_id:uint256 weight_remaining:int64 = ValidatorComplaintStatus;
+
+export interface ValidatorComplaintStatus {
+    readonly kind: 'ValidatorComplaintStatus';
+    readonly complaint: ValidatorComplaint;
+    readonly voters: Dictionary<number, True>;
+    readonly vset_id: bigint;
+    readonly weight_remaining: bigint;
+}
 
 // vm_stk_null#00 = VmStackValue;
 
@@ -3263,6 +3479,12 @@ export interface VmTuple_vm_tuple_tcons {
 
 // vm_stack#_ depth:(## 24) stack:(VmStackList depth) = VmStack;
 
+export interface VmStack {
+    readonly kind: 'VmStack';
+    readonly depth: number;
+    readonly stack: VmStackList;
+}
+
 // vm_stk_nil#_ = VmStackList 0;
 
 // vm_stk_cons#_ {n:#} rest:^(VmStackList n) tos:VmStackValue = VmStackList (n + 1);
@@ -3292,7 +3514,20 @@ gas_limits#_ remaining:int64 _:^[ max_limit:int64 cur_limit:int64 credit:int64 ]
   = VmGasLimits;
 */
 
+export interface VmGasLimits {
+    readonly kind: 'VmGasLimits';
+    readonly remaining: bigint;
+    readonly max_limit: bigint;
+    readonly cur_limit: bigint;
+    readonly credit: bigint;
+}
+
 // _ libraries:(HashmapE 256 ^Cell) = VmLibraries;
+
+export interface VmLibraries {
+    readonly kind: 'VmLibraries';
+    readonly libraries: Dictionary<bigint, Cell>;
+}
 
 /*
 vm_ctl_data$_ nargs:(Maybe uint13) stack:(Maybe VmStack) save:VmSaveList
@@ -3396,6 +3631,11 @@ export interface VmCont_vmc_pushint {
 
 // _ (HashmapE 256 ^DNSRecord) = DNS_RecordSet;
 
+export interface DNS_RecordSet {
+    readonly kind: 'DNS_RecordSet';
+    readonly anon0: Dictionary<bigint, DNSRecord>;
+}
+
 // chunk_ref_empty$_ = TextChunkRef 0;
 
 // chunk_ref$_ {n:#} ref:^(TextChunks (n + 1)) = TextChunkRef (n + 1);
@@ -3453,6 +3693,37 @@ dns_smc_address#9fd3 smc_addr:MsgAddressInt flags:(## 8) { flags <= 1 }
 */
 
 // dns_storage_address#7473 bag_id:bits256 = DNSRecord;
+
+export type DNSRecord = DNSRecord_dns_text | DNSRecord_dns_next_resolver | DNSRecord_dns_adnl_address | DNSRecord_dns_smc_address | DNSRecord_dns_storage_address;
+
+export interface DNSRecord_dns_text {
+    readonly kind: 'DNSRecord_dns_text';
+    readonly _: Text;
+}
+
+export interface DNSRecord_dns_next_resolver {
+    readonly kind: 'DNSRecord_dns_next_resolver';
+    readonly resolver: Address;
+}
+
+export interface DNSRecord_dns_adnl_address {
+    readonly kind: 'DNSRecord_dns_adnl_address';
+    readonly adnl_addr: Buffer;
+    readonly flags: number;
+    readonly proto_list: ProtoList | undefined;
+}
+
+export interface DNSRecord_dns_smc_address {
+    readonly kind: 'DNSRecord_dns_smc_address';
+    readonly smc_addr: Address;
+    readonly flags: number;
+    readonly cap_list: SmcCapList | undefined;
+}
+
+export interface DNSRecord_dns_storage_address {
+    readonly kind: 'DNSRecord_dns_storage_address';
+    readonly bag_id: Buffer;
+}
 
 // proto_list_nil$0 = ProtoList;
 
@@ -3524,11 +3795,53 @@ chan_config$_  init_timeout:uint32 close_timeout:uint32 a_key:bits256 b_key:bits
   a_addr:^MsgAddressInt b_addr:^MsgAddressInt channel_id:uint64 min_A_extra:Grams = ChanConfig;
 */
 
+export interface ChanConfig {
+    readonly kind: 'ChanConfig';
+    readonly init_timeout: number;
+    readonly close_timeout: number;
+    readonly a_key: Buffer;
+    readonly b_key: Buffer;
+    readonly a_addr: Address;
+    readonly b_addr: Address;
+    readonly channel_id: bigint;
+    readonly min_A_extra: bigint;
+}
+
 // chan_state_init$000  signed_A:Bool signed_B:Bool min_A:Grams min_B:Grams expire_at:uint32 A:Grams B:Grams = ChanState;
 
 // chan_state_close$001 signed_A:Bool signed_B:Bool promise_A:Grams promise_B:Grams expire_at:uint32 A:Grams B:Grams = ChanState;
 
 // chan_state_payout$010 A:Grams B:Grams = ChanState;
+
+export type ChanState = ChanState_chan_state_init | ChanState_chan_state_close | ChanState_chan_state_payout;
+
+export interface ChanState_chan_state_init {
+    readonly kind: 'ChanState_chan_state_init';
+    readonly signed_A: Bool;
+    readonly signed_B: Bool;
+    readonly min_A: bigint;
+    readonly min_B: bigint;
+    readonly expire_at: number;
+    readonly A: bigint;
+    readonly B: bigint;
+}
+
+export interface ChanState_chan_state_close {
+    readonly kind: 'ChanState_chan_state_close';
+    readonly signed_A: Bool;
+    readonly signed_B: Bool;
+    readonly promise_A: bigint;
+    readonly promise_B: bigint;
+    readonly expire_at: number;
+    readonly A: bigint;
+    readonly B: bigint;
+}
+
+export interface ChanState_chan_state_payout {
+    readonly kind: 'ChanState_chan_state_payout';
+    readonly A: bigint;
+    readonly B: bigint;
+}
 
 // chan_promise$_ channel_id:uint64 promise_A:Grams promise_B:Grams = ChanPromise;
 
@@ -3554,6 +3867,8 @@ export interface ChanSignedPromise {
 // chan_msg_timeout#43278a28 = ChanMsg;
 
 // chan_msg_payout#37fe7810 = ChanMsg;
+
+export type ChanMsg = ChanMsg_chan_msg_init | ChanMsg_chan_msg_close | ChanMsg_chan_msg_timeout | ChanMsg_chan_msg_payout;
 
 export interface ChanMsg_chan_msg_init {
     readonly kind: 'ChanMsg_chan_msg_init';
@@ -3581,9 +3896,27 @@ export interface ChanMsg_chan_msg_payout {
 
 // chan_signed_msg$_ sig_A:(Maybe ^bits512) sig_B:(Maybe ^bits512) msg:ChanMsg = ChanSignedMsg;
 
+export interface ChanSignedMsg {
+    readonly kind: 'ChanSignedMsg';
+    readonly sig_A: Maybe<Buffer>;
+    readonly sig_B: Maybe<Buffer>;
+    readonly msg: ChanMsg;
+}
+
 // chan_op_cmd#912838d1 msg:ChanSignedMsg = ChanOp;
 
+export interface ChanOp {
+    readonly kind: 'ChanOp';
+    readonly msg: ChanSignedMsg;
+}
+
 // chan_data$_ config:^ChanConfig state:^ChanState = ChanData;
+
+export interface ChanData {
+    readonly kind: 'ChanData';
+    readonly config: ChanConfig;
+    readonly state: ChanState;
+}
 
 // unit$_ = Unit;
 
@@ -3701,6 +4034,25 @@ export function storeEither<X, Y>(either: Either<X, Y>, storeX: (x: X) => (build
 }
 
 // pair$_ {X:Type} {Y:Type} first:X second:Y = Both X Y;
+
+export function loadBoth<X, Y>(slice: Slice, loadX: (slice: Slice) => X, loadY: (slice: Slice) => Y): Both<X, Y> {
+    let first: X = loadX(slice);
+    let second: Y = loadY(slice);
+    return {
+        kind: 'Both',
+        first: first,
+        second: second,
+    }
+
+}
+
+export function storeBoth<X, Y>(both: Both<X, Y>, storeX: (x: X) => (builder: Builder) => void, storeY: (y: Y) => (builder: Builder) => void): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        storeX(both.first)(builder);
+        storeY(both.second)(builder);
+    })
+
+}
 
 export function hashmap_get_l(label: HmLabel): number {
     if ((label.kind == 'HmLabel_hml_short')) {
@@ -3965,6 +4317,31 @@ export function storeUnary(unary: Unary): (builder: Builder) => void {
 
 // _ {n:#} _:(Hashmap n True) = BitstringSet n;
 
+export function loadBitstringSet(slice: Slice, n: number): BitstringSet {
+    let _: Dictionary<bigint, True> = Dictionary.loadDirect(Dictionary.Keys.BigUint(n), {
+        serialize: () => { throw new Error('Not implemented') },
+        parse: loadTrue,
+    }, slice);
+    return {
+        kind: 'BitstringSet',
+        n: n,
+        _: _,
+    }
+
+}
+
+export function storeBitstringSet(bitstringSet: BitstringSet): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeDictDirect(bitstringSet._, Dictionary.Keys.BigUint(bitstringSet.n), {
+            serialize: ((arg: True, builder: Builder) => {
+            storeTrue(arg)(builder);
+        }),
+            parse: () => { throw new Error('Not implemented') },
+        });
+    })
+
+}
+
 export function hashmapAug_get_l(label: HmLabel): number {
     if ((label.kind == 'HmLabel_hml_short')) {
         let n = label.n;
@@ -4220,6 +4597,48 @@ vhme_root$1 {n:#} {X:Type} root:^(VarHashmap n X)
             = VarHashmapE n X;
 */
 
+export function loadVarHashmapE<X>(slice: Slice, n: number, loadX: (slice: Slice) => X): VarHashmapE<X> {
+    if (((slice.remainingBits >= 1) && (slice.preloadUint(1) == 0b0))) {
+        slice.loadUint(1);
+        return {
+            kind: 'VarHashmapE_vhme_empty',
+            n: n,
+        }
+
+    }
+    if (((slice.remainingBits >= 1) && (slice.preloadUint(1) == 0b1))) {
+        slice.loadUint(1);
+        let slice1 = slice.loadRef().beginParse(true);
+        let root: VarHashmap<X> = loadVarHashmap<X>(slice1, n, loadX);
+        return {
+            kind: 'VarHashmapE_vhme_root',
+            n: n,
+            root: root,
+        }
+
+    }
+    throw new Error('Expected one of "VarHashmapE_vhme_empty", "VarHashmapE_vhme_root" in loading "VarHashmapE", but data does not satisfy any constructor');
+}
+
+export function storeVarHashmapE<X>(varHashmapE: VarHashmapE<X>, storeX: (x: X) => (builder: Builder) => void): (builder: Builder) => void {
+    if ((varHashmapE.kind == 'VarHashmapE_vhme_empty')) {
+        return ((builder: Builder) => {
+            builder.storeUint(0b0, 1);
+        })
+
+    }
+    if ((varHashmapE.kind == 'VarHashmapE_vhme_root')) {
+        return ((builder: Builder) => {
+            builder.storeUint(0b1, 1);
+            let cell1 = beginCell();
+            storeVarHashmap<X>(varHashmapE.root, storeX)(cell1);
+            builder.storeRef(cell1);
+        })
+
+    }
+    throw new Error('Expected one of "VarHashmapE_vhme_empty", "VarHashmapE_vhme_root" in loading "VarHashmapE", but data does not satisfy any constructor');
+}
+
 export function pfxHashmap_get_l(label: HmLabel): number {
     if ((label.kind == 'HmLabel_hml_short')) {
         let n = label.n;
@@ -4333,12 +4752,95 @@ phme_root$1 {n:#} {X:Type} root:^(PfxHashmap n X)
             = PfxHashmapE n X;
 */
 
+export function loadPfxHashmapE<X>(slice: Slice, n: number, loadX: (slice: Slice) => X): PfxHashmapE<X> {
+    if (((slice.remainingBits >= 1) && (slice.preloadUint(1) == 0b0))) {
+        slice.loadUint(1);
+        return {
+            kind: 'PfxHashmapE_phme_empty',
+            n: n,
+        }
+
+    }
+    if (((slice.remainingBits >= 1) && (slice.preloadUint(1) == 0b1))) {
+        slice.loadUint(1);
+        let slice1 = slice.loadRef().beginParse(true);
+        let root: PfxHashmap<X> = loadPfxHashmap<X>(slice1, n, loadX);
+        return {
+            kind: 'PfxHashmapE_phme_root',
+            n: n,
+            root: root,
+        }
+
+    }
+    throw new Error('Expected one of "PfxHashmapE_phme_empty", "PfxHashmapE_phme_root" in loading "PfxHashmapE", but data does not satisfy any constructor');
+}
+
+export function storePfxHashmapE<X>(pfxHashmapE: PfxHashmapE<X>, storeX: (x: X) => (builder: Builder) => void): (builder: Builder) => void {
+    if ((pfxHashmapE.kind == 'PfxHashmapE_phme_empty')) {
+        return ((builder: Builder) => {
+            builder.storeUint(0b0, 1);
+        })
+
+    }
+    if ((pfxHashmapE.kind == 'PfxHashmapE_phme_root')) {
+        return ((builder: Builder) => {
+            builder.storeUint(0b1, 1);
+            let cell1 = beginCell();
+            storePfxHashmap<X>(pfxHashmapE.root, storeX)(cell1);
+            builder.storeRef(cell1);
+        })
+
+    }
+    throw new Error('Expected one of "PfxHashmapE_phme_empty", "PfxHashmapE_phme_root" in loading "PfxHashmapE", but data does not satisfy any constructor');
+}
+
 /*
 anycast_info$_ depth:(#<= 30) { depth >= 1 }
    rewrite_pfx:(bits depth) = Anycast;
 */
 
+export function loadAnycast(slice: Slice): Anycast {
+    let depth: number = slice.loadUint(bitLen(30));
+    let rewrite_pfx: BitString = slice.loadBits(depth);
+    if ((!(depth >= 1))) {
+        throw new Error('Condition (depth >= 1) is not satisfied while loading "Anycast" for type "Anycast"');
+    }
+    return {
+        kind: 'Anycast',
+        depth: depth,
+        rewrite_pfx: rewrite_pfx,
+    }
+
+}
+
+export function storeAnycast(anycast: Anycast): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeUint(anycast.depth, bitLen(30));
+        builder.storeBits(anycast.rewrite_pfx);
+        if ((!(anycast.depth >= 1))) {
+            throw new Error('Condition (anycast.depth >= 1) is not satisfied while loading "Anycast" for type "Anycast"');
+        }
+    })
+
+}
+
 // _ grams:Grams = Coins;
+
+export function loadCoins(slice: Slice): Coins {
+    let grams: bigint = slice.loadCoins();
+    return {
+        kind: 'Coins',
+        grams: grams,
+    }
+
+}
+
+export function storeCoins(coins: Coins): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeCoins(coins.grams);
+    })
+
+}
 
 /*
 extra_currencies$_ dict:(HashmapE 32 (VarUInteger 32))
@@ -4528,6 +5030,52 @@ ext_out_msg_info$11 src:MsgAddress dest:MsgAddressExt
   created_lt:uint64 created_at:uint32 = CommonMsgInfoRelaxed;
 */
 
+export function loadCommonMsgInfoRelaxed(slice: Slice): CommonMsgInfoRelaxed {
+    if (((slice.remainingBits >= 1) && (slice.preloadUint(1) == 0b0))) {
+        slice.loadUint(1);
+        let ihr_disabled: Bool = loadBool(slice);
+        let bounce: Bool = loadBool(slice);
+        let bounced: Bool = loadBool(slice);
+        let src: Address | ExternalAddress | null = slice.loadAddressAny();
+        let dest: Address = slice.loadAddress();
+        let value: CurrencyCollection = loadCurrencyCollection(slice);
+        let ihr_fee: bigint = slice.loadCoins();
+        let fwd_fee: bigint = slice.loadCoins();
+        let created_lt: bigint = slice.loadUintBig(64);
+        let created_at: number = slice.loadUint(32);
+        return {
+            kind: 'CommonMsgInfoRelaxed_int_msg_info',
+            ihr_disabled: ihr_disabled,
+            bounce: bounce,
+            bounced: bounced,
+            src: src,
+            dest: dest,
+            value: value,
+            ihr_fee: ihr_fee,
+            fwd_fee: fwd_fee,
+            created_lt: created_lt,
+            created_at: created_at,
+        }
+
+    }
+    if (((slice.remainingBits >= 2) && (slice.preloadUint(2) == 0b11))) {
+        slice.loadUint(2);
+        let src: Address | ExternalAddress | null = slice.loadAddressAny();
+        let dest: ExternalAddress | null = slice.loadMaybeExternalAddress();
+        let created_lt: bigint = slice.loadUintBig(64);
+        let created_at: number = slice.loadUint(32);
+        return {
+            kind: 'CommonMsgInfoRelaxed_ext_out_msg_info',
+            src: src,
+            dest: dest,
+            created_lt: created_lt,
+            created_at: created_at,
+        }
+
+    }
+    throw new Error('Expected one of "CommonMsgInfoRelaxed_int_msg_info", "CommonMsgInfoRelaxed_ext_out_msg_info" in loading "CommonMsgInfoRelaxed", but data does not satisfy any constructor');
+}
+
 export function storeCommonMsgInfoRelaxed(commonMsgInfoRelaxed: CommonMsgInfoRelaxed): (builder: Builder) => void {
     if ((commonMsgInfoRelaxed.kind == 'CommonMsgInfoRelaxed_int_msg_info')) {
         return ((builder: Builder) => {
@@ -4663,7 +5211,97 @@ _ fixed_prefix_length:(Maybe (## 5)) special:(Maybe TickTock)
   library:(HashmapE 256 SimpleLib) = StateInitWithLibs;
 */
 
+export function loadStateInitWithLibs(slice: Slice): StateInitWithLibs {
+    let fixed_prefix_length: Maybe<number> = loadMaybe<number>(slice, ((slice: Slice) => {
+        return slice.loadUint(5)
+
+    }));
+    let special: Maybe<TickTock> = loadMaybe<TickTock>(slice, loadTickTock);
+    let code: Maybe<Cell> = loadMaybe<Cell>(slice, ((slice: Slice) => {
+        let slice1 = slice.loadRef().beginParse(true);
+        return slice1.asCell()
+
+    }));
+    let data: Maybe<Cell> = loadMaybe<Cell>(slice, ((slice: Slice) => {
+        let slice1 = slice.loadRef().beginParse(true);
+        return slice1.asCell()
+
+    }));
+    let library: Dictionary<bigint, SimpleLib> = Dictionary.load(Dictionary.Keys.BigUint(256), {
+        serialize: () => { throw new Error('Not implemented') },
+        parse: loadSimpleLib,
+    }, slice);
+    return {
+        kind: 'StateInitWithLibs',
+        fixed_prefix_length: fixed_prefix_length,
+        special: special,
+        code: code,
+        data: data,
+        library: library,
+    }
+
+}
+
+export function storeStateInitWithLibs(stateInitWithLibs: StateInitWithLibs): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        storeMaybe<number>(stateInitWithLibs.fixed_prefix_length, ((arg: number) => {
+            return ((builder: Builder) => {
+                builder.storeUint(arg, 5);
+            })
+
+        }))(builder);
+        storeMaybe<TickTock>(stateInitWithLibs.special, storeTickTock)(builder);
+        storeMaybe<Cell>(stateInitWithLibs.code, ((arg: Cell) => {
+            return ((builder: Builder) => {
+                let cell1 = beginCell();
+                cell1.storeSlice(arg.beginParse(true));
+                builder.storeRef(cell1);
+
+            })
+
+        }))(builder);
+        storeMaybe<Cell>(stateInitWithLibs.data, ((arg: Cell) => {
+            return ((builder: Builder) => {
+                let cell1 = beginCell();
+                cell1.storeSlice(arg.beginParse(true));
+                builder.storeRef(cell1);
+
+            })
+
+        }))(builder);
+        builder.storeDict(stateInitWithLibs.library, Dictionary.Keys.BigUint(256), {
+            serialize: ((arg: SimpleLib, builder: Builder) => {
+            storeSimpleLib(arg)(builder);
+        }),
+            parse: () => { throw new Error('Not implemented') },
+        });
+    })
+
+}
+
 // simple_lib$_ public:Bool root:^Cell = SimpleLib;
+
+export function loadSimpleLib(slice: Slice): SimpleLib {
+    let public0: Bool = loadBool(slice);
+    let slice1 = slice.loadRef().beginParse(true);
+    let root: Cell = slice1.asCell();
+    return {
+        kind: 'SimpleLib',
+        public0: public0,
+        root: root,
+    }
+
+}
+
+export function storeSimpleLib(simpleLib: SimpleLib): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        storeBool(simpleLib.public0)(builder);
+        let cell1 = beginCell();
+        cell1.storeSlice(simpleLib.root.beginParse(true));
+        builder.storeRef(cell1);
+    })
+
+}
 
 /*
 message$_ {X:Type} info:CommonMsgInfo
@@ -4731,6 +5369,30 @@ message$_ {X:Type} info:CommonMsgInfoRelaxed
   body:(Either X ^X) = MessageRelaxed X;
 */
 
+export function loadMessageRelaxed<X>(slice: Slice, loadX: (slice: Slice) => X): MessageRelaxed<X> {
+    let info: CommonMsgInfoRelaxed = loadCommonMsgInfoRelaxed(slice);
+    let init: Maybe<Either<StateInit, StateInit>> = loadMaybe<Either<StateInit, StateInit>>(slice, ((slice: Slice) => {
+        return loadEither<StateInit, StateInit>(slice, loadStateInit, ((slice: Slice) => {
+            let slice1 = slice.loadRef().beginParse(true);
+            return loadStateInit(slice1)
+
+        }))
+
+    }));
+    let body: Either<X, X> = loadEither<X, X>(slice, loadX, ((slice: Slice) => {
+        let slice1 = slice.loadRef().beginParse(true);
+        return loadX(slice1)
+
+    }));
+    return {
+        kind: 'MessageRelaxed',
+        info: info,
+        init: init,
+        body: body,
+    }
+
+}
+
 export function storeMessageRelaxed<X>(messageRelaxed: MessageRelaxed<X>, storeX: (x: X) => (builder: Builder) => void): (builder: Builder) => void {
     return ((builder: Builder) => {
         storeCommonMsgInfoRelaxed(messageRelaxed.info)(builder);
@@ -4762,6 +5424,30 @@ export function storeMessageRelaxed<X>(messageRelaxed: MessageRelaxed<X>, storeX
 }
 
 // _ (Message Any) = MessageAny;
+
+export function loadMessageAny(slice: Slice): MessageAny {
+    let anon0: Message<Cell> = loadMessage<Cell>(slice, ((slice: Slice) => {
+        return slice.asCell()
+
+    }));
+    return {
+        kind: 'MessageAny',
+        anon0: anon0,
+    }
+
+}
+
+export function storeMessageAny(messageAny: MessageAny): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        storeMessage<Cell>(messageAny.anon0, ((arg: Cell) => {
+            return ((builder: Builder) => {
+                builder.storeSlice(arg.beginParse(true));
+            })
+
+        }))(builder);
+    })
+
+}
 
 /*
 interm_addr_regular$0 use_dest_bits:(#<= 96)
@@ -5841,7 +6527,47 @@ export function storeProcessedInfo(processedInfo: ProcessedInfo): (builder: Buil
 
 // ihr_pending$_ import_lt:uint64 = IhrPendingSince;
 
+export function loadIhrPendingSince(slice: Slice): IhrPendingSince {
+    let import_lt: bigint = slice.loadUintBig(64);
+    return {
+        kind: 'IhrPendingSince',
+        import_lt: import_lt,
+    }
+
+}
+
+export function storeIhrPendingSince(ihrPendingSince: IhrPendingSince): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeUint(ihrPendingSince.import_lt, 64);
+    })
+
+}
+
 // _ (HashmapE 320 IhrPendingSince) = IhrPendingInfo;
+
+export function loadIhrPendingInfo(slice: Slice): IhrPendingInfo {
+    let anon0: Dictionary<bigint, IhrPendingSince> = Dictionary.load(Dictionary.Keys.BigUint(320), {
+        serialize: () => { throw new Error('Not implemented') },
+        parse: loadIhrPendingSince,
+    }, slice);
+    return {
+        kind: 'IhrPendingInfo',
+        anon0: anon0,
+    }
+
+}
+
+export function storeIhrPendingInfo(ihrPendingInfo: IhrPendingInfo): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeDict(ihrPendingInfo.anon0, Dictionary.Keys.BigUint(320), {
+            serialize: ((arg: IhrPendingSince, builder: Builder) => {
+            storeIhrPendingSince(arg)(builder);
+        }),
+            parse: () => { throw new Error('Not implemented') },
+        });
+    })
+
+}
 
 // _ messages:(HashmapE 64 EnqueuedMsg) count:uint48 = AccountDispatchQueue;
 
@@ -6503,6 +7229,48 @@ export function storeTransaction(transaction: Transaction): (builder: Builder) =
 !merkle_update#04 {X:Type} old_hash:bits256 new_hash:bits256 old_depth:uint16 new_depth:uint16
   old:^X new:^X = MERKLE_UPDATE X;
 */
+
+export function loadMERKLE_UPDATE<X>(slice: Slice, loadX: (slice: Slice) => X): MERKLE_UPDATE<X> {
+    if (((slice.remainingBits >= 8) && (slice.preloadUint(8) == 0x04))) {
+        slice.loadUint(8);
+        let old_hash: Buffer = slice.loadBuffer((256 / 8));
+        let new_hash: Buffer = slice.loadBuffer((256 / 8));
+        let old_depth: number = slice.loadUint(16);
+        let new_depth: number = slice.loadUint(16);
+        let slice1 = slice.loadRef().beginParse(true);
+        let old: X = loadX(slice1);
+        let slice2 = slice.loadRef().beginParse(true);
+        let new0: X = loadX(slice2);
+        return {
+            kind: 'MERKLE_UPDATE',
+            old_hash: old_hash,
+            new_hash: new_hash,
+            old_depth: old_depth,
+            new_depth: new_depth,
+            old: old,
+            new0: new0,
+        }
+
+    }
+    throw new Error('Expected one of "MERKLE_UPDATE" in loading "MERKLE_UPDATE", but data does not satisfy any constructor');
+}
+
+export function storeMERKLE_UPDATE<X>(mERKLE_UPDATE: MERKLE_UPDATE<X>, storeX: (x: X) => (builder: Builder) => void): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeUint(0x04, 8);
+        builder.storeBuffer(mERKLE_UPDATE.old_hash, (256 / 8));
+        builder.storeBuffer(mERKLE_UPDATE.new_hash, (256 / 8));
+        builder.storeUint(mERKLE_UPDATE.old_depth, 16);
+        builder.storeUint(mERKLE_UPDATE.new_depth, 16);
+        let cell1 = beginCell();
+        storeX(mERKLE_UPDATE.old)(cell1);
+        builder.storeRef(cell1);
+        let cell2 = beginCell();
+        storeX(mERKLE_UPDATE.new0)(cell2);
+        builder.storeRef(cell2);
+    })
+
+}
 
 /*
 update_hashes#72 {X:Type} old_hash:bits256 new_hash:bits256
@@ -7468,12 +8236,87 @@ smc_info#076ef1ea actions:uint16 msgs_sent:uint16
   myself:MsgAddressInt global_config:(Maybe Cell) = SmartContractInfo;
 */
 
+export function loadSmartContractInfo(slice: Slice): SmartContractInfo {
+    if (((slice.remainingBits >= 32) && (slice.preloadUint(32) == 0x076ef1ea))) {
+        slice.loadUint(32);
+        let actions: number = slice.loadUint(16);
+        let msgs_sent: number = slice.loadUint(16);
+        let unixtime: number = slice.loadUint(32);
+        let block_lt: bigint = slice.loadUintBig(64);
+        let trans_lt: bigint = slice.loadUintBig(64);
+        let rand_seed: Buffer = slice.loadBuffer((256 / 8));
+        let balance_remaining: CurrencyCollection = loadCurrencyCollection(slice);
+        let myself: Address = slice.loadAddress();
+        let global_config: Maybe<Cell> = loadMaybe<Cell>(slice, ((slice: Slice) => {
+            return slice.asCell()
+
+        }));
+        return {
+            kind: 'SmartContractInfo',
+            actions: actions,
+            msgs_sent: msgs_sent,
+            unixtime: unixtime,
+            block_lt: block_lt,
+            trans_lt: trans_lt,
+            rand_seed: rand_seed,
+            balance_remaining: balance_remaining,
+            myself: myself,
+            global_config: global_config,
+        }
+
+    }
+    throw new Error('Expected one of "SmartContractInfo" in loading "SmartContractInfo", but data does not satisfy any constructor');
+}
+
+export function storeSmartContractInfo(smartContractInfo: SmartContractInfo): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeUint(0x076ef1ea, 32);
+        builder.storeUint(smartContractInfo.actions, 16);
+        builder.storeUint(smartContractInfo.msgs_sent, 16);
+        builder.storeUint(smartContractInfo.unixtime, 32);
+        builder.storeUint(smartContractInfo.block_lt, 64);
+        builder.storeUint(smartContractInfo.trans_lt, 64);
+        builder.storeBuffer(smartContractInfo.rand_seed, (256 / 8));
+        storeCurrencyCollection(smartContractInfo.balance_remaining)(builder);
+        builder.storeAddress(smartContractInfo.myself);
+        storeMaybe<Cell>(smartContractInfo.global_config, ((arg: Cell) => {
+            return ((builder: Builder) => {
+                builder.storeSlice(arg.beginParse(true));
+            })
+
+        }))(builder);
+    })
+
+}
+
 // out_list_empty$_ = OutList 0;
 
 /*
 out_list$_ {n:#} prev:^(OutList n) action:OutAction
   = OutList (n + 1);
 */
+
+export function loadOutList(slice: Slice, arg0: number): OutList {
+    if ((arg0 == 0)) {
+        return {
+            kind: 'OutList_out_list_empty',
+        }
+
+    }
+    if (true) {
+        let slice1 = slice.loadRef().beginParse(true);
+        let prev: OutList = loadOutList(slice1, (arg0 - 1));
+        let action: OutAction = loadOutAction(slice);
+        return {
+            kind: 'OutList_out_list',
+            n: (arg0 - 1),
+            prev: prev,
+            action: action,
+        }
+
+    }
+    throw new Error('Expected one of "OutList_out_list_empty", "OutList_out_list" in loading "OutList", but data does not satisfy any constructor');
+}
 
 export function storeOutList(outList: OutList): (builder: Builder) => void {
     if ((outList.kind == 'OutList_out_list_empty')) {
@@ -7509,6 +8352,57 @@ action_reserve_currency#36e6b809 mode:(## 8)
 action_change_library#26fa1dd4 mode:(## 7)
   libref:LibRef = OutAction;
 */
+
+export function loadOutAction(slice: Slice): OutAction {
+    if (((slice.remainingBits >= 32) && (slice.preloadUint(32) == 0x0ec3c86d))) {
+        slice.loadUint(32);
+        let mode: number = slice.loadUint(8);
+        let slice1 = slice.loadRef().beginParse(true);
+        let out_msg: MessageRelaxed<Cell> = loadMessageRelaxed<Cell>(slice1, ((slice: Slice) => {
+            return slice.asCell()
+
+        }));
+        return {
+            kind: 'OutAction_action_send_msg',
+            mode: mode,
+            out_msg: out_msg,
+        }
+
+    }
+    if (((slice.remainingBits >= 32) && (slice.preloadUint(32) == 0xad4de08e))) {
+        slice.loadUint(32);
+        let slice1 = slice.loadRef().beginParse(true);
+        let new_code: Cell = slice1.asCell();
+        return {
+            kind: 'OutAction_action_set_code',
+            new_code: new_code,
+        }
+
+    }
+    if (((slice.remainingBits >= 32) && (slice.preloadUint(32) == 0x36e6b809))) {
+        slice.loadUint(32);
+        let mode: number = slice.loadUint(8);
+        let currency: CurrencyCollection = loadCurrencyCollection(slice);
+        return {
+            kind: 'OutAction_action_reserve_currency',
+            mode: mode,
+            currency: currency,
+        }
+
+    }
+    if (((slice.remainingBits >= 32) && (slice.preloadUint(32) == 0x26fa1dd4))) {
+        slice.loadUint(32);
+        let mode: number = slice.loadUint(7);
+        let libref: LibRef = loadLibRef(slice);
+        return {
+            kind: 'OutAction_action_change_library',
+            mode: mode,
+            libref: libref,
+        }
+
+    }
+    throw new Error('Expected one of "OutAction_action_send_msg", "OutAction_action_set_code", "OutAction_action_reserve_currency", "OutAction_action_change_library" in loading "OutAction", but data does not satisfy any constructor');
+}
 
 export function storeOutAction(outAction: OutAction): (builder: Builder) => void {
     if ((outAction.kind == 'OutAction_action_send_msg')) {
@@ -7558,6 +8452,29 @@ export function storeOutAction(outAction: OutAction): (builder: Builder) => void
 
 // libref_ref$1 library:^Cell = LibRef;
 
+export function loadLibRef(slice: Slice): LibRef {
+    if (((slice.remainingBits >= 1) && (slice.preloadUint(1) == 0b0))) {
+        slice.loadUint(1);
+        let lib_hash: Buffer = slice.loadBuffer((256 / 8));
+        return {
+            kind: 'LibRef_libref_hash',
+            lib_hash: lib_hash,
+        }
+
+    }
+    if (((slice.remainingBits >= 1) && (slice.preloadUint(1) == 0b1))) {
+        slice.loadUint(1);
+        let slice1 = slice.loadRef().beginParse(true);
+        let library: Cell = slice1.asCell();
+        return {
+            kind: 'LibRef_libref_ref',
+            library: library,
+        }
+
+    }
+    throw new Error('Expected one of "LibRef_libref_hash", "LibRef_libref_ref" in loading "LibRef", but data does not satisfy any constructor');
+}
+
 export function storeLibRef(libRef: LibRef): (builder: Builder) => void {
     if ((libRef.kind == 'LibRef_libref_hash')) {
         return ((builder: Builder) => {
@@ -7579,6 +8496,28 @@ export function storeLibRef(libRef: LibRef): (builder: Builder) => void {
 }
 
 // out_list_node$_ prev:^Cell action:OutAction = OutListNode;
+
+export function loadOutListNode(slice: Slice): OutListNode {
+    let slice1 = slice.loadRef().beginParse(true);
+    let prev: Cell = slice1.asCell();
+    let action: OutAction = loadOutAction(slice);
+    return {
+        kind: 'OutListNode',
+        prev: prev,
+        action: action,
+    }
+
+}
+
+export function storeOutListNode(outListNode: OutListNode): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        let cell1 = beginCell();
+        cell1.storeSlice(outListNode.prev.beginParse(true));
+        builder.storeRef(cell1);
+        storeOutAction(outListNode.action)(builder);
+    })
+
+}
 
 /*
 shard_ident$00 shard_pfx_bits:(#<= 60)
@@ -7647,6 +8586,31 @@ export function storeExtBlkRef(extBlkRef: ExtBlkRef): (builder: Builder) => void
 block_id_ext$_ shard_id:ShardIdent seq_no:uint32
   root_hash:bits256 file_hash:bits256 = BlockIdExt;
 */
+
+export function loadBlockIdExt(slice: Slice): BlockIdExt {
+    let shard_id: ShardIdent = loadShardIdent(slice);
+    let seq_no: number = slice.loadUint(32);
+    let root_hash: Buffer = slice.loadBuffer((256 / 8));
+    let file_hash: Buffer = slice.loadBuffer((256 / 8));
+    return {
+        kind: 'BlockIdExt',
+        shard_id: shard_id,
+        seq_no: seq_no,
+        root_hash: root_hash,
+        file_hash: file_hash,
+    }
+
+}
+
+export function storeBlockIdExt(blockIdExt: BlockIdExt): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        storeShardIdent(blockIdExt.shard_id)(builder);
+        builder.storeUint(blockIdExt.seq_no, 32);
+        builder.storeBuffer(blockIdExt.root_hash, (256 / 8));
+        builder.storeBuffer(blockIdExt.file_hash, (256 / 8));
+    })
+
+}
 
 // master_info$_ master:ExtBlkRef = BlkMasterInfo;
 
@@ -8676,6 +9640,36 @@ bta_fork$1 {X:Type} {Y:Type} left:^(BinTreeAug X Y)
            right:^(BinTreeAug X Y) extra:Y = BinTreeAug X Y;
 */
 
+export function loadBinTreeAug<X, Y>(slice: Slice, loadX: (slice: Slice) => X, loadY: (slice: Slice) => Y): BinTreeAug<X, Y> {
+    if (((slice.remainingBits >= 1) && (slice.preloadUint(1) == 0b0))) {
+        slice.loadUint(1);
+        let extra: Y = loadY(slice);
+        let leaf: X = loadX(slice);
+        return {
+            kind: 'BinTreeAug_bta_leaf',
+            extra: extra,
+            leaf: leaf,
+        }
+
+    }
+    if (((slice.remainingBits >= 1) && (slice.preloadUint(1) == 0b1))) {
+        slice.loadUint(1);
+        let slice1 = slice.loadRef().beginParse(true);
+        let left: BinTreeAug<X, Y> = loadBinTreeAug<X, Y>(slice1, loadX, loadY);
+        let slice2 = slice.loadRef().beginParse(true);
+        let right: BinTreeAug<X, Y> = loadBinTreeAug<X, Y>(slice2, loadX, loadY);
+        let extra: Y = loadY(slice);
+        return {
+            kind: 'BinTreeAug_bta_fork',
+            left: left,
+            right: right,
+            extra: extra,
+        }
+
+    }
+    throw new Error('Expected one of "BinTreeAug_bta_leaf", "BinTreeAug_bta_fork" in loading "BinTreeAug", but data does not satisfy any constructor');
+}
+
 export function storeBinTreeAug<X, Y>(binTreeAug: BinTreeAug<X, Y>, storeX: (x: X) => (builder: Builder) => void, storeY: (y: Y) => (builder: Builder) => void): (builder: Builder) => void {
     if ((binTreeAug.kind == 'BinTreeAug_bta_leaf')) {
         return ((builder: Builder) => {
@@ -8848,6 +9842,25 @@ validator_base_info$_
   catchain_seqno:uint32
 = ValidatorBaseInfo;
 */
+
+export function loadValidatorBaseInfo(slice: Slice): ValidatorBaseInfo {
+    let validator_list_hash_short: number = slice.loadUint(32);
+    let catchain_seqno: number = slice.loadUint(32);
+    return {
+        kind: 'ValidatorBaseInfo',
+        validator_list_hash_short: validator_list_hash_short,
+        catchain_seqno: catchain_seqno,
+    }
+
+}
+
+export function storeValidatorBaseInfo(validatorBaseInfo: ValidatorBaseInfo): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeUint(validatorBaseInfo.validator_list_hash_short, 32);
+        builder.storeUint(validatorBaseInfo.catchain_seqno, 32);
+    })
+
+}
 
 // _ key:Bool max_end_lt:uint64 = KeyMaxLt;
 
@@ -9279,6 +10292,27 @@ export function storeCertificate(certificate: Certificate): (builder: Builder) =
 }
 
 // certificate_env#a419b7d certificate:Certificate = CertificateEnv;
+
+export function loadCertificateEnv(slice: Slice): CertificateEnv {
+    if (((slice.remainingBits >= 28) && (slice.preloadUint(28) == 0xa419b7d))) {
+        slice.loadUint(28);
+        let certificate: Certificate = loadCertificate(slice);
+        return {
+            kind: 'CertificateEnv',
+            certificate: certificate,
+        }
+
+    }
+    throw new Error('Expected one of "CertificateEnv" in loading "CertificateEnv", but data does not satisfy any constructor');
+}
+
+export function storeCertificateEnv(certificateEnv: CertificateEnv): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeUint(0xa419b7d, 28);
+        storeCertificate(certificateEnv.certificate)(builder);
+    })
+
+}
 
 /*
 signed_certificate$_ certificate:Certificate certificate_signature:CryptoSignature
@@ -10571,11 +11605,114 @@ cfg_proposal#f3 param_id:int32 param_value:(Maybe ^Cell) if_hash_equal:(Maybe ui
   = ConfigProposal;
 */
 
+export function loadConfigProposal(slice: Slice): ConfigProposal {
+    if (((slice.remainingBits >= 8) && (slice.preloadUint(8) == 0xf3))) {
+        slice.loadUint(8);
+        let param_id: number = slice.loadInt(32);
+        let param_value: Maybe<Cell> = loadMaybe<Cell>(slice, ((slice: Slice) => {
+            let slice1 = slice.loadRef().beginParse(true);
+            return slice1.asCell()
+
+        }));
+        let if_hash_equal: Maybe<bigint> = loadMaybe<bigint>(slice, ((slice: Slice) => {
+            return slice.loadUintBig(256)
+
+        }));
+        return {
+            kind: 'ConfigProposal',
+            param_id: param_id,
+            param_value: param_value,
+            if_hash_equal: if_hash_equal,
+        }
+
+    }
+    throw new Error('Expected one of "ConfigProposal" in loading "ConfigProposal", but data does not satisfy any constructor');
+}
+
+export function storeConfigProposal(configProposal: ConfigProposal): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeUint(0xf3, 8);
+        builder.storeInt(configProposal.param_id, 32);
+        storeMaybe<Cell>(configProposal.param_value, ((arg: Cell) => {
+            return ((builder: Builder) => {
+                let cell1 = beginCell();
+                cell1.storeSlice(arg.beginParse(true));
+                builder.storeRef(cell1);
+
+            })
+
+        }))(builder);
+        storeMaybe<bigint>(configProposal.if_hash_equal, ((arg: bigint) => {
+            return ((builder: Builder) => {
+                builder.storeUint(arg, 256);
+            })
+
+        }))(builder);
+    })
+
+}
+
 /*
 cfg_proposal_status#ce expires:uint32 proposal:^ConfigProposal is_critical:Bool
   voters:(HashmapE 16 True) remaining_weight:int64 validator_set_id:uint256
   rounds_remaining:uint8 wins:uint8 losses:uint8 = ConfigProposalStatus;
 */
+
+export function loadConfigProposalStatus(slice: Slice): ConfigProposalStatus {
+    if (((slice.remainingBits >= 8) && (slice.preloadUint(8) == 0xce))) {
+        slice.loadUint(8);
+        let expires: number = slice.loadUint(32);
+        let slice1 = slice.loadRef().beginParse(true);
+        let proposal: ConfigProposal = loadConfigProposal(slice1);
+        let is_critical: Bool = loadBool(slice);
+        let voters: Dictionary<number, True> = Dictionary.load(Dictionary.Keys.Uint(16), {
+            serialize: () => { throw new Error('Not implemented') },
+            parse: loadTrue,
+        }, slice);
+        let remaining_weight: bigint = slice.loadIntBig(64);
+        let validator_set_id: bigint = slice.loadUintBig(256);
+        let rounds_remaining: number = slice.loadUint(8);
+        let wins: number = slice.loadUint(8);
+        let losses: number = slice.loadUint(8);
+        return {
+            kind: 'ConfigProposalStatus',
+            expires: expires,
+            proposal: proposal,
+            is_critical: is_critical,
+            voters: voters,
+            remaining_weight: remaining_weight,
+            validator_set_id: validator_set_id,
+            rounds_remaining: rounds_remaining,
+            wins: wins,
+            losses: losses,
+        }
+
+    }
+    throw new Error('Expected one of "ConfigProposalStatus" in loading "ConfigProposalStatus", but data does not satisfy any constructor');
+}
+
+export function storeConfigProposalStatus(configProposalStatus: ConfigProposalStatus): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeUint(0xce, 8);
+        builder.storeUint(configProposalStatus.expires, 32);
+        let cell1 = beginCell();
+        storeConfigProposal(configProposalStatus.proposal)(cell1);
+        builder.storeRef(cell1);
+        storeBool(configProposalStatus.is_critical)(builder);
+        builder.storeDict(configProposalStatus.voters, Dictionary.Keys.Uint(16), {
+            serialize: ((arg: True, builder: Builder) => {
+            storeTrue(arg)(builder);
+        }),
+            parse: () => { throw new Error('Not implemented') },
+        });
+        builder.storeInt(configProposalStatus.remaining_weight, 64);
+        builder.storeUint(configProposalStatus.validator_set_id, 256);
+        builder.storeUint(configProposalStatus.rounds_remaining, 8);
+        builder.storeUint(configProposalStatus.wins, 8);
+        builder.storeUint(configProposalStatus.losses, 8);
+    })
+
+}
 
 // wfmt_basic#1 vm_version:int32 vm_mode:uint64 = WorkchainFormat 1;
 
@@ -12025,9 +13162,105 @@ block_signatures_pure#_ sig_count:uint32 sig_weight:uint64
   signatures:(HashmapE 16 CryptoSignaturePair) = BlockSignaturesPure;
 */
 
+export function loadBlockSignaturesPure(slice: Slice): BlockSignaturesPure {
+    let sig_count: number = slice.loadUint(32);
+    let sig_weight: bigint = slice.loadUintBig(64);
+    let signatures: Dictionary<number, CryptoSignaturePair> = Dictionary.load(Dictionary.Keys.Uint(16), {
+        serialize: () => { throw new Error('Not implemented') },
+        parse: loadCryptoSignaturePair,
+    }, slice);
+    return {
+        kind: 'BlockSignaturesPure',
+        sig_count: sig_count,
+        sig_weight: sig_weight,
+        signatures: signatures,
+    }
+
+}
+
+export function storeBlockSignaturesPure(blockSignaturesPure: BlockSignaturesPure): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeUint(blockSignaturesPure.sig_count, 32);
+        builder.storeUint(blockSignaturesPure.sig_weight, 64);
+        builder.storeDict(blockSignaturesPure.signatures, Dictionary.Keys.Uint(16), {
+            serialize: ((arg: CryptoSignaturePair, builder: Builder) => {
+            storeCryptoSignaturePair(arg)(builder);
+        }),
+            parse: () => { throw new Error('Not implemented') },
+        });
+    })
+
+}
+
 // block_signatures#11 validator_info:ValidatorBaseInfo pure_signatures:BlockSignaturesPure = BlockSignatures;
 
+export function loadBlockSignatures(slice: Slice): BlockSignatures {
+    if (((slice.remainingBits >= 8) && (slice.preloadUint(8) == 0x11))) {
+        slice.loadUint(8);
+        let validator_info: ValidatorBaseInfo = loadValidatorBaseInfo(slice);
+        let pure_signatures: BlockSignaturesPure = loadBlockSignaturesPure(slice);
+        return {
+            kind: 'BlockSignatures',
+            validator_info: validator_info,
+            pure_signatures: pure_signatures,
+        }
+
+    }
+    throw new Error('Expected one of "BlockSignatures" in loading "BlockSignatures", but data does not satisfy any constructor');
+}
+
+export function storeBlockSignatures(blockSignatures: BlockSignatures): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeUint(0x11, 8);
+        storeValidatorBaseInfo(blockSignatures.validator_info)(builder);
+        storeBlockSignaturesPure(blockSignatures.pure_signatures)(builder);
+    })
+
+}
+
 // block_proof#c3 proof_for:BlockIdExt root:^Cell signatures:(Maybe ^BlockSignatures) = BlockProof;
+
+export function loadBlockProof(slice: Slice): BlockProof {
+    if (((slice.remainingBits >= 8) && (slice.preloadUint(8) == 0xc3))) {
+        slice.loadUint(8);
+        let proof_for: BlockIdExt = loadBlockIdExt(slice);
+        let slice1 = slice.loadRef().beginParse(true);
+        let root: Cell = slice1.asCell();
+        let signatures: Maybe<BlockSignatures> = loadMaybe<BlockSignatures>(slice, ((slice: Slice) => {
+            let slice1 = slice.loadRef().beginParse(true);
+            return loadBlockSignatures(slice1)
+
+        }));
+        return {
+            kind: 'BlockProof',
+            proof_for: proof_for,
+            root: root,
+            signatures: signatures,
+        }
+
+    }
+    throw new Error('Expected one of "BlockProof" in loading "BlockProof", but data does not satisfy any constructor');
+}
+
+export function storeBlockProof(blockProof: BlockProof): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeUint(0xc3, 8);
+        storeBlockIdExt(blockProof.proof_for)(builder);
+        let cell1 = beginCell();
+        cell1.storeSlice(blockProof.root.beginParse(true));
+        builder.storeRef(cell1);
+        storeMaybe<BlockSignatures>(blockProof.signatures, ((arg: BlockSignatures) => {
+            return ((builder: Builder) => {
+                let cell1 = beginCell();
+                storeBlockSignatures(arg)(cell1);
+                builder.storeRef(cell1);
+
+            })
+
+        }))(builder);
+    })
+
+}
 
 // chain_empty$_ = ProofChain 0;
 
@@ -12087,20 +13320,292 @@ top_block_descr#d5 proof_for:BlockIdExt signatures:(Maybe ^BlockSignatures)
   len:(## 8) { len >= 1 } { len <= 8 } chain:(ProofChain len) = TopBlockDescr;
 */
 
+export function loadTopBlockDescr(slice: Slice): TopBlockDescr {
+    if (((slice.remainingBits >= 8) && (slice.preloadUint(8) == 0xd5))) {
+        slice.loadUint(8);
+        let proof_for: BlockIdExt = loadBlockIdExt(slice);
+        let signatures: Maybe<BlockSignatures> = loadMaybe<BlockSignatures>(slice, ((slice: Slice) => {
+            let slice1 = slice.loadRef().beginParse(true);
+            return loadBlockSignatures(slice1)
+
+        }));
+        let len: number = slice.loadUint(8);
+        let chain: ProofChain = loadProofChain(slice, len);
+        if ((!(len >= 1))) {
+            throw new Error('Condition (len >= 1) is not satisfied while loading "TopBlockDescr" for type "TopBlockDescr"');
+        }
+        if ((!(len <= 8))) {
+            throw new Error('Condition (len <= 8) is not satisfied while loading "TopBlockDescr" for type "TopBlockDescr"');
+        }
+        return {
+            kind: 'TopBlockDescr',
+            proof_for: proof_for,
+            signatures: signatures,
+            len: len,
+            chain: chain,
+        }
+
+    }
+    throw new Error('Expected one of "TopBlockDescr" in loading "TopBlockDescr", but data does not satisfy any constructor');
+}
+
+export function storeTopBlockDescr(topBlockDescr: TopBlockDescr): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeUint(0xd5, 8);
+        storeBlockIdExt(topBlockDescr.proof_for)(builder);
+        storeMaybe<BlockSignatures>(topBlockDescr.signatures, ((arg: BlockSignatures) => {
+            return ((builder: Builder) => {
+                let cell1 = beginCell();
+                storeBlockSignatures(arg)(cell1);
+                builder.storeRef(cell1);
+
+            })
+
+        }))(builder);
+        builder.storeUint(topBlockDescr.len, 8);
+        storeProofChain(topBlockDescr.chain)(builder);
+        if ((!(topBlockDescr.len >= 1))) {
+            throw new Error('Condition (topBlockDescr.len >= 1) is not satisfied while loading "TopBlockDescr" for type "TopBlockDescr"');
+        }
+        if ((!(topBlockDescr.len <= 8))) {
+            throw new Error('Condition (topBlockDescr.len <= 8) is not satisfied while loading "TopBlockDescr" for type "TopBlockDescr"');
+        }
+    })
+
+}
+
 // top_block_descr_set#4ac789f3 collection:(HashmapE 96 ^TopBlockDescr) = TopBlockDescrSet;
+
+export function loadTopBlockDescrSet(slice: Slice): TopBlockDescrSet {
+    if (((slice.remainingBits >= 32) && (slice.preloadUint(32) == 0x4ac789f3))) {
+        slice.loadUint(32);
+        let collection: Dictionary<bigint, TopBlockDescr> = Dictionary.load(Dictionary.Keys.BigUint(96), {
+            serialize: () => { throw new Error('Not implemented') },
+            parse: ((slice: Slice) => {
+            let slice1 = slice.loadRef().beginParse(true);
+            return loadTopBlockDescr(slice1)
+
+        }),
+        }, slice);
+        return {
+            kind: 'TopBlockDescrSet',
+            collection: collection,
+        }
+
+    }
+    throw new Error('Expected one of "TopBlockDescrSet" in loading "TopBlockDescrSet", but data does not satisfy any constructor');
+}
+
+export function storeTopBlockDescrSet(topBlockDescrSet: TopBlockDescrSet): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeUint(0x4ac789f3, 32);
+        builder.storeDict(topBlockDescrSet.collection, Dictionary.Keys.BigUint(96), {
+            serialize: ((arg: TopBlockDescr, builder: Builder) => {
+            ((arg: TopBlockDescr) => {
+                return ((builder: Builder) => {
+                    let cell1 = beginCell();
+                    storeTopBlockDescr(arg)(cell1);
+                    builder.storeRef(cell1);
+
+                })
+
+            })(arg)(builder);
+        }),
+            parse: () => { throw new Error('Not implemented') },
+        });
+    })
+
+}
 
 /*
 prod_info#34 utime:uint32 mc_blk_ref:ExtBlkRef state_proof:^(MERKLE_PROOF Block)
   prod_proof:^(MERKLE_PROOF ShardState) = ProducerInfo;
 */
 
+export function loadProducerInfo(slice: Slice): ProducerInfo {
+    if (((slice.remainingBits >= 8) && (slice.preloadUint(8) == 0x34))) {
+        slice.loadUint(8);
+        let utime: number = slice.loadUint(32);
+        let mc_blk_ref: ExtBlkRef = loadExtBlkRef(slice);
+        let slice1 = slice.loadRef().beginParse(true);
+        let state_proof: MERKLE_PROOF<Block> = loadMERKLE_PROOF<Block>(slice1, loadBlock);
+        let slice2 = slice.loadRef().beginParse(true);
+        let prod_proof: MERKLE_PROOF<ShardState> = loadMERKLE_PROOF<ShardState>(slice2, loadShardState);
+        return {
+            kind: 'ProducerInfo',
+            utime: utime,
+            mc_blk_ref: mc_blk_ref,
+            state_proof: state_proof,
+            prod_proof: prod_proof,
+        }
+
+    }
+    throw new Error('Expected one of "ProducerInfo" in loading "ProducerInfo", but data does not satisfy any constructor');
+}
+
+export function storeProducerInfo(producerInfo: ProducerInfo): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeUint(0x34, 8);
+        builder.storeUint(producerInfo.utime, 32);
+        storeExtBlkRef(producerInfo.mc_blk_ref)(builder);
+        let cell1 = beginCell();
+        storeMERKLE_PROOF<Block>(producerInfo.state_proof, storeBlock)(cell1);
+        builder.storeRef(cell1);
+        let cell2 = beginCell();
+        storeMERKLE_PROOF<ShardState>(producerInfo.prod_proof, storeShardState)(cell2);
+        builder.storeRef(cell2);
+    })
+
+}
+
 // no_blk_gen from_utime:uint32 prod_info:^ProducerInfo = ComplaintDescr;
 
 // no_blk_gen_diff prod_info_old:^ProducerInfo prod_info_new:^ProducerInfo = ComplaintDescr;
 
+export function loadComplaintDescr(slice: Slice): ComplaintDescr {
+    if (((slice.remainingBits >= 32) && (slice.preloadUint(32) == 0x450e8bd9))) {
+        slice.loadUint(32);
+        let from_utime: number = slice.loadUint(32);
+        let slice1 = slice.loadRef().beginParse(true);
+        let prod_info: ProducerInfo = loadProducerInfo(slice1);
+        return {
+            kind: 'ComplaintDescr_no_blk_gen',
+            from_utime: from_utime,
+            prod_info: prod_info,
+        }
+
+    }
+    if (((slice.remainingBits >= 32) && (slice.preloadUint(32) == 0x4737b0ca))) {
+        slice.loadUint(32);
+        let slice1 = slice.loadRef().beginParse(true);
+        let prod_info_old: ProducerInfo = loadProducerInfo(slice1);
+        let slice2 = slice.loadRef().beginParse(true);
+        let prod_info_new: ProducerInfo = loadProducerInfo(slice2);
+        return {
+            kind: 'ComplaintDescr_no_blk_gen_diff',
+            prod_info_old: prod_info_old,
+            prod_info_new: prod_info_new,
+        }
+
+    }
+    throw new Error('Expected one of "ComplaintDescr_no_blk_gen", "ComplaintDescr_no_blk_gen_diff" in loading "ComplaintDescr", but data does not satisfy any constructor');
+}
+
+export function storeComplaintDescr(complaintDescr: ComplaintDescr): (builder: Builder) => void {
+    if ((complaintDescr.kind == 'ComplaintDescr_no_blk_gen')) {
+        return ((builder: Builder) => {
+            builder.storeUint(0x450e8bd9, 32);
+            builder.storeUint(complaintDescr.from_utime, 32);
+            let cell1 = beginCell();
+            storeProducerInfo(complaintDescr.prod_info)(cell1);
+            builder.storeRef(cell1);
+        })
+
+    }
+    if ((complaintDescr.kind == 'ComplaintDescr_no_blk_gen_diff')) {
+        return ((builder: Builder) => {
+            builder.storeUint(0x4737b0ca, 32);
+            let cell1 = beginCell();
+            storeProducerInfo(complaintDescr.prod_info_old)(cell1);
+            builder.storeRef(cell1);
+            let cell2 = beginCell();
+            storeProducerInfo(complaintDescr.prod_info_new)(cell2);
+            builder.storeRef(cell2);
+        })
+
+    }
+    throw new Error('Expected one of "ComplaintDescr_no_blk_gen", "ComplaintDescr_no_blk_gen_diff" in loading "ComplaintDescr", but data does not satisfy any constructor');
+}
+
 // validator_complaint#bc validator_pubkey:bits256 description:^ComplaintDescr created_at:uint32 severity:uint8 reward_addr:uint256 paid:Grams suggested_fine:Grams suggested_fine_part:uint32 = ValidatorComplaint;
 
+export function loadValidatorComplaint(slice: Slice): ValidatorComplaint {
+    if (((slice.remainingBits >= 8) && (slice.preloadUint(8) == 0xbc))) {
+        slice.loadUint(8);
+        let validator_pubkey: Buffer = slice.loadBuffer((256 / 8));
+        let slice1 = slice.loadRef().beginParse(true);
+        let description: ComplaintDescr = loadComplaintDescr(slice1);
+        let created_at: number = slice.loadUint(32);
+        let severity: number = slice.loadUint(8);
+        let reward_addr: bigint = slice.loadUintBig(256);
+        let paid: bigint = slice.loadCoins();
+        let suggested_fine: bigint = slice.loadCoins();
+        let suggested_fine_part: number = slice.loadUint(32);
+        return {
+            kind: 'ValidatorComplaint',
+            validator_pubkey: validator_pubkey,
+            description: description,
+            created_at: created_at,
+            severity: severity,
+            reward_addr: reward_addr,
+            paid: paid,
+            suggested_fine: suggested_fine,
+            suggested_fine_part: suggested_fine_part,
+        }
+
+    }
+    throw new Error('Expected one of "ValidatorComplaint" in loading "ValidatorComplaint", but data does not satisfy any constructor');
+}
+
+export function storeValidatorComplaint(validatorComplaint: ValidatorComplaint): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeUint(0xbc, 8);
+        builder.storeBuffer(validatorComplaint.validator_pubkey, (256 / 8));
+        let cell1 = beginCell();
+        storeComplaintDescr(validatorComplaint.description)(cell1);
+        builder.storeRef(cell1);
+        builder.storeUint(validatorComplaint.created_at, 32);
+        builder.storeUint(validatorComplaint.severity, 8);
+        builder.storeUint(validatorComplaint.reward_addr, 256);
+        builder.storeCoins(validatorComplaint.paid);
+        builder.storeCoins(validatorComplaint.suggested_fine);
+        builder.storeUint(validatorComplaint.suggested_fine_part, 32);
+    })
+
+}
+
 // complaint_status#2d complaint:^ValidatorComplaint voters:(HashmapE 16 True) vset_id:uint256 weight_remaining:int64 = ValidatorComplaintStatus;
+
+export function loadValidatorComplaintStatus(slice: Slice): ValidatorComplaintStatus {
+    if (((slice.remainingBits >= 8) && (slice.preloadUint(8) == 0x2d))) {
+        slice.loadUint(8);
+        let slice1 = slice.loadRef().beginParse(true);
+        let complaint: ValidatorComplaint = loadValidatorComplaint(slice1);
+        let voters: Dictionary<number, True> = Dictionary.load(Dictionary.Keys.Uint(16), {
+            serialize: () => { throw new Error('Not implemented') },
+            parse: loadTrue,
+        }, slice);
+        let vset_id: bigint = slice.loadUintBig(256);
+        let weight_remaining: bigint = slice.loadIntBig(64);
+        return {
+            kind: 'ValidatorComplaintStatus',
+            complaint: complaint,
+            voters: voters,
+            vset_id: vset_id,
+            weight_remaining: weight_remaining,
+        }
+
+    }
+    throw new Error('Expected one of "ValidatorComplaintStatus" in loading "ValidatorComplaintStatus", but data does not satisfy any constructor');
+}
+
+export function storeValidatorComplaintStatus(validatorComplaintStatus: ValidatorComplaintStatus): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeUint(0x2d, 8);
+        let cell1 = beginCell();
+        storeValidatorComplaint(validatorComplaintStatus.complaint)(cell1);
+        builder.storeRef(cell1);
+        builder.storeDict(validatorComplaintStatus.voters, Dictionary.Keys.Uint(16), {
+            serialize: ((arg: True, builder: Builder) => {
+            storeTrue(arg)(builder);
+        }),
+            parse: () => { throw new Error('Not implemented') },
+        });
+        builder.storeUint(validatorComplaintStatus.vset_id, 256);
+        builder.storeInt(validatorComplaintStatus.weight_remaining, 64);
+    })
+
+}
 
 // vm_stk_null#00 = VmStackValue;
 
@@ -12429,9 +13934,50 @@ export function storeVmTuple(vmTuple: VmTuple): (builder: Builder) => void {
 
 // vm_stack#_ depth:(## 24) stack:(VmStackList depth) = VmStack;
 
+export function loadVmStack(slice: Slice): VmStack {
+    let depth: number = slice.loadUint(24);
+    let stack: VmStackList = loadVmStackList(slice, depth);
+    return {
+        kind: 'VmStack',
+        depth: depth,
+        stack: stack,
+    }
+
+}
+
+export function storeVmStack(vmStack: VmStack): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeUint(vmStack.depth, 24);
+        storeVmStackList(vmStack.stack)(builder);
+    })
+
+}
+
 // vm_stk_nil#_ = VmStackList 0;
 
 // vm_stk_cons#_ {n:#} rest:^(VmStackList n) tos:VmStackValue = VmStackList (n + 1);
+
+export function loadVmStackList(slice: Slice, arg0: number): VmStackList {
+    if ((arg0 == 0)) {
+        return {
+            kind: 'VmStackList_vm_stk_nil',
+        }
+
+    }
+    if (true) {
+        let slice1 = slice.loadRef().beginParse(true);
+        let rest: VmStackList = loadVmStackList(slice1, (arg0 - 1));
+        let tos: VmStackValue = loadVmStackValue(slice);
+        return {
+            kind: 'VmStackList_vm_stk_cons',
+            n: (arg0 - 1),
+            rest: rest,
+            tos: tos,
+        }
+
+    }
+    throw new Error('Expected one of "VmStackList_vm_stk_nil", "VmStackList_vm_stk_cons" in loading "VmStackList", but data does not satisfy any constructor');
+}
 
 export function storeVmStackList(vmStackList: VmStackList): (builder: Builder) => void {
     if ((vmStackList.kind == 'VmStackList_vm_stk_nil')) {
@@ -12482,7 +14028,71 @@ gas_limits#_ remaining:int64 _:^[ max_limit:int64 cur_limit:int64 credit:int64 ]
   = VmGasLimits;
 */
 
+export function loadVmGasLimits(slice: Slice): VmGasLimits {
+    let remaining: bigint = slice.loadIntBig(64);
+    let slice1 = slice.loadRef().beginParse(true);
+    let max_limit: bigint = slice1.loadIntBig(64);
+    let cur_limit: bigint = slice1.loadIntBig(64);
+    let credit: bigint = slice1.loadIntBig(64);
+    return {
+        kind: 'VmGasLimits',
+        remaining: remaining,
+        max_limit: max_limit,
+        cur_limit: cur_limit,
+        credit: credit,
+    }
+
+}
+
+export function storeVmGasLimits(vmGasLimits: VmGasLimits): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeInt(vmGasLimits.remaining, 64);
+        let cell1 = beginCell();
+        cell1.storeInt(vmGasLimits.max_limit, 64);
+        cell1.storeInt(vmGasLimits.cur_limit, 64);
+        cell1.storeInt(vmGasLimits.credit, 64);
+        builder.storeRef(cell1);
+    })
+
+}
+
 // _ libraries:(HashmapE 256 ^Cell) = VmLibraries;
+
+export function loadVmLibraries(slice: Slice): VmLibraries {
+    let libraries: Dictionary<bigint, Cell> = Dictionary.load(Dictionary.Keys.BigUint(256), {
+        serialize: () => { throw new Error('Not implemented') },
+        parse: ((slice: Slice) => {
+        let slice1 = slice.loadRef().beginParse(true);
+        return slice1.asCell()
+
+    }),
+    }, slice);
+    return {
+        kind: 'VmLibraries',
+        libraries: libraries,
+    }
+
+}
+
+export function storeVmLibraries(vmLibraries: VmLibraries): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeDict(vmLibraries.libraries, Dictionary.Keys.BigUint(256), {
+            serialize: ((arg: Cell, builder: Builder) => {
+            ((arg: Cell) => {
+                return ((builder: Builder) => {
+                    let cell1 = beginCell();
+                    cell1.storeSlice(arg.beginParse(true));
+                    builder.storeRef(cell1);
+
+                })
+
+            })(arg)(builder);
+        }),
+            parse: () => { throw new Error('Not implemented') },
+        });
+    })
+
+}
 
 /*
 vm_ctl_data$_ nargs:(Maybe uint13) stack:(Maybe VmStack) save:VmSaveList
@@ -12800,6 +14410,42 @@ export function storeVmCont(vmCont: VmCont): (builder: Builder) => void {
 
 // _ (HashmapE 256 ^DNSRecord) = DNS_RecordSet;
 
+export function loadDNS_RecordSet(slice: Slice): DNS_RecordSet {
+    let anon0: Dictionary<bigint, DNSRecord> = Dictionary.load(Dictionary.Keys.BigUint(256), {
+        serialize: () => { throw new Error('Not implemented') },
+        parse: ((slice: Slice) => {
+        let slice1 = slice.loadRef().beginParse(true);
+        return loadDNSRecord(slice1)
+
+    }),
+    }, slice);
+    return {
+        kind: 'DNS_RecordSet',
+        anon0: anon0,
+    }
+
+}
+
+export function storeDNS_RecordSet(dNS_RecordSet: DNS_RecordSet): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeDict(dNS_RecordSet.anon0, Dictionary.Keys.BigUint(256), {
+            serialize: ((arg: DNSRecord, builder: Builder) => {
+            ((arg: DNSRecord) => {
+                return ((builder: Builder) => {
+                    let cell1 = beginCell();
+                    storeDNSRecord(arg)(cell1);
+                    builder.storeRef(cell1);
+
+                })
+
+            })(arg)(builder);
+        }),
+            parse: () => { throw new Error('Not implemented') },
+        });
+    })
+
+}
+
 // chunk_ref_empty$_ = TextChunkRef 0;
 
 // chunk_ref$_ {n:#} ref:^(TextChunks (n + 1)) = TextChunkRef (n + 1);
@@ -12922,9 +14568,147 @@ dns_smc_address#9fd3 smc_addr:MsgAddressInt flags:(## 8) { flags <= 1 }
 
 // dns_storage_address#7473 bag_id:bits256 = DNSRecord;
 
+export function loadDNSRecord(slice: Slice): DNSRecord {
+    if (((slice.remainingBits >= 16) && (slice.preloadUint(16) == 0x1eda))) {
+        slice.loadUint(16);
+        let _: Text = loadText(slice);
+        return {
+            kind: 'DNSRecord_dns_text',
+            _: _,
+        }
+
+    }
+    if (((slice.remainingBits >= 16) && (slice.preloadUint(16) == 0xba93))) {
+        slice.loadUint(16);
+        let resolver: Address = slice.loadAddress();
+        return {
+            kind: 'DNSRecord_dns_next_resolver',
+            resolver: resolver,
+        }
+
+    }
+    if (((slice.remainingBits >= 16) && (slice.preloadUint(16) == 0xad01))) {
+        slice.loadUint(16);
+        let adnl_addr: Buffer = slice.loadBuffer((256 / 8));
+        let flags: number = slice.loadUint(8);
+        let proto_list: ProtoList | undefined = ((flags & (1 << 0)) ? loadProtoList(slice) : undefined);
+        if ((!(flags <= 1))) {
+            throw new Error('Condition (flags <= 1) is not satisfied while loading "DNSRecord_dns_adnl_address" for type "DNSRecord"');
+        }
+        return {
+            kind: 'DNSRecord_dns_adnl_address',
+            adnl_addr: adnl_addr,
+            flags: flags,
+            proto_list: proto_list,
+        }
+
+    }
+    if (((slice.remainingBits >= 16) && (slice.preloadUint(16) == 0x9fd3))) {
+        slice.loadUint(16);
+        let smc_addr: Address = slice.loadAddress();
+        let flags: number = slice.loadUint(8);
+        let cap_list: SmcCapList | undefined = ((flags & (1 << 0)) ? loadSmcCapList(slice) : undefined);
+        if ((!(flags <= 1))) {
+            throw new Error('Condition (flags <= 1) is not satisfied while loading "DNSRecord_dns_smc_address" for type "DNSRecord"');
+        }
+        return {
+            kind: 'DNSRecord_dns_smc_address',
+            smc_addr: smc_addr,
+            flags: flags,
+            cap_list: cap_list,
+        }
+
+    }
+    if (((slice.remainingBits >= 16) && (slice.preloadUint(16) == 0x7473))) {
+        slice.loadUint(16);
+        let bag_id: Buffer = slice.loadBuffer((256 / 8));
+        return {
+            kind: 'DNSRecord_dns_storage_address',
+            bag_id: bag_id,
+        }
+
+    }
+    throw new Error('Expected one of "DNSRecord_dns_text", "DNSRecord_dns_next_resolver", "DNSRecord_dns_adnl_address", "DNSRecord_dns_smc_address", "DNSRecord_dns_storage_address" in loading "DNSRecord", but data does not satisfy any constructor');
+}
+
+export function storeDNSRecord(dNSRecord: DNSRecord): (builder: Builder) => void {
+    if ((dNSRecord.kind == 'DNSRecord_dns_text')) {
+        return ((builder: Builder) => {
+            builder.storeUint(0x1eda, 16);
+            storeText(dNSRecord._)(builder);
+        })
+
+    }
+    if ((dNSRecord.kind == 'DNSRecord_dns_next_resolver')) {
+        return ((builder: Builder) => {
+            builder.storeUint(0xba93, 16);
+            builder.storeAddress(dNSRecord.resolver);
+        })
+
+    }
+    if ((dNSRecord.kind == 'DNSRecord_dns_adnl_address')) {
+        return ((builder: Builder) => {
+            builder.storeUint(0xad01, 16);
+            builder.storeBuffer(dNSRecord.adnl_addr, (256 / 8));
+            builder.storeUint(dNSRecord.flags, 8);
+            if ((dNSRecord.proto_list != undefined)) {
+                storeProtoList(dNSRecord.proto_list)(builder);
+            }
+            if ((!(dNSRecord.flags <= 1))) {
+                throw new Error('Condition (dNSRecord.flags <= 1) is not satisfied while loading "DNSRecord_dns_adnl_address" for type "DNSRecord"');
+            }
+        })
+
+    }
+    if ((dNSRecord.kind == 'DNSRecord_dns_smc_address')) {
+        return ((builder: Builder) => {
+            builder.storeUint(0x9fd3, 16);
+            builder.storeAddress(dNSRecord.smc_addr);
+            builder.storeUint(dNSRecord.flags, 8);
+            if ((dNSRecord.cap_list != undefined)) {
+                storeSmcCapList(dNSRecord.cap_list)(builder);
+            }
+            if ((!(dNSRecord.flags <= 1))) {
+                throw new Error('Condition (dNSRecord.flags <= 1) is not satisfied while loading "DNSRecord_dns_smc_address" for type "DNSRecord"');
+            }
+        })
+
+    }
+    if ((dNSRecord.kind == 'DNSRecord_dns_storage_address')) {
+        return ((builder: Builder) => {
+            builder.storeUint(0x7473, 16);
+            builder.storeBuffer(dNSRecord.bag_id, (256 / 8));
+        })
+
+    }
+    throw new Error('Expected one of "DNSRecord_dns_text", "DNSRecord_dns_next_resolver", "DNSRecord_dns_adnl_address", "DNSRecord_dns_smc_address", "DNSRecord_dns_storage_address" in loading "DNSRecord", but data does not satisfy any constructor');
+}
+
 // proto_list_nil$0 = ProtoList;
 
 // proto_list_next$1 head:Protocol tail:ProtoList = ProtoList;
+
+export function loadProtoList(slice: Slice): ProtoList {
+    if (((slice.remainingBits >= 1) && (slice.preloadUint(1) == 0b0))) {
+        slice.loadUint(1);
+        return {
+            kind: 'ProtoList_proto_list_nil',
+        }
+
+    }
+    if (((slice.remainingBits >= 1) && (slice.preloadUint(1) == 0b1))) {
+        slice.loadUint(1);
+        let head: Protocol = loadProtocol(slice);
+        let tail: ProtoList = loadProtoList(slice);
+        return {
+            kind: 'ProtoList_proto_list_next',
+            head: head,
+            tail: tail,
+        }
+
+    }
+    throw new Error('Expected one of "ProtoList_proto_list_nil", "ProtoList_proto_list_next" in loading "ProtoList", but data does not satisfy any constructor');
+}
 
 export function storeProtoList(protoList: ProtoList): (builder: Builder) => void {
     if ((protoList.kind == 'ProtoList_proto_list_nil')) {
@@ -12946,6 +14730,17 @@ export function storeProtoList(protoList: ProtoList): (builder: Builder) => void
 
 // proto_http#4854 = Protocol;
 
+export function loadProtocol(slice: Slice): Protocol {
+    if (((slice.remainingBits >= 16) && (slice.preloadUint(16) == 0x4854))) {
+        slice.loadUint(16);
+        return {
+            kind: 'Protocol',
+        }
+
+    }
+    throw new Error('Expected one of "Protocol" in loading "Protocol", but data does not satisfy any constructor');
+}
+
 export function storeProtocol(protocol: Protocol): (builder: Builder) => void {
     return ((builder: Builder) => {
         builder.storeUint(0x4854, 16);
@@ -12956,6 +14751,28 @@ export function storeProtocol(protocol: Protocol): (builder: Builder) => void {
 // cap_list_nil$0 = SmcCapList;
 
 // cap_list_next$1 head:SmcCapability tail:SmcCapList = SmcCapList;
+
+export function loadSmcCapList(slice: Slice): SmcCapList {
+    if (((slice.remainingBits >= 1) && (slice.preloadUint(1) == 0b0))) {
+        slice.loadUint(1);
+        return {
+            kind: 'SmcCapList_cap_list_nil',
+        }
+
+    }
+    if (((slice.remainingBits >= 1) && (slice.preloadUint(1) == 0b1))) {
+        slice.loadUint(1);
+        let head: SmcCapability = loadSmcCapability(slice);
+        let tail: SmcCapList = loadSmcCapList(slice);
+        return {
+            kind: 'SmcCapList_cap_list_next',
+            head: head,
+            tail: tail,
+        }
+
+    }
+    throw new Error('Expected one of "SmcCapList_cap_list_nil", "SmcCapList_cap_list_next" in loading "SmcCapList", but data does not satisfy any constructor');
+}
 
 export function storeSmcCapList(smcCapList: SmcCapList): (builder: Builder) => void {
     if ((smcCapList.kind == 'SmcCapList_cap_list_nil')) {
@@ -12982,6 +14799,40 @@ export function storeSmcCapList(smcCapList: SmcCapList): (builder: Builder) => v
 // cap_is_wallet#2177 = SmcCapability;
 
 // cap_name#ff name:Text = SmcCapability;
+
+export function loadSmcCapability(slice: Slice): SmcCapability {
+    if (((slice.remainingBits >= 16) && (slice.preloadUint(16) == 0x5371))) {
+        slice.loadUint(16);
+        return {
+            kind: 'SmcCapability_cap_method_seqno',
+        }
+
+    }
+    if (((slice.remainingBits >= 16) && (slice.preloadUint(16) == 0x71f4))) {
+        slice.loadUint(16);
+        return {
+            kind: 'SmcCapability_cap_method_pubkey',
+        }
+
+    }
+    if (((slice.remainingBits >= 16) && (slice.preloadUint(16) == 0x2177))) {
+        slice.loadUint(16);
+        return {
+            kind: 'SmcCapability_cap_is_wallet',
+        }
+
+    }
+    if (((slice.remainingBits >= 8) && (slice.preloadUint(8) == 0xff))) {
+        slice.loadUint(8);
+        let name: Text = loadText(slice);
+        return {
+            kind: 'SmcCapability_cap_name',
+            name: name,
+        }
+
+    }
+    throw new Error('Expected one of "SmcCapability_cap_method_seqno", "SmcCapability_cap_method_pubkey", "SmcCapability_cap_is_wallet", "SmcCapability_cap_name" in loading "SmcCapability", but data does not satisfy any constructor');
+}
 
 export function storeSmcCapability(smcCapability: SmcCapability): (builder: Builder) => void {
     if ((smcCapability.kind == 'SmcCapability_cap_method_seqno')) {
@@ -13017,11 +14868,149 @@ chan_config$_  init_timeout:uint32 close_timeout:uint32 a_key:bits256 b_key:bits
   a_addr:^MsgAddressInt b_addr:^MsgAddressInt channel_id:uint64 min_A_extra:Grams = ChanConfig;
 */
 
+export function loadChanConfig(slice: Slice): ChanConfig {
+    let init_timeout: number = slice.loadUint(32);
+    let close_timeout: number = slice.loadUint(32);
+    let a_key: Buffer = slice.loadBuffer((256 / 8));
+    let b_key: Buffer = slice.loadBuffer((256 / 8));
+    let slice1 = slice.loadRef().beginParse(true);
+    let a_addr: Address = slice1.loadAddress();
+    let slice2 = slice.loadRef().beginParse(true);
+    let b_addr: Address = slice2.loadAddress();
+    let channel_id: bigint = slice.loadUintBig(64);
+    let min_A_extra: bigint = slice.loadCoins();
+    return {
+        kind: 'ChanConfig',
+        init_timeout: init_timeout,
+        close_timeout: close_timeout,
+        a_key: a_key,
+        b_key: b_key,
+        a_addr: a_addr,
+        b_addr: b_addr,
+        channel_id: channel_id,
+        min_A_extra: min_A_extra,
+    }
+
+}
+
+export function storeChanConfig(chanConfig: ChanConfig): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeUint(chanConfig.init_timeout, 32);
+        builder.storeUint(chanConfig.close_timeout, 32);
+        builder.storeBuffer(chanConfig.a_key, (256 / 8));
+        builder.storeBuffer(chanConfig.b_key, (256 / 8));
+        let cell1 = beginCell();
+        cell1.storeAddress(chanConfig.a_addr);
+        builder.storeRef(cell1);
+        let cell2 = beginCell();
+        cell2.storeAddress(chanConfig.b_addr);
+        builder.storeRef(cell2);
+        builder.storeUint(chanConfig.channel_id, 64);
+        builder.storeCoins(chanConfig.min_A_extra);
+    })
+
+}
+
 // chan_state_init$000  signed_A:Bool signed_B:Bool min_A:Grams min_B:Grams expire_at:uint32 A:Grams B:Grams = ChanState;
 
 // chan_state_close$001 signed_A:Bool signed_B:Bool promise_A:Grams promise_B:Grams expire_at:uint32 A:Grams B:Grams = ChanState;
 
 // chan_state_payout$010 A:Grams B:Grams = ChanState;
+
+export function loadChanState(slice: Slice): ChanState {
+    if (((slice.remainingBits >= 3) && (slice.preloadUint(3) == 0b000))) {
+        slice.loadUint(3);
+        let signed_A: Bool = loadBool(slice);
+        let signed_B: Bool = loadBool(slice);
+        let min_A: bigint = slice.loadCoins();
+        let min_B: bigint = slice.loadCoins();
+        let expire_at: number = slice.loadUint(32);
+        let A: bigint = slice.loadCoins();
+        let B: bigint = slice.loadCoins();
+        return {
+            kind: 'ChanState_chan_state_init',
+            signed_A: signed_A,
+            signed_B: signed_B,
+            min_A: min_A,
+            min_B: min_B,
+            expire_at: expire_at,
+            A: A,
+            B: B,
+        }
+
+    }
+    if (((slice.remainingBits >= 3) && (slice.preloadUint(3) == 0b001))) {
+        slice.loadUint(3);
+        let signed_A: Bool = loadBool(slice);
+        let signed_B: Bool = loadBool(slice);
+        let promise_A: bigint = slice.loadCoins();
+        let promise_B: bigint = slice.loadCoins();
+        let expire_at: number = slice.loadUint(32);
+        let A: bigint = slice.loadCoins();
+        let B: bigint = slice.loadCoins();
+        return {
+            kind: 'ChanState_chan_state_close',
+            signed_A: signed_A,
+            signed_B: signed_B,
+            promise_A: promise_A,
+            promise_B: promise_B,
+            expire_at: expire_at,
+            A: A,
+            B: B,
+        }
+
+    }
+    if (((slice.remainingBits >= 3) && (slice.preloadUint(3) == 0b010))) {
+        slice.loadUint(3);
+        let A: bigint = slice.loadCoins();
+        let B: bigint = slice.loadCoins();
+        return {
+            kind: 'ChanState_chan_state_payout',
+            A: A,
+            B: B,
+        }
+
+    }
+    throw new Error('Expected one of "ChanState_chan_state_init", "ChanState_chan_state_close", "ChanState_chan_state_payout" in loading "ChanState", but data does not satisfy any constructor');
+}
+
+export function storeChanState(chanState: ChanState): (builder: Builder) => void {
+    if ((chanState.kind == 'ChanState_chan_state_init')) {
+        return ((builder: Builder) => {
+            builder.storeUint(0b000, 3);
+            storeBool(chanState.signed_A)(builder);
+            storeBool(chanState.signed_B)(builder);
+            builder.storeCoins(chanState.min_A);
+            builder.storeCoins(chanState.min_B);
+            builder.storeUint(chanState.expire_at, 32);
+            builder.storeCoins(chanState.A);
+            builder.storeCoins(chanState.B);
+        })
+
+    }
+    if ((chanState.kind == 'ChanState_chan_state_close')) {
+        return ((builder: Builder) => {
+            builder.storeUint(0b001, 3);
+            storeBool(chanState.signed_A)(builder);
+            storeBool(chanState.signed_B)(builder);
+            builder.storeCoins(chanState.promise_A);
+            builder.storeCoins(chanState.promise_B);
+            builder.storeUint(chanState.expire_at, 32);
+            builder.storeCoins(chanState.A);
+            builder.storeCoins(chanState.B);
+        })
+
+    }
+    if ((chanState.kind == 'ChanState_chan_state_payout')) {
+        return ((builder: Builder) => {
+            builder.storeUint(0b010, 3);
+            builder.storeCoins(chanState.A);
+            builder.storeCoins(chanState.B);
+        })
+
+    }
+    throw new Error('Expected one of "ChanState_chan_state_init", "ChanState_chan_state_close", "ChanState_chan_state_payout" in loading "ChanState", but data does not satisfy any constructor');
+}
 
 // chan_promise$_ channel_id:uint64 promise_A:Grams promise_B:Grams = ChanPromise;
 
@@ -13037,7 +15026,48 @@ export function loadChanPromise(slice: Slice): ChanPromise {
     }
 
 }
+
+export function storeChanPromise(chanPromise: ChanPromise): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeUint(chanPromise.channel_id, 64);
+        builder.storeCoins(chanPromise.promise_A);
+        builder.storeCoins(chanPromise.promise_B);
+    })
+
+}
+
 // chan_signed_promise#_ sig:(Maybe ^bits512) promise:ChanPromise = ChanSignedPromise;
+
+export function loadChanSignedPromise(slice: Slice): ChanSignedPromise {
+    let sig: Maybe<Buffer> = loadMaybe<Buffer>(slice, ((slice: Slice) => {
+        let slice1 = slice.loadRef().beginParse(true);
+        return slice1.loadBuffer((512 / 8))
+
+    }));
+    let promise: ChanPromise = loadChanPromise(slice);
+    return {
+        kind: 'ChanSignedPromise',
+        sig: sig,
+        promise: promise,
+    }
+
+}
+
+export function storeChanSignedPromise(chanSignedPromise: ChanSignedPromise): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        storeMaybe<Buffer>(chanSignedPromise.sig, ((arg: Buffer) => {
+            return ((builder: Builder) => {
+                let cell1 = beginCell();
+                cell1.storeBuffer(arg, (512 / 8));
+                builder.storeRef(cell1);
+
+            })
+
+        }))(builder);
+        storeChanPromise(chanSignedPromise.promise)(builder);
+    })
+
+}
 
 // chan_msg_init#27317822 inc_A:Grams inc_B:Grams min_A:Grams min_B:Grams channel_id:uint64 = ChanMsg;
 
@@ -13047,9 +15077,185 @@ export function loadChanPromise(slice: Slice): ChanPromise {
 
 // chan_msg_payout#37fe7810 = ChanMsg;
 
+export function loadChanMsg(slice: Slice): ChanMsg {
+    if (((slice.remainingBits >= 32) && (slice.preloadUint(32) == 0x27317822))) {
+        slice.loadUint(32);
+        let inc_A: bigint = slice.loadCoins();
+        let inc_B: bigint = slice.loadCoins();
+        let min_A: bigint = slice.loadCoins();
+        let min_B: bigint = slice.loadCoins();
+        let channel_id: bigint = slice.loadUintBig(64);
+        return {
+            kind: 'ChanMsg_chan_msg_init',
+            inc_A: inc_A,
+            inc_B: inc_B,
+            min_A: min_A,
+            min_B: min_B,
+            channel_id: channel_id,
+        }
+
+    }
+    if (((slice.remainingBits >= 32) && (slice.preloadUint(32) == 0xf28ae183))) {
+        slice.loadUint(32);
+        let extra_A: bigint = slice.loadCoins();
+        let extra_B: bigint = slice.loadCoins();
+        let promise: ChanSignedPromise = loadChanSignedPromise(slice);
+        return {
+            kind: 'ChanMsg_chan_msg_close',
+            extra_A: extra_A,
+            extra_B: extra_B,
+            promise: promise,
+        }
+
+    }
+    if (((slice.remainingBits >= 32) && (slice.preloadUint(32) == 0x43278a28))) {
+        slice.loadUint(32);
+        return {
+            kind: 'ChanMsg_chan_msg_timeout',
+        }
+
+    }
+    if (((slice.remainingBits >= 32) && (slice.preloadUint(32) == 0x37fe7810))) {
+        slice.loadUint(32);
+        return {
+            kind: 'ChanMsg_chan_msg_payout',
+        }
+
+    }
+    throw new Error('Expected one of "ChanMsg_chan_msg_init", "ChanMsg_chan_msg_close", "ChanMsg_chan_msg_timeout", "ChanMsg_chan_msg_payout" in loading "ChanMsg", but data does not satisfy any constructor');
+}
+
+export function storeChanMsg(chanMsg: ChanMsg): (builder: Builder) => void {
+    if ((chanMsg.kind == 'ChanMsg_chan_msg_init')) {
+        return ((builder: Builder) => {
+            builder.storeUint(0x27317822, 32);
+            builder.storeCoins(chanMsg.inc_A);
+            builder.storeCoins(chanMsg.inc_B);
+            builder.storeCoins(chanMsg.min_A);
+            builder.storeCoins(chanMsg.min_B);
+            builder.storeUint(chanMsg.channel_id, 64);
+        })
+
+    }
+    if ((chanMsg.kind == 'ChanMsg_chan_msg_close')) {
+        return ((builder: Builder) => {
+            builder.storeUint(0xf28ae183, 32);
+            builder.storeCoins(chanMsg.extra_A);
+            builder.storeCoins(chanMsg.extra_B);
+            storeChanSignedPromise(chanMsg.promise)(builder);
+        })
+
+    }
+    if ((chanMsg.kind == 'ChanMsg_chan_msg_timeout')) {
+        return ((builder: Builder) => {
+            builder.storeUint(0x43278a28, 32);
+        })
+
+    }
+    if ((chanMsg.kind == 'ChanMsg_chan_msg_payout')) {
+        return ((builder: Builder) => {
+            builder.storeUint(0x37fe7810, 32);
+        })
+
+    }
+    throw new Error('Expected one of "ChanMsg_chan_msg_init", "ChanMsg_chan_msg_close", "ChanMsg_chan_msg_timeout", "ChanMsg_chan_msg_payout" in loading "ChanMsg", but data does not satisfy any constructor');
+}
+
 // chan_signed_msg$_ sig_A:(Maybe ^bits512) sig_B:(Maybe ^bits512) msg:ChanMsg = ChanSignedMsg;
+
+export function loadChanSignedMsg(slice: Slice): ChanSignedMsg {
+    let sig_A: Maybe<Buffer> = loadMaybe<Buffer>(slice, ((slice: Slice) => {
+        let slice1 = slice.loadRef().beginParse(true);
+        return slice1.loadBuffer((512 / 8))
+
+    }));
+    let sig_B: Maybe<Buffer> = loadMaybe<Buffer>(slice, ((slice: Slice) => {
+        let slice1 = slice.loadRef().beginParse(true);
+        return slice1.loadBuffer((512 / 8))
+
+    }));
+    let msg: ChanMsg = loadChanMsg(slice);
+    return {
+        kind: 'ChanSignedMsg',
+        sig_A: sig_A,
+        sig_B: sig_B,
+        msg: msg,
+    }
+
+}
+
+export function storeChanSignedMsg(chanSignedMsg: ChanSignedMsg): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        storeMaybe<Buffer>(chanSignedMsg.sig_A, ((arg: Buffer) => {
+            return ((builder: Builder) => {
+                let cell1 = beginCell();
+                cell1.storeBuffer(arg, (512 / 8));
+                builder.storeRef(cell1);
+
+            })
+
+        }))(builder);
+        storeMaybe<Buffer>(chanSignedMsg.sig_B, ((arg: Buffer) => {
+            return ((builder: Builder) => {
+                let cell1 = beginCell();
+                cell1.storeBuffer(arg, (512 / 8));
+                builder.storeRef(cell1);
+
+            })
+
+        }))(builder);
+        storeChanMsg(chanSignedMsg.msg)(builder);
+    })
+
+}
 
 // chan_op_cmd#912838d1 msg:ChanSignedMsg = ChanOp;
 
+export function loadChanOp(slice: Slice): ChanOp {
+    if (((slice.remainingBits >= 32) && (slice.preloadUint(32) == 0x912838d1))) {
+        slice.loadUint(32);
+        let msg: ChanSignedMsg = loadChanSignedMsg(slice);
+        return {
+            kind: 'ChanOp',
+            msg: msg,
+        }
+
+    }
+    throw new Error('Expected one of "ChanOp" in loading "ChanOp", but data does not satisfy any constructor');
+}
+
+export function storeChanOp(chanOp: ChanOp): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeUint(0x912838d1, 32);
+        storeChanSignedMsg(chanOp.msg)(builder);
+    })
+
+}
+
 // chan_data$_ config:^ChanConfig state:^ChanState = ChanData;
+
+export function loadChanData(slice: Slice): ChanData {
+    let slice1 = slice.loadRef().beginParse(true);
+    let config: ChanConfig = loadChanConfig(slice1);
+    let slice2 = slice.loadRef().beginParse(true);
+    let state: ChanState = loadChanState(slice2);
+    return {
+        kind: 'ChanData',
+        config: config,
+        state: state,
+    }
+
+}
+
+export function storeChanData(chanData: ChanData): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        let cell1 = beginCell();
+        storeChanConfig(chanData.config)(cell1);
+        builder.storeRef(cell1);
+        let cell2 = beginCell();
+        storeChanState(chanData.state)(cell2);
+        builder.storeRef(cell2);
+    })
+
+}
 
