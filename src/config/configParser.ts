@@ -1,6 +1,6 @@
 import { beginCell, Cell, Dictionary } from '@ton/core';
 
-import { ConfigParam, loadConfigParam, storeConfigParam } from './block';
+import { ConfigParam, loadConfigParam, storeConfigParam } from './config.tlb-gen';
 
 type KindToNumber<K extends string> = K extends `ConfigParam__${infer N}`
     ? N extends ''
