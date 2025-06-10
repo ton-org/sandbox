@@ -824,14 +824,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ton/core@npm:^0.60.1":
-  version: 0.60.1
-  resolution: "@ton/core@npm:0.60.1"
+"@ton/core@npm:^0.61.0":
+  version: 0.61.0
+  resolution: "@ton/core@npm:0.61.0"
   dependencies:
     symbol.inspect: 1.0.1
   peerDependencies:
     "@ton/crypto": ">=3.2.0"
-  checksum: 23f59e6704b826873a6e88eb36a743bb9a7350f1bb315c4ece3e06136ce96a384b239612a05b4ed79e1c0902d73fa3dd0bff695831219cf6ee087929e6116e33
+  checksum: e68c5f1a726db4b919255f642d9cb0e8933d54319e31306ddfa6433b40204ddbb508ab34c59bc2159ac954e7b0e6b484a1795dc3b507777aac7e62f0c49c8acc
   languageName: node
   linkType: hard
 
@@ -859,7 +859,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@ton/sandbox@workspace:."
   dependencies:
-    "@ton/core": ^0.60.1
+    "@ton/core": ^0.61.0
     "@ton/crypto": 3.3.0
     "@ton/test-utils": ^0.7.0
     "@ton/tolk-js": ^0.13.0
@@ -875,6 +875,7 @@ __metadata:
     ts-node: ^10.9.1
     typescript: ^4.9.5
   peerDependencies:
+    "@ton/core": ">=0.61.0"
     "@ton/crypto": ">=3.3.0"
     "@ton/test-utils": ">=0.7.0"
     jest: ^29.5.0

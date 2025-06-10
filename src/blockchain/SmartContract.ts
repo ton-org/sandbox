@@ -39,10 +39,10 @@ export function createShardAccount(args: { address?: Address, code: Cell, data: 
                 used: {
                     cells: 0n,
                     bits: 0n,
-                    publicCells: 0n
                 },
                 lastPaid: 0,
-                duePayment: null
+                duePayment: null,
+                storageExtra: null,
             }
         },
         lastTransactionLt: 0n,
@@ -59,8 +59,9 @@ function createEmptyAccount(address: Address): Account {
             state: { type: 'uninit' }
         },
         storageStats: {
-            used: { cells: 0n, bits: 0n, publicCells: 0n },
+            used: { cells: 0n, bits: 0n },
             lastPaid: 0,
+            storageExtra: null,
         }
     }
 }
