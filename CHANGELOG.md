@@ -15,6 +15,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed `now` not updating when running transaction through `blockchain.sendMessageIter`
 
+## [0.32.2] - 2025-06-10
+
+### Changed
+
+- Added missing `@ton/core` peer dependency
+
+### Fixed
+
+- Fixed missing `storageExtra` field when creating accounts
+
 ## [0.32.1] - 2025-06-05
 
 ### Fixed

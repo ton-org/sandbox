@@ -210,10 +210,10 @@ export class RemoteBlockchainStorage implements BlockchainStorage {
                             used: {
                                 cells: 0n,
                                 bits: 0n,
-                                publicCells: 0n,
                             },
                             lastPaid: 0,
                             duePayment: null,
+                            storageExtra: null,
                         },
                         storage: {
                             lastTransLt: lt === 0n ? 0n : lt + 1n,
