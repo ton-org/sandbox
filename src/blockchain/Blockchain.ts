@@ -401,12 +401,7 @@ export class Blockchain {
      * const now = res.stackReader.readNumber();
      */
     async runGetMethod(address: Address, method: number | string, stack: TupleItem[] = [], params?: GetMethodParams) {
-        return await (
-            await this.getContract(address)
-        ).get(method, stack, {
-            now: this.now,
-            ...params,
-        });
+        return await (await this.getContract(address)).get(method, stack, params);
     }
 
     protected async pushMessage(message: Message | Cell) {
@@ -527,10 +522,6 @@ export class Blockchain {
     }
 
     protected async processQueue(params?: MessageParams) {
-        params = {
-            now: this.now,
-            ...params,
-        };
         return await this.lock.with(async () => {
             // Locked already
             const txs = this.txIter(false, params);

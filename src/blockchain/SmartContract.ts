@@ -308,11 +308,6 @@ export class SmartContract {
     }
 
     async receiveMessage(message: Message, params?: MessageParams) {
-        // Sync now with blockchain instance if not specified in parameters
-        params = {
-            now: this.blockchain.now,
-            ...params,
-        };
         return await this.runCommon(() =>
             this.blockchain.executor.runTransaction({
                 ...this.createCommonArgs(params),
@@ -400,7 +395,7 @@ export class SmartContract {
             verbosity: verbosityToExecutorVerbosity[this.verbosity.vmLogs],
             libs: this.blockchain.libs,
             address: this.address,
-            unixTime: params?.now ?? Math.floor(Date.now() / 1000),
+            unixTime: params?.now ?? this.blockchain.now ?? Math.floor(Date.now() / 1000),
             balance: this.balance,
             randomSeed: params?.randomSeed ?? Buffer.alloc(32),
             gasLimit: params?.gasLimit ?? 10_000_000n,
