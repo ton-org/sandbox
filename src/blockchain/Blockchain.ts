@@ -362,11 +362,6 @@ export class Blockchain {
         message: Message | Cell,
         params?: MessageParams,
     ): Promise<AsyncIterator<BlockchainTransaction> & AsyncIterable<BlockchainTransaction>> {
-        params = {
-            now: this.now,
-            ...params,
-        };
-
         await this.pushMessage(message);
         // Iterable will lock on per tx basis
         return await this.txIter(true, params);

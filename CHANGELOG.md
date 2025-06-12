@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added `fetchConfig` and `setGlobalVersion` utility functions
 
+### Fixed
+
+- Fixed `now` not updating when running transaction through `blockchain.sendMessageIter`
+
 ## [0.32.1] - 2025-06-05
 
 ### Fixed

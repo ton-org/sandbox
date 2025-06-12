@@ -286,7 +286,7 @@ export class SmartContract {
     }
 
     protected createCommonArgs(params?: MessageParams): RunCommonArgs {
-        const now = params?.now ?? Math.floor(Date.now() / 1000);
+        const now = params?.now ?? this.blockchain.now ?? Math.floor(Date.now() / 1000);
 
         if (now < this.#lastTxTime) {
             throw new TimeError(this.address, this.#lastTxTime, now);
