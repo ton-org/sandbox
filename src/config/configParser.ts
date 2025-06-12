@@ -2,13 +2,18 @@ import { beginCell, Cell, Dictionary } from '@ton/core';
 
 import { ConfigParam, loadConfigParam, storeConfigParam } from './config.tlb-gen';
 
-type KindToNumber<K extends string> = K extends `ConfigParam__${infer N}`
-    ? N extends ''
-        ? '0'
-        : N extends `${infer Num extends number}`
-          ? Num
-          : never
-    : never;
+const configNormalization = {
+    ConfigParam__: 'ConfigParam__0',
+    ConfigParam_config_mc_gas_prices: 'ConfigParam__20',
+    ConfigParam_config_gas_prices: 'ConfigParam__21',
+    ConfigParam_config_mc_block_limits: 'ConfigParam__22',
+    ConfigParam_config_block_limits: 'ConfigParam__23',
+    ConfigParam_config_mc_fwd_prices: 'ConfigParam__24',
+    ConfigParam_config_fwd_prices: 'ConfigParam__25',
+} as const;
+
+type NormalizeKind<K extends string> = K extends keyof typeof configNormalization ? (typeof configNormalization)[K] : K;
+type KindToNumber<K extends string> = NormalizeKind<K> extends `ConfigParam__${infer N extends number}` ? N : never;
 
 type BlockchainConfig = {
     [K in ConfigParam as KindToNumber<K['kind']>]: K;
@@ -45,7 +50,8 @@ export function loadConfig(configCellOrBase64: string | Cell): BlockchainConfig 
 export function updateConfig(config: Cell, ...params: ConfigParam[]): Cell {
     const configDict = loadConfigDict(config);
     for (const param of params) {
-        const id = Number(param.kind.replace('ConfigParam__', '0'));
+        const normalizedKind = (<Record<string, string>>configNormalization)[param.kind] ?? param.kind;
+        const id = Number(normalizedKind.slice('ConfigParam__'.length));
         configDict.set(id, beginCell().store(storeConfigParam(param)).endCell());
     }
     return beginCell().storeDictDirect(configDict).endCell();
