@@ -40,7 +40,7 @@ export function loadConfig(configCellOrBase64: string | Cell): BlockchainConfig 
             ) {
                 throw err;
             }
-            // ignore unknow params otherwise. Params -999, -1000 and -1001 not described in tlb
+            // Ignore unknown params otherwise. Params -999, -1000 and -1001 are not described in tlb
         }
     }
 
