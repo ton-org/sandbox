@@ -1,5 +1,4 @@
-import { Address, Cell, Message, Sender, SenderArguments } from "@ton/core";
-
+import { Address, Cell, Message, packExtraCurrencyDict, Sender, SenderArguments } from '@ton/core';
 
 /**
  * Sender for sandbox blockchain. For additional information see {@link Blockchain.sender}
@@ -7,7 +6,7 @@ import { Address, Cell, Message, Sender, SenderArguments } from "@ton/core";
 export class BlockchainSender implements Sender {
     constructor(
         private readonly blockchain: {
-            pushMessage(message: Message): Promise<void>
+            pushMessage(message: Message): Promise<void>;
         },
         readonly address: Address,
     ) {}
@@ -22,12 +21,15 @@ export class BlockchainSender implements Sender {
                 bounced: false,
                 src: this.address,
                 dest: args.to,
-                value: { coins: args.value },
+                value: {
+                    coins: args.value,
+                    other: args.extracurrency ? packExtraCurrencyDict(args.extracurrency) : undefined,
+                },
                 forwardFee: 0n,
                 createdAt: 0,
                 createdLt: 0n,
             },
-            body: args.body ?? new Cell()
-        })
+            body: args.body ?? new Cell(),
+        });
     }
 }

@@ -1,28 +1,41 @@
-import { Address, Cell, Message, StateInit } from "@ton/core";
+import { Address, Cell, Dictionary, Message, StateInit } from '@ton/core';
+
+import { ExtraCurrency, packEc } from './ec';
 
 /**
  * Creates {@link Message} from params.
  */
 export function internal(params: {
-    from: Address
-    to: Address
-    value: bigint
-    body?: Cell
-    stateInit?: StateInit
-    bounce?: boolean
-    bounced?: boolean
-    ihrDisabled?: boolean
-    ihrFee?: bigint
-    forwardFee?: bigint
-    createdAt?: number
-    createdLt?: bigint
+    from: Address;
+    to: Address;
+    value: bigint;
+    body?: Cell;
+    stateInit?: StateInit;
+    bounce?: boolean;
+    bounced?: boolean;
+    ihrDisabled?: boolean;
+    ihrFee?: bigint;
+    forwardFee?: bigint;
+    createdAt?: number;
+    createdLt?: bigint;
+    ec?: Dictionary<number, bigint> | [number, bigint][] | ExtraCurrency;
 }): Message {
+    let ecd: Dictionary<number, bigint> | undefined = undefined;
+    if (params.ec !== undefined) {
+        if (Array.isArray(params.ec)) {
+            ecd = packEc(params.ec);
+        } else if (params.ec instanceof Dictionary) {
+            ecd = params.ec;
+        } else {
+            ecd = packEc(Object.entries(params.ec).map(([k, v]) => [Number(k), v]));
+        }
+    }
     return {
         info: {
             type: 'internal',
             dest: params.to,
             src: params.from,
-            value: { coins: params.value },
+            value: { coins: params.value, other: ecd },
             bounce: params.bounce ?? true,
             ihrDisabled: params.ihrDisabled ?? true,
             bounced: params.bounced ?? false,
@@ -33,5 +46,5 @@ export function internal(params: {
         },
         body: params.body ?? new Cell(),
         init: params.stateInit,
-    }
+    };
 }

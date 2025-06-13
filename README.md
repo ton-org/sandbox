@@ -16,6 +16,7 @@ The key difference of this package from [ton-contract-executor](https://github.c
   * [Testing key points](#testing-key-points)
   * [Test examples](#test-examples)
   * [Using assets in tests](#using-assets-in-tests)
+* [Benchmark contracts](#benchmark-contracts)
 * [Sandbox pitfalls](#sandbox-pitfalls)
 * [Viewing logs](#viewing-logs)
 * [Setting smart contract state directly](#setting-smart-contract-state-directly)
@@ -337,6 +338,109 @@ Learn more from examples:
 * [FunC Test Examples](https://docs.ton.org/develop/smart-contracts/examples#examples-of-tests-for-smart-contracts)
 * [Tact Test Examples](docs/tact-testing-examples.md) 
 
+## Benchmark contracts
+
+The `@ton/sandbox` package provides `@ton/sandbox/jest-environment` and `@ton/sandbox/jest-reporter` built-in support for benchmarking smart contract behavior during tests, including tracking gas usage, cell size, opcode execution, and action phases.
+This is especially useful for performance analysis, gas optimization, and regression checks on contract logic.
+
+> ℹ️ See also: [Collect metric API](docs/collect-metric-api.md) for low-level control and manual snapshots.
+
+### Features
+
+* Automatic metric collection from all transactions triggered during tests
+* Snapshot reporting with contract-level filters
+* Integration with [blueprint](https://github.com/ton-org/blueprint#benchmark-contracts)
+
+### Setup in `jest.config.ts`
+
+```ts
+import type { Config } from 'jest';
+
+const config: Config = {
+    preset: 'ts-jest',
+    testEnvironment: '@ton/sandbox/jest-environment',
+    globalSetup: './jest.setup.ts',
+    testPathIgnorePatterns: ['/node_modules/', '/dist/'],
+    reporters: [
+        'default',
+        ['@ton/sandbox/jest-reporter', {
+            // options
+            snapshotDir: '.snapshot',              // output folder for benchmark reports, default: '.snapshot'
+            contractDatabase: 'contract.abi.json', // path or json a map of known contracts, see Collect metric API, default: 'contract.abi.json'
+            reportName: 'gas-report',              // report name, default: 'gas-report'
+            depthCompare: 2,                       // comparison depth, default: 2
+            removeRawResult: true,                 // remove raw metric file, default: true
+            contractExcludes: [                    // exclude specific contracts from snapshot, default: []
+                'TreasuryContract',
+            ],
+        }],
+    ],
+};
+
+export default config;
+```
+
+### How to run benchmarks
+
+To collect and save snapshot metrics:
+
+```bash
+BENCH_NEW="some" npx jest
+# or
+npx blueprint snapshot --label "some" 
+```
+
+This will:
+
+* Run your tests
+* Collect contract execution metrics
+* Save a snapshot in `.snapshot/<timestamp>.json`
+
+To compare with a previous snapshot:
+
+```bash
+BENCH_DIFF=true npx jest
+# or
+npx blueprint test --gas-report
+```
+
+### Or setup in `gas-report.config.ts`
+
+```ts
+import config from './jest.config';
+
+config.testNamePattern = '^DescribeName .* - test name$'
+config.testEnvironment = '@ton/sandbox/jest-environment'
+config.reporters = [
+    ['@ton/sandbox/jest-reporter', {
+        contractDatabase: 'abi.json',
+        contractExcludes: [
+            'TreasuryContract',
+        ],
+    }],
+]
+export default config;
+```
+
+**Collect metric and get report:**
+
+```bash
+npx blueprint snapshot --label "some label" -- --config gas-report.config.ts
+npx blueprint test --gas-report -- --config gas-report.config.ts
+```
+
+### Output structure
+
+By default, the reporter generates:
+
+```
+.project-root/
+├── .snapshot/
+│   └── 4200000000000.json    // timestamped snapshot file
+├── .sandbox-metric-raw.jsonl // raw metric log (auto-deleted by default)
+├── contract.abi.json         // map of known contracts, see Collect metric API
+└── gas-report.json           // aggregate report in json format
+```
 
 ## Sandbox pitfalls
 
@@ -355,7 +459,7 @@ libsDict.set(code.hash(), code);
 blockchain.libs = beginCell().storeDictDirect(libsDict).endCell();
 ```
 * There is no blocks in emulation, so opcodes like `PREVBLOCKSINFO`, `PREVMCBLOCKS`, `PREVKEYBLOCK`  will return empty tuple.
-* The randomness in the TON is always deterministic and the same randomSeed always gives the same random number sequence. If necessary, you can change the randomSeed to make `RAND` provide result based on provided seed. Currently, there is no way to provide randomSeed in opened contracts.
+* The randomness in the TON is always deterministic and the same randomSeed always gives the same random number sequence. If necessary, you can change the randomSeed to make `RAND` provide result based on provided seed.
 ```typescript
 const res = await blockchain.runGetMethod(example.address,
         'get_method',
@@ -365,6 +469,12 @@ const res = await blockchain.runGetMethod(example.address,
 const stack = new TupleReader(res.stack);
 // read data from stack ...
 ```
+
+To provide randomSeed in opened contracts use `blockchain.random` setter:
+```typescript
+blockchain.random = randomBytes(32);
+```
+
 * Because there is no concept of blocks in Sandbox, things like sharding do not work.
 
 ## Viewing logs
@@ -480,6 +590,23 @@ This approach allows you to stop the processing of the transaction chain, unlike
 ## Network/Block configuration
 
 By default, this package will use its [stored network configuration](src/config/defaultConfig.ts) to emulate messages. However, you can set any configuration you want when creating the `Blockchain` instance by passing the configuration cell in the optional `params` argument in the `config` field.
+
+### Updating configuration
+
+Configuration may be updated as following:
+```typescript
+import { loadConfig, updateConfig } from '@ton/sandbox';
+
+const oldConfig = loadConfig(blockchain.config);
+const updatedConfig = updateConfig(blockchain.config, {
+    ...oldConfig[8],
+    anon0: {
+        ...oldConfig[8].anon0,
+        version: 99,
+    },
+});
+blockchain.setConfig(updatedConfig);
+```
 
 ## Contributors
 

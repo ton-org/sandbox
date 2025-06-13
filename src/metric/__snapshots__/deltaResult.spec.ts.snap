@@ -1,0 +1,2029 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`deltaResult aggregatedCompareMetric diff metric should be decrease 1`] = `
+{
+  "execute.action.bits": {
+    "after": 0,
+    "before": 1,
+    "kind": "decrease",
+    "path": "execute.action.bits",
+  },
+  "execute.action.cells": {
+    "after": 0,
+    "before": 1,
+    "kind": "decrease",
+    "path": "execute.action.cells",
+  },
+  "execute.action.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.action.gasUsed",
+  },
+  "execute.action.resultCode": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.action.resultCode",
+  },
+  "execute.action.skippedActions": {
+    "after": 0,
+    "before": 1,
+    "kind": "decrease",
+    "path": "execute.action.skippedActions",
+  },
+  "execute.action.totalActionFees": {
+    "after": 0,
+    "before": 1,
+    "kind": "decrease",
+    "path": "execute.action.totalActionFees",
+  },
+  "execute.action.totalActions": {
+    "after": 0,
+    "before": 1,
+    "kind": "decrease",
+    "path": "execute.action.totalActions",
+  },
+  "execute.bits": {
+    "after": 0,
+    "before": 1,
+    "kind": "decrease",
+    "path": "execute.bits",
+  },
+  "execute.cells": {
+    "after": 0,
+    "before": 1,
+    "kind": "decrease",
+    "path": "execute.cells",
+  },
+  "execute.compute.bits": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.compute.bits",
+  },
+  "execute.compute.cells": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.compute.cells",
+  },
+  "execute.compute.exitCode": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.compute.exitCode",
+  },
+  "execute.compute.gasUsed": {
+    "after": 0,
+    "before": 1,
+    "kind": "decrease",
+    "path": "execute.compute.gasUsed",
+  },
+  "execute.compute.vmSteps": {
+    "after": 0,
+    "before": 1,
+    "kind": "decrease",
+    "path": "execute.compute.vmSteps",
+  },
+  "execute.gasUsed": {
+    "after": 0,
+    "before": 1,
+    "kind": "decrease",
+    "path": "execute.gasUsed",
+  },
+  "message.bits": {
+    "after": 0,
+    "before": 2,
+    "kind": "decrease",
+    "path": "message.bits",
+  },
+  "message.cells": {
+    "after": 0,
+    "before": 2,
+    "kind": "decrease",
+    "path": "message.cells",
+  },
+  "message.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "message.gasUsed",
+  },
+  "message.in.bits": {
+    "after": 0,
+    "before": 1,
+    "kind": "decrease",
+    "path": "message.in.bits",
+  },
+  "message.in.cells": {
+    "after": 0,
+    "before": 1,
+    "kind": "decrease",
+    "path": "message.in.cells",
+  },
+  "message.in.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "message.in.gasUsed",
+  },
+  "message.out.bits": {
+    "after": 0,
+    "before": 1,
+    "kind": "decrease",
+    "path": "message.out.bits",
+  },
+  "message.out.cells": {
+    "after": 0,
+    "before": 1,
+    "kind": "decrease",
+    "path": "message.out.cells",
+  },
+  "message.out.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "message.out.gasUsed",
+  },
+  "root.bits": {
+    "after": 0,
+    "before": 5,
+    "kind": "decrease",
+    "path": "root.bits",
+  },
+  "root.cells": {
+    "after": 0,
+    "before": 5,
+    "kind": "decrease",
+    "path": "root.cells",
+  },
+  "root.gasUsed": {
+    "after": 0,
+    "before": 1,
+    "kind": "decrease",
+    "path": "root.gasUsed",
+  },
+  "state.bits": {
+    "after": 0,
+    "before": 2,
+    "kind": "decrease",
+    "path": "state.bits",
+  },
+  "state.cells": {
+    "after": 0,
+    "before": 2,
+    "kind": "decrease",
+    "path": "state.cells",
+  },
+  "state.code.bits": {
+    "after": 0,
+    "before": 1,
+    "kind": "decrease",
+    "path": "state.code.bits",
+  },
+  "state.code.cells": {
+    "after": 0,
+    "before": 1,
+    "kind": "decrease",
+    "path": "state.code.cells",
+  },
+  "state.code.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "state.code.gasUsed",
+  },
+  "state.data.bits": {
+    "after": 0,
+    "before": 1,
+    "kind": "decrease",
+    "path": "state.data.bits",
+  },
+  "state.data.cells": {
+    "after": 0,
+    "before": 1,
+    "kind": "decrease",
+    "path": "state.data.cells",
+  },
+  "state.data.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "state.data.gasUsed",
+  },
+  "state.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "state.gasUsed",
+  },
+}
+`;
+
+exports[`deltaResult aggregatedCompareMetric diff metric should be increase 1`] = `
+{
+  "execute.action.bits": {
+    "after": 1,
+    "before": 0,
+    "kind": "increase",
+    "path": "execute.action.bits",
+  },
+  "execute.action.cells": {
+    "after": 1,
+    "before": 0,
+    "kind": "increase",
+    "path": "execute.action.cells",
+  },
+  "execute.action.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.action.gasUsed",
+  },
+  "execute.action.resultCode": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.action.resultCode",
+  },
+  "execute.action.skippedActions": {
+    "after": 1,
+    "before": 0,
+    "kind": "increase",
+    "path": "execute.action.skippedActions",
+  },
+  "execute.action.totalActionFees": {
+    "after": 1,
+    "before": 0,
+    "kind": "increase",
+    "path": "execute.action.totalActionFees",
+  },
+  "execute.action.totalActions": {
+    "after": 1,
+    "before": 0,
+    "kind": "increase",
+    "path": "execute.action.totalActions",
+  },
+  "execute.bits": {
+    "after": 1,
+    "before": 0,
+    "kind": "increase",
+    "path": "execute.bits",
+  },
+  "execute.cells": {
+    "after": 1,
+    "before": 0,
+    "kind": "increase",
+    "path": "execute.cells",
+  },
+  "execute.compute.bits": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.compute.bits",
+  },
+  "execute.compute.cells": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.compute.cells",
+  },
+  "execute.compute.exitCode": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.compute.exitCode",
+  },
+  "execute.compute.gasUsed": {
+    "after": 1,
+    "before": 0,
+    "kind": "increase",
+    "path": "execute.compute.gasUsed",
+  },
+  "execute.compute.vmSteps": {
+    "after": 1,
+    "before": 0,
+    "kind": "increase",
+    "path": "execute.compute.vmSteps",
+  },
+  "execute.gasUsed": {
+    "after": 1,
+    "before": 0,
+    "kind": "increase",
+    "path": "execute.gasUsed",
+  },
+  "message.bits": {
+    "after": 2,
+    "before": 0,
+    "kind": "increase",
+    "path": "message.bits",
+  },
+  "message.cells": {
+    "after": 2,
+    "before": 0,
+    "kind": "increase",
+    "path": "message.cells",
+  },
+  "message.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "message.gasUsed",
+  },
+  "message.in.bits": {
+    "after": 1,
+    "before": 0,
+    "kind": "increase",
+    "path": "message.in.bits",
+  },
+  "message.in.cells": {
+    "after": 1,
+    "before": 0,
+    "kind": "increase",
+    "path": "message.in.cells",
+  },
+  "message.in.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "message.in.gasUsed",
+  },
+  "message.out.bits": {
+    "after": 1,
+    "before": 0,
+    "kind": "increase",
+    "path": "message.out.bits",
+  },
+  "message.out.cells": {
+    "after": 1,
+    "before": 0,
+    "kind": "increase",
+    "path": "message.out.cells",
+  },
+  "message.out.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "message.out.gasUsed",
+  },
+  "root.bits": {
+    "after": 5,
+    "before": 0,
+    "kind": "increase",
+    "path": "root.bits",
+  },
+  "root.cells": {
+    "after": 5,
+    "before": 0,
+    "kind": "increase",
+    "path": "root.cells",
+  },
+  "root.gasUsed": {
+    "after": 1,
+    "before": 0,
+    "kind": "increase",
+    "path": "root.gasUsed",
+  },
+  "state.bits": {
+    "after": 2,
+    "before": 0,
+    "kind": "increase",
+    "path": "state.bits",
+  },
+  "state.cells": {
+    "after": 2,
+    "before": 0,
+    "kind": "increase",
+    "path": "state.cells",
+  },
+  "state.code.bits": {
+    "after": 1,
+    "before": 0,
+    "kind": "increase",
+    "path": "state.code.bits",
+  },
+  "state.code.cells": {
+    "after": 1,
+    "before": 0,
+    "kind": "increase",
+    "path": "state.code.cells",
+  },
+  "state.code.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "state.code.gasUsed",
+  },
+  "state.data.bits": {
+    "after": 1,
+    "before": 0,
+    "kind": "increase",
+    "path": "state.data.bits",
+  },
+  "state.data.cells": {
+    "after": 1,
+    "before": 0,
+    "kind": "increase",
+    "path": "state.data.cells",
+  },
+  "state.data.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "state.data.gasUsed",
+  },
+  "state.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "state.gasUsed",
+  },
+}
+`;
+
+exports[`deltaResult aggregatedCompareMetric diff metric should be same one 1`] = `
+{
+  "execute.action.bits": {
+    "after": 1,
+    "before": 1,
+    "kind": "same",
+    "path": "execute.action.bits",
+  },
+  "execute.action.cells": {
+    "after": 1,
+    "before": 1,
+    "kind": "same",
+    "path": "execute.action.cells",
+  },
+  "execute.action.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.action.gasUsed",
+  },
+  "execute.action.resultCode": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.action.resultCode",
+  },
+  "execute.action.skippedActions": {
+    "after": 1,
+    "before": 1,
+    "kind": "same",
+    "path": "execute.action.skippedActions",
+  },
+  "execute.action.totalActionFees": {
+    "after": 1,
+    "before": 1,
+    "kind": "same",
+    "path": "execute.action.totalActionFees",
+  },
+  "execute.action.totalActions": {
+    "after": 1,
+    "before": 1,
+    "kind": "same",
+    "path": "execute.action.totalActions",
+  },
+  "execute.bits": {
+    "after": 1,
+    "before": 1,
+    "kind": "same",
+    "path": "execute.bits",
+  },
+  "execute.cells": {
+    "after": 1,
+    "before": 1,
+    "kind": "same",
+    "path": "execute.cells",
+  },
+  "execute.compute.bits": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.compute.bits",
+  },
+  "execute.compute.cells": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.compute.cells",
+  },
+  "execute.compute.exitCode": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.compute.exitCode",
+  },
+  "execute.compute.gasUsed": {
+    "after": 1,
+    "before": 1,
+    "kind": "same",
+    "path": "execute.compute.gasUsed",
+  },
+  "execute.compute.vmSteps": {
+    "after": 1,
+    "before": 1,
+    "kind": "same",
+    "path": "execute.compute.vmSteps",
+  },
+  "execute.gasUsed": {
+    "after": 1,
+    "before": 1,
+    "kind": "same",
+    "path": "execute.gasUsed",
+  },
+  "message.bits": {
+    "after": 2,
+    "before": 2,
+    "kind": "same",
+    "path": "message.bits",
+  },
+  "message.cells": {
+    "after": 2,
+    "before": 2,
+    "kind": "same",
+    "path": "message.cells",
+  },
+  "message.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "message.gasUsed",
+  },
+  "message.in.bits": {
+    "after": 1,
+    "before": 1,
+    "kind": "same",
+    "path": "message.in.bits",
+  },
+  "message.in.cells": {
+    "after": 1,
+    "before": 1,
+    "kind": "same",
+    "path": "message.in.cells",
+  },
+  "message.in.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "message.in.gasUsed",
+  },
+  "message.out.bits": {
+    "after": 1,
+    "before": 1,
+    "kind": "same",
+    "path": "message.out.bits",
+  },
+  "message.out.cells": {
+    "after": 1,
+    "before": 1,
+    "kind": "same",
+    "path": "message.out.cells",
+  },
+  "message.out.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "message.out.gasUsed",
+  },
+  "root.bits": {
+    "after": 5,
+    "before": 5,
+    "kind": "same",
+    "path": "root.bits",
+  },
+  "root.cells": {
+    "after": 5,
+    "before": 5,
+    "kind": "same",
+    "path": "root.cells",
+  },
+  "root.gasUsed": {
+    "after": 1,
+    "before": 1,
+    "kind": "same",
+    "path": "root.gasUsed",
+  },
+  "state.bits": {
+    "after": 2,
+    "before": 2,
+    "kind": "same",
+    "path": "state.bits",
+  },
+  "state.cells": {
+    "after": 2,
+    "before": 2,
+    "kind": "same",
+    "path": "state.cells",
+  },
+  "state.code.bits": {
+    "after": 1,
+    "before": 1,
+    "kind": "same",
+    "path": "state.code.bits",
+  },
+  "state.code.cells": {
+    "after": 1,
+    "before": 1,
+    "kind": "same",
+    "path": "state.code.cells",
+  },
+  "state.code.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "state.code.gasUsed",
+  },
+  "state.data.bits": {
+    "after": 1,
+    "before": 1,
+    "kind": "same",
+    "path": "state.data.bits",
+  },
+  "state.data.cells": {
+    "after": 1,
+    "before": 1,
+    "kind": "same",
+    "path": "state.data.cells",
+  },
+  "state.data.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "state.data.gasUsed",
+  },
+  "state.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "state.gasUsed",
+  },
+}
+`;
+
+exports[`deltaResult aggregatedCompareMetric diff metric should be same zero 1`] = `
+{
+  "execute.action.bits": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.action.bits",
+  },
+  "execute.action.cells": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.action.cells",
+  },
+  "execute.action.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.action.gasUsed",
+  },
+  "execute.action.resultCode": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.action.resultCode",
+  },
+  "execute.action.skippedActions": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.action.skippedActions",
+  },
+  "execute.action.totalActionFees": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.action.totalActionFees",
+  },
+  "execute.action.totalActions": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.action.totalActions",
+  },
+  "execute.bits": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.bits",
+  },
+  "execute.cells": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.cells",
+  },
+  "execute.compute.bits": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.compute.bits",
+  },
+  "execute.compute.cells": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.compute.cells",
+  },
+  "execute.compute.exitCode": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.compute.exitCode",
+  },
+  "execute.compute.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.compute.gasUsed",
+  },
+  "execute.compute.vmSteps": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.compute.vmSteps",
+  },
+  "execute.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "execute.gasUsed",
+  },
+  "message.bits": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "message.bits",
+  },
+  "message.cells": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "message.cells",
+  },
+  "message.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "message.gasUsed",
+  },
+  "message.in.bits": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "message.in.bits",
+  },
+  "message.in.cells": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "message.in.cells",
+  },
+  "message.in.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "message.in.gasUsed",
+  },
+  "message.out.bits": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "message.out.bits",
+  },
+  "message.out.cells": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "message.out.cells",
+  },
+  "message.out.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "message.out.gasUsed",
+  },
+  "root.bits": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "root.bits",
+  },
+  "root.cells": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "root.cells",
+  },
+  "root.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "root.gasUsed",
+  },
+  "state.bits": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "state.bits",
+  },
+  "state.cells": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "state.cells",
+  },
+  "state.code.bits": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "state.code.bits",
+  },
+  "state.code.cells": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "state.code.cells",
+  },
+  "state.code.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "state.code.gasUsed",
+  },
+  "state.data.bits": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "state.data.bits",
+  },
+  "state.data.cells": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "state.data.cells",
+  },
+  "state.data.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "state.data.gasUsed",
+  },
+  "state.gasUsed": {
+    "after": 0,
+    "before": 0,
+    "kind": "same",
+    "path": "state.gasUsed",
+  },
+}
+`;
+
+exports[`deltaResult makeGasReport makeGasReport complex 1`] = `
+[
+  {
+    "createdAt": 2009-01-03T00:00:00.000Z,
+    "label": "v1",
+    "result": {
+      "NFTCollection": {
+        "0x1": {
+          "bits": {
+            "kind": "init",
+            "value": "7650",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "36",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "7251",
+          },
+        },
+        "0x2": {
+          "bits": {
+            "kind": "init",
+            "value": "7650",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "36",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "727481",
+          },
+        },
+        "0x3": {
+          "bits": {
+            "kind": "init",
+            "value": "7650",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "37",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "2448",
+          },
+        },
+        "0x693d3950": {
+          "bits": {
+            "kind": "init",
+            "value": "7650",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "37",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "2831",
+          },
+        },
+        "0x8002d39c": {
+          "bits": {
+            "kind": "init",
+            "value": "7650",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "37",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "3218",
+          },
+        },
+        "0x800637ac": {
+          "bits": {
+            "kind": "init",
+            "value": "7351",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "36",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "3218",
+          },
+        },
+        "0x8008751c": {
+          "bits": {
+            "kind": "init",
+            "value": "7650",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "36",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "3218",
+          },
+        },
+        "0x80105974": {
+          "bits": {
+            "kind": "init",
+            "value": "7650",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "37",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "3218",
+          },
+        },
+        "0x8017bad0": {
+          "bits": {
+            "kind": "init",
+            "value": "7650",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "37",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "3218",
+          },
+        },
+        "0xa8cb00ad": {
+          "bits": {
+            "kind": "init",
+            "value": "7650",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "37",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "309",
+          },
+        },
+        "notSupported": {
+          "bits": {
+            "kind": "init",
+            "value": "7650",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "37",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "741",
+          },
+        },
+        "send": {
+          "bits": {
+            "kind": "init",
+            "value": "7650",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "36",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "489",
+          },
+        },
+        "sendBatchDeployNFT": {
+          "bits": {
+            "kind": "init",
+            "value": "7650",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "36",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "1937",
+          },
+        },
+        "sendChangeOwner": {
+          "bits": {
+            "kind": "init",
+            "value": "7650",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "37",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "1937",
+          },
+        },
+        "sendDeploy": {
+          "bits": {
+            "kind": "init",
+            "value": "7650",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "36",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "1937",
+          },
+        },
+        "sendDeployNft": {
+          "bits": {
+            "kind": "init",
+            "value": "7650",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "36",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "1937",
+          },
+        },
+        "sendGetRoyaltyParams": {
+          "bits": {
+            "kind": "init",
+            "value": "7650",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "37",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "1937",
+          },
+        },
+      },
+      "NFTItem": {
+        "0x2fcb26a2": {
+          "bits": {
+            "kind": "init",
+            "value": "3782",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "15",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "4226",
+          },
+        },
+        "0x5138d91": {
+          "bits": {
+            "kind": "init",
+            "value": "4049",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "16",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "0",
+          },
+        },
+        "0x5fcc3d14": {
+          "bits": {
+            "kind": "init",
+            "value": "3782",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "15",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "6850",
+          },
+        },
+        "0x8008751c": {
+          "bits": {
+            "kind": "init",
+            "value": "3782",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "15",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "3218",
+          },
+        },
+        "0x8b771735": {
+          "bits": {
+            "kind": "init",
+            "value": "3782",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "15",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "309",
+          },
+        },
+        "0xd53276db": {
+          "bits": {
+            "kind": "init",
+            "value": "3782",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "15",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "309",
+          },
+        },
+        "notSupported": {
+          "bits": {
+            "kind": "init",
+            "value": "4049",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "16",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "309",
+          },
+        },
+        "sendDeploy": {
+          "bits": {
+            "kind": "init",
+            "value": "3782",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "15",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "1937",
+          },
+        },
+        "sendGetStaticData": {
+          "bits": {
+            "kind": "init",
+            "value": "3782",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "15",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "1937",
+          },
+        },
+        "sendTransferOwnership": {
+          "bits": {
+            "kind": "init",
+            "value": "3782",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "15",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "1937",
+          },
+        },
+      },
+    },
+  },
+  {
+    "createdAt": 2009-01-04T00:00:00.000Z,
+    "label": "current",
+    "result": {
+      "NFTCollection": {
+        "0x1": {
+          "bits": {
+            "kind": "same",
+            "value": "7650 same",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "36 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "7251 same",
+          },
+        },
+        "0x2": {
+          "bits": {
+            "kind": "same",
+            "value": "7650 same",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "36 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "727481 same",
+          },
+        },
+        "0x3": {
+          "bits": {
+            "kind": "increase",
+            "value": "7758 +1.41%",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "37 same",
+          },
+          "gasUsed": {
+            "kind": "increase",
+            "value": "2582 +5.47%",
+          },
+        },
+        "0x693d3950": {
+          "bits": {
+            "kind": "increase",
+            "value": "7758 +1.41%",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "37 same",
+          },
+          "gasUsed": {
+            "kind": "increase",
+            "value": "3126 +10.42%",
+          },
+        },
+        "0x800299f8": {
+          "bits": {
+            "kind": "init",
+            "value": "7758",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "37",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "3208",
+          },
+        },
+        "0x800637ac": {
+          "bits": {
+            "kind": "increase",
+            "value": "7459 +1.47%",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "36 same",
+          },
+          "gasUsed": {
+            "kind": "decrease",
+            "value": "3208 -0.31%",
+          },
+        },
+        "0x8008751c": {
+          "bits": {
+            "kind": "same",
+            "value": "7650 same",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "36 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "3218 same",
+          },
+        },
+        "0x800f8178": {
+          "bits": {
+            "kind": "init",
+            "value": "7758",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "37",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "3208",
+          },
+        },
+        "0x801a18cb": {
+          "bits": {
+            "kind": "init",
+            "value": "7758",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "37",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "3208",
+          },
+        },
+        "0xa8cb00ad": {
+          "bits": {
+            "kind": "increase",
+            "value": "7758 +1.41%",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "37 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "309 same",
+          },
+        },
+        "notSupported": {
+          "bits": {
+            "kind": "increase",
+            "value": "7758 +1.41%",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "37 same",
+          },
+          "gasUsed": {
+            "kind": "increase",
+            "value": "849 +14.57%",
+          },
+        },
+        "send": {
+          "bits": {
+            "kind": "same",
+            "value": "7650 same",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "36 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "489 same",
+          },
+        },
+        "sendBatchDeployNFT": {
+          "bits": {
+            "kind": "same",
+            "value": "7650 same",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "36 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "1937 same",
+          },
+        },
+        "sendChangeOwner": {
+          "bits": {
+            "kind": "increase",
+            "value": "7758 +1.41%",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "37 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "1937 same",
+          },
+        },
+        "sendDeploy": {
+          "bits": {
+            "kind": "same",
+            "value": "7650 same",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "36 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "1937 same",
+          },
+        },
+        "sendDeployNft": {
+          "bits": {
+            "kind": "same",
+            "value": "7650 same",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "36 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "1937 same",
+          },
+        },
+        "sendGetRoyaltyParams": {
+          "bits": {
+            "kind": "increase",
+            "value": "7758 +1.41%",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "37 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "1937 same",
+          },
+        },
+      },
+      "NFTItem": {
+        "0x2fcb26a2": {
+          "bits": {
+            "kind": "same",
+            "value": "3782 same",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "15 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "4226 same",
+          },
+        },
+        "0x5138d91": {
+          "bits": {
+            "kind": "decrease",
+            "value": "3983 -1.63%",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "16 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "0 same",
+          },
+        },
+        "0x5fcc3d14": {
+          "bits": {
+            "kind": "same",
+            "value": "3782 same",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "15 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "6850 same",
+          },
+        },
+        "0x8008751c": {
+          "bits": {
+            "kind": "same",
+            "value": "3782 same",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "15 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "3218 same",
+          },
+        },
+        "0x8b771735": {
+          "bits": {
+            "kind": "same",
+            "value": "3782 same",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "15 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "309 same",
+          },
+        },
+        "0xd53276db": {
+          "bits": {
+            "kind": "same",
+            "value": "3782 same",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "15 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "309 same",
+          },
+        },
+        "notSupported": {
+          "bits": {
+            "kind": "decrease",
+            "value": "3983 -1.63%",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "16 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "309 same",
+          },
+        },
+        "sendDeploy": {
+          "bits": {
+            "kind": "same",
+            "value": "3782 same",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "15 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "1937 same",
+          },
+        },
+        "sendGetStaticData": {
+          "bits": {
+            "kind": "same",
+            "value": "3782 same",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "15 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "1937 same",
+          },
+        },
+        "sendTransferOwnership": {
+          "bits": {
+            "kind": "same",
+            "value": "3782 same",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "15 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "1937 same",
+          },
+        },
+      },
+    },
+  },
+]
+`;
+
+exports[`deltaResult makeGasReport makeGasReport decrease 1`] = `
+[
+  {
+    "createdAt": 2009-01-03T00:00:00.000Z,
+    "label": "zero first",
+    "result": {
+      "EQBGhqLAZseEqRXz4ByFPTGV7SVMlI4hrbs-Sps_Xzx01x8G": {
+        "0x0": {
+          "bits": {
+            "kind": "init",
+            "value": "0",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "0",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "0",
+          },
+        },
+      },
+    },
+  },
+  {
+    "createdAt": 2009-01-03T00:00:01.000Z,
+    "label": "one second",
+    "result": {
+      "EQBGhqLAZseEqRXz4ByFPTGV7SVMlI4hrbs-Sps_Xzx01x8G": {
+        "0x0": {
+          "bits": {
+            "kind": "increase",
+            "value": "2 +100.00%",
+          },
+          "cells": {
+            "kind": "increase",
+            "value": "2 +100.00%",
+          },
+          "gasUsed": {
+            "kind": "increase",
+            "value": "1 +100.00%",
+          },
+        },
+      },
+    },
+  },
+]
+`;
+
+exports[`deltaResult makeGasReport makeGasReport increase 1`] = `
+[
+  {
+    "createdAt": 2009-01-03T00:00:00.000Z,
+    "label": "one first",
+    "result": {
+      "EQBGhqLAZseEqRXz4ByFPTGV7SVMlI4hrbs-Sps_Xzx01x8G": {
+        "0x0": {
+          "bits": {
+            "kind": "init",
+            "value": "2",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "2",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "1",
+          },
+        },
+      },
+    },
+  },
+  {
+    "createdAt": 2009-01-03T00:00:01.000Z,
+    "label": "zero second",
+    "result": {
+      "EQBGhqLAZseEqRXz4ByFPTGV7SVMlI4hrbs-Sps_Xzx01x8G": {
+        "0x0": {
+          "bits": {
+            "kind": "decrease",
+            "value": "0 -100.00%",
+          },
+          "cells": {
+            "kind": "decrease",
+            "value": "0 -100.00%",
+          },
+          "gasUsed": {
+            "kind": "decrease",
+            "value": "0 -100.00%",
+          },
+        },
+      },
+    },
+  },
+]
+`;
+
+exports[`deltaResult makeGasReport makeGasReport only after 1`] = `
+[
+  {
+    "createdAt": 2009-01-03T00:00:00.000Z,
+    "label": "one first",
+    "result": {
+      "EQBGhqLAZseEqRXz4ByFPTGV7SVMlI4hrbs-Sps_Xzx01x8G": {
+        "0x0": {
+          "bits": {
+            "kind": "init",
+            "value": "2",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "2",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "1",
+          },
+        },
+      },
+    },
+  },
+]
+`;
+
+exports[`deltaResult makeGasReport makeGasReport same 1`] = `
+[
+  {
+    "createdAt": 2009-01-03T00:00:00.000Z,
+    "label": "one first",
+    "result": {
+      "EQBGhqLAZseEqRXz4ByFPTGV7SVMlI4hrbs-Sps_Xzx01x8G": {
+        "0x0": {
+          "bits": {
+            "kind": "init",
+            "value": "2",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "2",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "1",
+          },
+        },
+      },
+    },
+  },
+  {
+    "createdAt": 2009-01-03T00:00:01.000Z,
+    "label": "one second",
+    "result": {
+      "EQBGhqLAZseEqRXz4ByFPTGV7SVMlI4hrbs-Sps_Xzx01x8G": {
+        "0x0": {
+          "bits": {
+            "kind": "same",
+            "value": "2 same",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "2 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "1 same",
+          },
+        },
+      },
+    },
+  },
+]
+`;
+
+exports[`deltaResult makeGasReport makeGasReport sample 1`] = `
+[
+  {
+    "createdAt": 2009-01-03T00:00:00.000Z,
+    "label": "first",
+    "result": {
+      "SampleBench": {
+        "Decr": {
+          "bits": {
+            "kind": "init",
+            "value": "1071",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "9",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "2885",
+          },
+        },
+        "Incr": {
+          "bits": {
+            "kind": "init",
+            "value": "1071",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "9",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "2787",
+          },
+        },
+        "send": {
+          "bits": {
+            "kind": "init",
+            "value": "1071",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "9",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "641",
+          },
+        },
+        "sendDecrAction": {
+          "bits": {
+            "kind": "init",
+            "value": "1071",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "9",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "1937",
+          },
+        },
+        "sendDeploy": {
+          "bits": {
+            "kind": "init",
+            "value": "1071",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "9",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "1937",
+          },
+        },
+        "sendIncrAction": {
+          "bits": {
+            "kind": "init",
+            "value": "1071",
+          },
+          "cells": {
+            "kind": "init",
+            "value": "9",
+          },
+          "gasUsed": {
+            "kind": "init",
+            "value": "1937",
+          },
+        },
+      },
+    },
+  },
+  {
+    "createdAt": 2009-01-04T00:00:00.000Z,
+    "label": "current",
+    "result": {
+      "SampleBench": {
+        "Decr": {
+          "bits": {
+            "kind": "decrease",
+            "value": "1023 -4.48%",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "9 same",
+          },
+          "gasUsed": {
+            "kind": "decrease",
+            "value": "2820 -2.25%",
+          },
+        },
+        "Incr": {
+          "bits": {
+            "kind": "decrease",
+            "value": "1023 -4.48%",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "9 same",
+          },
+          "gasUsed": {
+            "kind": "decrease",
+            "value": "2743 -1.58%",
+          },
+        },
+        "send": {
+          "bits": {
+            "kind": "decrease",
+            "value": "1023 -4.48%",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "9 same",
+          },
+          "gasUsed": {
+            "kind": "decrease",
+            "value": "589 -8.11%",
+          },
+        },
+        "sendDecrAction": {
+          "bits": {
+            "kind": "decrease",
+            "value": "1023 -4.48%",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "9 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "1937 same",
+          },
+        },
+        "sendDeploy": {
+          "bits": {
+            "kind": "decrease",
+            "value": "1023 -4.48%",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "9 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "1937 same",
+          },
+        },
+        "sendIncrAction": {
+          "bits": {
+            "kind": "decrease",
+            "value": "1023 -4.48%",
+          },
+          "cells": {
+            "kind": "same",
+            "value": "9 same",
+          },
+          "gasUsed": {
+            "kind": "same",
+            "value": "1937 same",
+          },
+        },
+      },
+    },
+  },
+]
+`;

@@ -1,7 +1,4 @@
-export {
-    defaultConfig,
-    defaultConfigSeqno,
-} from './config/defaultConfig';
+export { defaultConfig, defaultConfigSeqno } from './config/defaultConfig';
 
 export {
     Blockchain,
@@ -16,14 +13,9 @@ export {
     BlockchainSnapshot,
 } from './blockchain/Blockchain';
 
-export {
-    BlockchainContractProvider,
-    SandboxContractProvider,
-} from './blockchain/BlockchainContractProvider';
+export { BlockchainContractProvider, SandboxContractProvider } from './blockchain/BlockchainContractProvider';
 
-export {
-    BlockchainSender,
-} from './blockchain/BlockchainSender';
+export { BlockchainSender } from './blockchain/BlockchainSender';
 
 export {
     BlockchainStorage,
@@ -59,29 +51,24 @@ export {
     EmulationResult as ExecutorEmulationResult,
     RunTransactionArgs as ExecutorRunTransactionArgs,
     ExecutorVerbosity,
+    BlockId,
+    PrevBlocksInfo,
 } from './executor/Executor';
 
-export {
-    Event,
-    EventAccountCreated,
-    EventAccountDestroyed,
-    EventMessageSent,
-} from './event/Event';
+export { loadConfig, updateConfig } from './config/configParser';
 
-export {
-    Treasury,
-    TreasuryContract,
-} from './treasury/Treasury';
+export { Event, EventAccountCreated, EventAccountDestroyed, EventMessageSent } from './event/Event';
 
-export {
-    prettyLogTransaction,
-    prettyLogTransactions,
-} from './utils/prettyLogTransaction';
+export { Treasury, TreasuryContract } from './treasury/Treasury';
 
-export {
-    printTransactionFees,
-} from './utils/printTransactionFees';
+export { prettyLogTransaction, prettyLogTransactions } from './utils/prettyLogTransaction';
 
-export {
-    internal,
-} from './utils/message';
+export { printTransactionFees } from './utils/printTransactionFees';
+
+export { internal } from './utils/message';
+
+export { fetchConfig, setGlobalVersion } from './utils/config';
+
+export { ExtraCurrency } from './utils/ec';
+
+export * from './metric';

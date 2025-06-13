@@ -14,10 +14,10 @@ import {
     SenderArguments,
     SendMode,
     StateInit,
-    storeMessageRelaxed
-} from "@ton/core";
+    storeMessageRelaxed,
+} from '@ton/core';
 
-const DictionaryMessageValue: DictionaryValue<{ sendMode: SendMode, message: MessageRelaxed }> = {
+const DictionaryMessageValue: DictionaryValue<{ sendMode: SendMode; message: MessageRelaxed }> = {
     serialize(src, builder) {
         builder.storeUint(src.sendMode, 8);
         builder.storeRef(beginCell().store(storeMessageRelaxed(src.message)));
@@ -27,27 +27,30 @@ const DictionaryMessageValue: DictionaryValue<{ sendMode: SendMode, message: Mes
         let message = loadMessageRelaxed(src.loadRef().beginParse());
         return { sendMode, message };
     },
-}
+};
 
 export type Treasury = Sender & {
-    address: Address
-}
+    address: Address;
+};
 
 function senderArgsToMessageRelaxed(args: SenderArguments): MessageRelaxed {
     return internal({
         to: args.to,
         value: args.value,
+        extracurrency: args.extracurrency,
         init: args.init,
         body: args.body,
-        bounce: args.bounce
-    })
+        bounce: args.bounce,
+    });
 }
 
 /**
- * @class TreasuryContract is Wallet v4 alternative. For additional information see {@link Blockchain.treasury}
+ * @class TreasuryContract is a Wallet alternative. For additional information see {@link Blockchain#treasury}
  */
 export class TreasuryContract implements Contract {
-    static readonly code = Cell.fromBase64('te6cckEBBAEARQABFP8A9KQT9LzyyAsBAgEgAwIAWvLT/+1E0NP/0RK68qL0BNH4AH+OFiGAEPR4b6UgmALTB9QwAfsAkTLiAbPmWwAE0jD+omUe')
+    static readonly code = Cell.fromBase64(
+        'te6cckEBBAEARQABFP8A9KQT9LzyyAsBAgEgAwIAWvLT/+1E0NP/0RK68qL0BNH4AH+OFiGAEPR4b6UgmALTB9QwAfsAkTLiAbPmWwAE0jD+omUe',
+    );
 
     static create(workchain: number, subwalletId: bigint) {
         return new TreasuryContract(workchain, subwalletId);
@@ -58,9 +61,7 @@ export class TreasuryContract implements Contract {
     readonly subwalletId: bigint;
 
     constructor(workchain: number, subwalletId: bigint) {
-        const data = beginCell()
-            .storeUint(subwalletId, 256)
-            .endCell();
+        const data = beginCell().storeUint(subwalletId, 256).endCell();
         this.init = { code: TreasuryContract.code, data };
         this.address = contractAddress(workchain, this.init);
         this.subwalletId = subwalletId;
@@ -74,16 +75,16 @@ export class TreasuryContract implements Contract {
     async sendMessages(provider: ContractProvider, messages: MessageRelaxed[], sendMode?: SendMode) {
         let transfer = this.createTransfer({
             sendMode: sendMode,
-            messages: messages
-        })
-        await provider.external(transfer)
+            messages: messages,
+        });
+        await provider.external(transfer);
     }
 
     /**
      * Sends message by arguments specified.
      */
     async send(provider: ContractProvider, args: SenderArguments) {
-        await this.sendMessages(provider, [senderArgsToMessageRelaxed(args)], args.sendMode ?? undefined)
+        await this.sendMessages(provider, [senderArgsToMessageRelaxed(args)], args.sendMode ?? undefined);
     }
 
     /**
@@ -95,10 +96,10 @@ export class TreasuryContract implements Contract {
             send: async (args) => {
                 let transfer = this.createTransfer({
                     sendMode: args.sendMode ?? undefined,
-                    messages: [senderArgsToMessageRelaxed(args)]
+                    messages: [senderArgsToMessageRelaxed(args)],
                 });
                 await provider.external(transfer);
-            }
+            },
         };
     }
 
@@ -106,16 +107,13 @@ export class TreasuryContract implements Contract {
      * @returns wallet balance in nanoTONs
      */
     async getBalance(provider: ContractProvider): Promise<bigint> {
-        return (await provider.getState()).balance
+        return (await provider.getState()).balance;
     }
 
     /**
      * Creates transfer cell for {@link sendMessages}.
      */
-    createTransfer(args: {
-        messages: MessageRelaxed[]
-        sendMode?: SendMode,
-    }) {
+    createTransfer(args: { messages: MessageRelaxed[]; sendMode?: SendMode }) {
         let sendMode = SendMode.PAY_GAS_SEPARATELY;
         if (args.sendMode !== null && args.sendMode !== undefined) {
             sendMode = args.sendMode;
@@ -130,9 +128,6 @@ export class TreasuryContract implements Contract {
             messages.set(index++, { sendMode, message: m });
         }
 
-        return beginCell()
-            .storeUint(this.subwalletId, 256)
-            .storeDict(messages)
-            .endCell();
+        return beginCell().storeUint(this.subwalletId, 256).storeDict(messages).endCell();
     }
 }

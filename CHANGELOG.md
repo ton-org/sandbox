@@ -5,6 +5,133 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- Added `fetchConfig` and `setGlobalVersion` utility functions
+- Added `blockchain.randomSeed` property
+- Added `prevBlocksInfo` to snapshot
+- Add possibility to update blockchain config
+
+### Fixed
+
+- Fixed `now` not updating when running transaction through `blockchain.sendMessageIter`
+- Fixed `is` methods type and code mismatch
+
+## [0.32.2] - 2025-06-10
+
+### Changed
+
+- Added missing `@ton/core` peer dependency
+
+### Fixed
+
+- Fixed missing `storageExtra` field when creating accounts
+
+## [0.32.1] - 2025-06-05
+
+### Fixed
+
+- Fixed missing `chalk` dependency
+
+## [0.32.0] - 2025-06-02
+
+### Added
+
+- Added contract meta gathering via meta field in blockchain
+- Added ability to set `PREVBLOCKS` information
+
+## [0.31.0] - 2025-05-20
+
+### Added
+
+- Added methods to collect metrics of contracts
+- Added `@ton/sandbox/jest-environment` and `@ton/sandbox/jest-reporter` to write metric snapshots from test run results
+- Added contract method ABI auto-mapping mechanism for detailed benchmark metrics
+- Added methods to generate delta reports from metrics of contracts
+
+## [0.30.0] - 2025-05-12
+
+### Changed
+
+- Updated config
+
+## [0.29.0] - 2025-04-30
+
+### Changed
+
+- Updated API docs
+- Updated emulator WASM binary (TON v2025.04)
+
+## [0.28.0] - 2025-04-01
+
+### Added
+
+- Added `getVersion` method to `Executor`
+
+### Changed
+
+- Updated emulator WASM binary (TON v2025.03)
+- Updated config
+
+## [0.27.1] - 2025-02-25
+
+### Fixed
+
+- Fixed a bug pertaining to blockchain snapshot loading
+
+## [0.27.0] - 2025-02-20
+
+### Added
+
+- Added better extra currency support
+
+### Changed
+
+- Updated dependencies
+
+## [0.26.0] - 2025-02-12
+
+### Changed
+
+- Updated emulator WASM binary (TON v2025.02)
+
+## [0.25.0] - 2025-01-30
+
+### Changed
+
+- Extra currencies are now available in get methods
+
+## [0.24.0] - 2025-01-17
+
+### Added
+
+- Added `SmartContract.ec` getter and setter to work with extra currencies
+- Added an optional `ec` parameter to `internal` helper to set extra currencies
+
+## [0.23.0] - 2024-12-18
+
+### Updated
+
+- Updated emulator WASM binary
+
+## [0.22.0] - 2024-09-17
+
+### Added
+
+- Added `blockchain.recordStorage` flag. If set to `true`, `BlockchainTransaction` will have `oldStorage` and `newStorage` fields. Note that enabling this flag will disable a certain optimization, which will slow down contract emulation
+
+## [0.21.0] - 2024-09-16
+
+### Added
+
+- `SandboxContract` now wraps methods starting with `is` (having the same semantics as `get`) as well as `send` and `get`
+
+### Changed
+
+- Updated dependencies
+
 ## [0.20.0] - 2024-05-31
 
 ### Added
