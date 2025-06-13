@@ -55,6 +55,8 @@ export {
     PrevBlocksInfo,
 } from './executor/Executor';
 
+export { loadConfig, updateConfig } from './config/configParser';
+
 export { Event, EventAccountCreated, EventAccountDestroyed, EventMessageSent } from './event/Event';
 
 export { Treasury, TreasuryContract } from './treasury/Treasury';

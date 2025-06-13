@@ -538,6 +538,23 @@ This approach allows you to stop the processing of the transaction chain, unlike
 
 By default, this package will use its [stored network configuration](src/config/defaultConfig.ts) to emulate messages. However, you can set any configuration you want when creating the `Blockchain` instance by passing the configuration cell in the optional `params` argument in the `config` field.
 
+### Updating configuration
+
+Configuration may be updated as following:
+```typescript
+import { loadConfig, updateConfig } from '@ton/sandbox';
+
+const oldConfig = loadConfig(blockchain.config);
+const updatedConfig = updateConfig(blockchain.config, {
+    ...oldConfig[8],
+    anon0: {
+        ...oldConfig[8].anon0,
+        version: 99,
+    },
+});
+blockchain.setConfig(updatedConfig);
+```
+
 ## Contributors
 
 Special thanks to [@dungeon-master-666](https://github.com/dungeon-master-666) for their C++ code of the emulator.
