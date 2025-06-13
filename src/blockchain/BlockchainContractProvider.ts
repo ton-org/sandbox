@@ -107,6 +107,7 @@ export class BlockchainContractProvider implements SandboxContractProvider {
             stackItems: result.stack,
             logs: result.vmLogs,
         };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         delete (ret as any).stackReader;
         return ret;
     }

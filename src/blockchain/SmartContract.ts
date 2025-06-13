@@ -51,10 +51,10 @@ export function createShardAccount(args: {
                 used: {
                     cells: 0n,
                     bits: 0n,
-                    publicCells: 0n,
                 },
                 lastPaid: 0,
                 duePayment: null,
+                storageExtra: null,
             },
         },
         lastTransactionLt: 0n,
@@ -71,8 +71,9 @@ function createEmptyAccount(address: Address): Account {
             state: { type: 'uninit' },
         },
         storageStats: {
-            used: { cells: 0n, bits: 0n, publicCells: 0n },
+            used: { cells: 0n, bits: 0n },
             lastPaid: 0,
+            storageExtra: null,
         },
     };
 }
@@ -286,7 +287,7 @@ export class SmartContract {
     }
 
     protected createCommonArgs(params?: MessageParams): RunCommonArgs {
-        const now = params?.now ?? Math.floor(Date.now() / 1000);
+        const now = params?.now ?? this.blockchain.now ?? Math.floor(Date.now() / 1000);
 
         if (now < this.#lastTxTime) {
             throw new TimeError(this.address, this.#lastTxTime, now);
@@ -307,11 +308,6 @@ export class SmartContract {
     }
 
     async receiveMessage(message: Message, params?: MessageParams) {
-        // Sync now with blockchain instance if not specified in parameters
-        params = {
-            now: this.blockchain.now,
-            ...params,
-        };
         return await this.runCommon(() =>
             this.blockchain.executor.runTransaction({
                 ...this.createCommonArgs(params),
@@ -399,7 +395,7 @@ export class SmartContract {
             verbosity: verbosityToExecutorVerbosity[this.verbosity.vmLogs],
             libs: this.blockchain.libs,
             address: this.address,
-            unixTime: params?.now ?? Math.floor(Date.now() / 1000),
+            unixTime: params?.now ?? this.blockchain.now ?? Math.floor(Date.now() / 1000),
             balance: this.balance,
             randomSeed: params?.randomSeed ?? this.blockchain.random ?? Buffer.alloc(32),
             gasLimit: params?.gasLimit ?? 10_000_000n,

@@ -120,7 +120,9 @@ export type SandboxContract<F> = {
  * @throws Error if contract not a sandbox contract
  */
 export function toSandboxContract<T>(contract: OpenedContract<T>): SandboxContract<T> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((contract as any)[SANDBOX_CONTRACT_SYMBOL] === true) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return contract as any;
     }
 
@@ -392,11 +394,6 @@ export class Blockchain {
         message: Message | Cell,
         params?: MessageParams,
     ): Promise<AsyncIterator<BlockchainTransaction> & AsyncIterable<BlockchainTransaction>> {
-        params = {
-            now: this.now,
-            ...params,
-        };
-
         await this.pushMessage(message);
         // Iterable will lock on per tx basis
         return await this.txIter(true, params);
@@ -436,12 +433,7 @@ export class Blockchain {
      * const now = res.stackReader.readNumber();
      */
     async runGetMethod(address: Address, method: number | string, stack: TupleItem[] = [], params?: GetMethodParams) {
-        return await (
-            await this.getContract(address)
-        ).get(method, stack, {
-            now: this.now,
-            ...params,
-        });
+        return await (await this.getContract(address)).get(method, stack, params);
     }
 
     protected async pushMessage(message: Message | Cell) {
@@ -562,10 +554,6 @@ export class Blockchain {
     }
 
     protected async processQueue(params?: MessageParams) {
-        params = {
-            now: this.now,
-            ...params,
-        };
         return await this.lock.with(async () => {
             // Locked already
             const txs = this.txIter(false, params);
@@ -715,6 +703,7 @@ export class Blockchain {
 
         const provider = this.provider(address, init);
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return new Proxy<any>(contract as any, {
             get: (target, prop) => {
                 if (prop === SANDBOX_CONTRACT_SYMBOL) {
@@ -727,10 +716,10 @@ export class Blockchain {
                         contract,
                         methodName: prop,
                     };
-                    if (prop.startsWith('get')) {
-                        return (...args: any[]) => value.apply(target, [provider, ...args]);
+                    if (prop.startsWith('get') || prop.startsWith('is')) {
+                        return (...args: unknown[]) => value.apply(target, [provider, ...args]);
                     } else if (prop.startsWith('send')) {
-                        return async (...args: any[]) => {
+                        return async (...args: unknown[]) => {
                             let ret = value.apply(target, [provider, ...args]);
                             if (ret instanceof Promise) {
                                 ret = await ret;
