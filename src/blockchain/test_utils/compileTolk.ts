@@ -1,3 +1,6 @@
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
 import { Cell } from '@ton/core';
 import { runTolkCompiler } from '@ton/tolk-js';
 
@@ -18,4 +21,11 @@ export async function compileTolk(source: string) {
     }
 
     return Cell.fromBase64(r.codeBoc64);
+}
+
+/**
+ * Compiles Tolk contract from contracts directory
+ */
+export function compileLocal(contractName: string) {
+    return compileTolk(readFileSync(join(__dirname, 'contracts', contractName), 'utf-8'));
 }
