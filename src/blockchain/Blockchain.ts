@@ -684,12 +684,10 @@ export class Blockchain {
                         contract,
                         methodName: prop,
                     };
-                    if (prop.startsWith('get')) {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        return (...args: any[]) => value.apply(target, [provider, ...args]);
+                    if (prop.startsWith('get') || prop.startsWith('is')) {
+                        return (...args: unknown[]) => value.apply(target, [provider, ...args]);
                     } else if (prop.startsWith('send')) {
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        return async (...args: any[]) => {
+                        return async (...args: unknown[]) => {
                             let ret = value.apply(target, [provider, ...args]);
                             if (ret instanceof Promise) {
                                 ret = await ret;
