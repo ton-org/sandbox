@@ -46,8 +46,8 @@ export type OpMapFunc = (op: number) => string | null | undefined;
  * │ (index) │ op          │ valueIn        │ valueOut       │ totalFees      │ inForwardFee   │ outForwardFee │ outActions │ computeFee     │ exitCode │ actionCode │
  * ├─────────┼─────────────┼────────────────┼────────────────┼────────────────┼────────────────┼───────────────┼────────────┼────────────────┼──────────┼────────────┤
  * │ 0       │ 'N/A'       │ 'N/A'          │ '1000 TON'     │ '0.004007 TON' │ 'N/A'          │ '0.001 TON'   │ 1          │ '0.001937 TON' │ 0        │ 0          │
- * │ 1       │ '0x45ab564' │ '1000 TON'     │ '998.8485 TON' │ '1.051473 TON' │ '0.000667 TON' │ '0.255 TON'   │ 255        │ '0.966474 TON' │ 0        │ 0          │
- * │ 2       │ '0x0'       │ '3.917053 TON' │ '0 TON'        │ '0.00031 TON'  │ '0.000667 TON' │ 'N/A'         │ 0          │ '0.000309 TON' │ 0        │ 0          │
+ * │ 1       │ '45ab564' │ '1000 TON'     │ '998.8485 TON' │ '1.051473 TON' │ '0.000667 TON' │ '0.255 TON'   │ 255        │ '0.966474 TON' │ 0        │ 0          │
+ * │ 2       │ '0'       │ '3.917053 TON' │ '0 TON'        │ '0.00031 TON'  │ '0.000667 TON' │ 'N/A'         │ 0          │ '0.000309 TON' │ 0        │ 0          │
  * ```
  *
  * @example With mapping
