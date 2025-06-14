@@ -1,3 +1,5 @@
+import { randomAddress } from '@ton/test-utils';
+
 import { deepcopy } from './deepcopy';
 
 describe('deepcopy', () => {
@@ -20,6 +22,17 @@ describe('deepcopy', () => {
 
         copy[0] = 99;
         expect(buf[0]).toBe(1);
+    });
+
+    it('should deep copy Address', () => {
+        const addr = randomAddress();
+        addr.hash[0] = 1;
+
+        const copy = deepcopy(addr);
+        expect(addr.equals(copy)).toBeTruthy();
+
+        addr.hash[0] = 99;
+        expect(copy.hash[0]).toBe(1);
     });
 
     it('should deep copy arrays', () => {
