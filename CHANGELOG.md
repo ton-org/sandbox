@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed `now` not updating when running transaction through `blockchain.sendMessageIter`
 - Fixed `is` methods type and code mismatch
+- Fixed `Blockchain.snapshot()` returning mutable references to internal blockchain state
 
 ## [0.32.2] - 2025-06-10
 

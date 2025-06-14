@@ -962,5 +962,19 @@ describe('Blockchain', () => {
             snapshot.randomSeed![0] = 3;
             expect(blockchain.random[0]).toBe(2);
         });
+
+        it('should not alter account snapshot state', async () => {
+            const blockchain = await Blockchain.create();
+            const wallet = await blockchain.treasury('snapshot');
+
+            const snap = blockchain.snapshot();
+            const sc = snap.contracts.find((c) => c.address.equals(wallet.address))!;
+
+            const originalBalance = sc.account.account!.storage.balance.coins;
+            sc.account.account!.storage.balance.coins = originalBalance + 100n;
+
+            const currentBalance = (await blockchain.getContract(wallet.address)).balance;
+            expect(currentBalance).toBe(originalBalance);
+        });
     });
 });

@@ -21,6 +21,7 @@ import { Blockchain } from './Blockchain';
 import { ExtraCurrency, extractEc, packEc } from '../utils/ec';
 import { getSelectorForMethod } from '../utils/selector';
 import { EmulationResult, ExecutorVerbosity, RunCommonArgs, TickOrTock } from '../executor/Executor';
+import { deepcopy } from '../utils/deepcopy';
 
 export function createShardAccount(args: {
     address?: Address;
@@ -206,12 +207,12 @@ export class SmartContract {
     }
 
     snapshot(): SmartContractSnapshot {
-        return {
+        return deepcopy({
             address: this.address,
             account: this.account,
             lastTxTime: this.#lastTxTime,
-            verbosity: this.#verbosity === undefined ? undefined : { ...this.#verbosity },
-        };
+            verbosity: this.#verbosity,
+        });
     }
 
     loadFrom(snapshot: SmartContractSnapshot) {
@@ -219,7 +220,7 @@ export class SmartContract {
             throw new Error('Wrong snapshot address');
         }
 
-        this.account = snapshot.account;
+        this.account = deepcopy(snapshot.account);
         this.#lastTxTime = snapshot.lastTxTime;
         this.#verbosity = snapshot.verbosity === undefined ? undefined : { ...snapshot.verbosity };
     }
