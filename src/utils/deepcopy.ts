@@ -15,6 +15,7 @@ type DeepCopiable =
     | Buffer
     | Address
     | Cell
+    | Map<DeepCopiable, DeepCopiable>
     | DeepCopiable[]
     | Partial<{ [key: Partial<string | number | symbol>]: DeepCopiable }>
     | Dictionary<DictionaryKeyTypes, DeepCopiable>;
@@ -25,6 +26,7 @@ function deepcopyDict(dict: Dictionary<DictionaryKeyTypes, unknown>) {
         _value: unknown;
         _map: Map<string, unknown>;
     };
+    // TODO: make pr to @ton/core with key, value and map fields
     // @ts-expect-error Accessing private constructor for cloning purposes
     return new Dictionary(deepcopy(rawDict._map), rawDict._key, rawDict._value);
 }
@@ -55,7 +57,16 @@ export function deepcopy<T extends IsCopiable<T> extends true ? unknown : DeepCo
     }
 
     if (obj instanceof Cell) {
-        return Cell.fromBase64(obj.toBoc().toString('base64')) as T;
+        return obj;
+    }
+
+    if (obj instanceof Map) {
+        const newMap = new Map();
+        for (const [key, value] of obj) {
+            newMap.set(deepcopy(key), deepcopy(value));
+        }
+
+        return newMap as T;
     }
 
     if (typeof obj === 'object') {

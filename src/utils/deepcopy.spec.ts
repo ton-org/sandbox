@@ -45,6 +45,23 @@ describe('deepcopy', () => {
         expect((arr[2] as Buffer)[0]).toBe(4);
     });
 
+    it('should deep copy map', () => {
+        let buf = Buffer.from([1, 2, 3]);
+        const map = new Map([
+            [1, buf],
+            [2, Buffer.from([4])],
+        ]);
+        const copy = deepcopy(map);
+
+        expect(copy).toEqual(map);
+
+        map.set(1, Buffer.from([5]));
+        expect(copy.get(1)!.equals(Buffer.from([1, 2, 3]))).toBeTruthy();
+
+        buf[0] = 99;
+        expect(copy.get(1)!.equals(Buffer.from([1, 2, 3]))).toBeTruthy();
+    });
+
     it('should deep copy objects with primitive and buffer values', () => {
         const original = {
             a: 1,
