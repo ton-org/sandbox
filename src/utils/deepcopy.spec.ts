@@ -1,3 +1,5 @@
+import { randomAddress } from '@ton/test-utils';
+
 import { deepcopy } from './deepcopy';
 
 describe('deepcopy', () => {
@@ -22,6 +24,17 @@ describe('deepcopy', () => {
         expect(buf[0]).toBe(1);
     });
 
+    it('should deep copy Address', () => {
+        const addr = randomAddress();
+        addr.hash[0] = 1;
+
+        const copy = deepcopy(addr);
+        expect(addr.equals(copy)).toBeTruthy();
+
+        addr.hash[0] = 99;
+        expect(copy.hash[0]).toBe(1);
+    });
+
     it('should deep copy arrays', () => {
         const arr = [1, 'test', Buffer.from([4]), null];
         const copy = deepcopy(arr);
@@ -30,6 +43,23 @@ describe('deepcopy', () => {
 
         (copy[2] as Buffer)[0] = 200;
         expect((arr[2] as Buffer)[0]).toBe(4);
+    });
+
+    it('should deep copy map', () => {
+        let buf = Buffer.from([1, 2, 3]);
+        const map = new Map([
+            [1, buf],
+            [2, Buffer.from([4])],
+        ]);
+        const copy = deepcopy(map);
+
+        expect(copy).toEqual(map);
+
+        map.set(1, Buffer.from([5]));
+        expect(copy.get(1)!.equals(Buffer.from([1, 2, 3]))).toBeTruthy();
+
+        buf[0] = 99;
+        expect(copy.get(1)!.equals(Buffer.from([1, 2, 3]))).toBeTruthy();
     });
 
     it('should deep copy objects with primitive and buffer values', () => {
