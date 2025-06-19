@@ -5,9 +5,11 @@ import {
     Cell,
     contractAddress,
     Dictionary,
+    loadOutList,
     loadShardAccount,
     loadTransaction,
     Message,
+    OutAction,
     parseTuple,
     ShardAccount,
     storeMessage,
@@ -111,7 +113,9 @@ export type SmartContractTransaction = Transaction & {
     debugLogs: string;
     oldStorage?: Cell;
     newStorage?: Cell;
+    outActions?: OutAction[];
 };
+
 export type MessageParams = Partial<{
     now: number;
     randomSeed: Buffer;
@@ -370,6 +374,11 @@ export class SmartContract {
             newStorage = this.account.account?.storage.state.state.data ?? undefined;
         }
 
+        let outActions: OutAction[] | undefined = undefined;
+        if (res.result.actions) {
+            outActions = loadOutList(Cell.fromBase64(res.result.actions).beginParse());
+        }
+
         return {
             ...tx,
             blockchainLogs: res.logs,
@@ -377,6 +386,7 @@ export class SmartContract {
             debugLogs: res.debugLogs,
             oldStorage,
             newStorage,
+            outActions,
         };
     }
 

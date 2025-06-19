@@ -8,8 +8,11 @@ import {
     Dictionary,
     ExtraCurrency,
     Sender,
+    storeMessageRelaxed,
     storeTransaction,
     toNano,
+    internal as msgInternal,
+    SendMode,
 } from '@ton/core';
 import { compareTransaction, flattenTransaction, randomAddress } from '@ton/test-utils';
 import { getSecureRandomBytes } from '@ton/crypto';
@@ -919,6 +922,71 @@ describe('Blockchain', () => {
             on: sender,
             body: beginCell().storeBuffer(prepareRandSeed(randomBuffer, addr)).endCell(),
         });
+    });
+
+    it('should include send mode into transactions', async () => {
+        const code = await compileLocal('send_message.tolk');
+        const data = new Cell();
+
+        const blockchain = await Blockchain.create();
+        const addr = randomAddress();
+
+        await blockchain.setShardAccount(
+            addr,
+            createShardAccount({
+                address: addr,
+                code,
+                data,
+                balance: toNano('1'),
+            }),
+        );
+
+        const sender = randomAddress();
+        const addr1 = randomAddress();
+        const innerMsg1 = beginCell()
+            .store(
+                storeMessageRelaxed(
+                    msgInternal({
+                        to: addr1,
+                        value: toNano('0.1'),
+                    }),
+                ),
+            )
+            .endCell();
+
+        const addr2 = randomAddress();
+        const innerMsg2 = beginCell()
+            .store(
+                storeMessageRelaxed(
+                    msgInternal({
+                        to: addr2,
+                        value: 0n,
+                    }),
+                ),
+            )
+            .endCell();
+
+        const res2 = await blockchain.sendMessage(
+            internal({
+                from: sender,
+                to: addr,
+                value: toNano('0.5'),
+                body: beginCell()
+                    .storeUint(SendMode.NONE, 8)
+                    .storeUint(SendMode.CARRY_ALL_REMAINING_INCOMING_VALUE, 8)
+                    .storeRef(innerMsg1)
+                    .storeRef(innerMsg2)
+                    .endCell(),
+            }),
+        );
+
+        expect(res2.transactions[1]!.inMessage!.info.src).toEqualAddress(addr);
+        expect(res2.transactions[1]!.inMessage!.info.dest).toEqualAddress(addr1);
+        expect(res2.transactions[1].mode).toEqual(SendMode.NONE);
+
+        expect(res2.transactions[2]!.inMessage!.info.src).toEqualAddress(addr);
+        expect(res2.transactions[2]!.inMessage!.info.dest).toEqualAddress(addr2);
+        expect(res2.transactions[2].mode).toEqual(SendMode.CARRY_ALL_REMAINING_INCOMING_VALUE);
     });
 
     describe('snapshots', () => {
