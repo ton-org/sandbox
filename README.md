@@ -598,7 +598,7 @@ Configuration may be updated as following:
 import { loadConfig, updateConfig } from '@ton/sandbox';
 
 const oldConfig = loadConfig(blockchain.config);
-const updatedConfig = updateConfig(blockchain.config, {
+const updatedConfig = updateConfig(oldConfig, {
     ...oldConfig[8],
     anon0: {
         ...oldConfig[8].anon0,
