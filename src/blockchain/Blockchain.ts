@@ -12,7 +12,6 @@ import {
     ExternalAddress,
     StateInit,
     OpenedContract,
-    SendMode,
     OutActionSendMsg,
 } from '@ton/core';
 import { getSecureRandomBytes } from '@ton/crypto';
@@ -68,7 +67,7 @@ export type BlockchainTransaction = SmartContractTransaction & {
     parent?: BlockchainTransaction;
     children: BlockchainTransaction[];
     externals: ExternalOut[];
-    mode?: SendMode;
+    mode?: number;
 };
 
 /**
@@ -129,7 +128,7 @@ export function toSandboxContract<T>(contract: OpenedContract<T>): SandboxContra
 export type PendingMessage = (
     | ({
           type: 'message';
-          mode?: SendMode;
+          mode?: number;
       } & Message)
     | {
           type: 'ticktock';
