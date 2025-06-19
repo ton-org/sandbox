@@ -2,7 +2,6 @@ import {
     Address,
     Cell,
     Message,
-    Transaction,
     ContractProvider,
     Contract,
     Sender,
@@ -13,6 +12,8 @@ import {
     ExternalAddress,
     StateInit,
     OpenedContract,
+    SendMode,
+    OutActionSendMsg,
 } from '@ton/core';
 import { getSecureRandomBytes } from '@ton/crypto';
 
@@ -62,16 +63,12 @@ export type ExternalOut = {
     body: Cell;
 };
 
-export type BlockchainTransaction = Transaction & {
-    blockchainLogs: string;
-    vmLogs: string;
-    debugLogs: string;
+export type BlockchainTransaction = SmartContractTransaction & {
     events: Event[];
     parent?: BlockchainTransaction;
     children: BlockchainTransaction[];
     externals: ExternalOut[];
-    oldStorage?: Cell;
-    newStorage?: Cell;
+    mode?: SendMode;
 };
 
 /**
@@ -132,6 +129,7 @@ export function toSandboxContract<T>(contract: OpenedContract<T>): SandboxContra
 export type PendingMessage = (
     | ({
           type: 'message';
+          mode?: SendMode;
       } & Message)
     | {
           type: 'ticktock';
@@ -507,13 +505,17 @@ export class Blockchain {
                 parent: message.parentTransaction,
                 children: [],
                 externals: [],
+                mode: message.type === 'message' ? message.mode : undefined,
             };
             transaction.parent?.children.push(transaction);
 
             result = transaction;
             done = true;
 
-            for (const message of transaction.outMessages.values()) {
+            const sendMsgActions = (transaction.outActions?.filter((action) => action.type === 'sendMsg') ??
+                []) as OutActionSendMsg[];
+
+            for (const [index, message] of transaction.outMessages) {
                 if (message.info.type === 'external-out') {
                     transaction.externals.push({
                         info: {
@@ -532,6 +534,7 @@ export class Blockchain {
                 this.messageQueue.push({
                     type: 'message',
                     parentTransaction: transaction,
+                    mode: sendMsgActions[index]?.mode,
                     ...message,
                 });
 
