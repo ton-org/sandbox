@@ -20,8 +20,19 @@ import {
 import { Blockchain } from './Blockchain';
 import { ExtraCurrency, extractEc, packEc } from '../utils/ec';
 import { getSelectorForMethod } from '../utils/selector';
-import { EmulationResult, ExecutorVerbosity, RunCommonArgs, TickOrTock } from '../executor/Executor';
+import {
+    EmulationResult,
+    ExecutorVerbosity,
+    GetMethodArgs,
+    RunCommonArgs,
+    RunTransactionArgs,
+    TickOrTock,
+    GetMethodResult as ExecutorGetMethodResult,
+} from '../executor/Executor';
 import { deepcopy } from '../utils/deepcopy';
+import { defaultDebugInfoCache } from '../debugger/DebugInfoCache';
+import { debugGetMethod, debugTransaction } from '../debugger/debug';
+import { DebugInfo } from '../debugger/Debuggee';
 
 export function createShardAccount(args: {
     address?: Address;
@@ -197,6 +208,7 @@ export class SmartContract {
     #parsedAccount?: ShardAccount;
     #lastTxTime: number;
     #verbosity?: Partial<LogsVerbosity>;
+    #debug?: boolean;
 
     constructor(shardAccount: ShardAccount, blockchain: Blockchain) {
         this.address = shardAccount.account!.addr;
@@ -308,13 +320,40 @@ export class SmartContract {
         };
     }
 
+    protected getDebugInfo(): { uninitialized: boolean; debugInfo: DebugInfo | undefined } {
+        const acc = this.account;
+        if (acc.account === undefined || acc.account === null) {
+            return { uninitialized: true, debugInfo: undefined };
+        }
+        if (acc.account.storage.state.type !== 'active') {
+            return { uninitialized: true, debugInfo: undefined };
+        }
+        const code = acc.account.storage.state.state.code;
+        if (code === undefined || code === null) {
+            return { uninitialized: true, debugInfo: undefined };
+        }
+        const debugInfo = defaultDebugInfoCache.get(code.hash().toString('base64'));
+        return { uninitialized: false, debugInfo };
+    }
+
     async receiveMessage(message: Message, params?: MessageParams) {
-        return await this.runCommon(() =>
-            this.blockchain.executor.runTransaction({
-                ...this.createCommonArgs(params),
-                message: beginCell().store(storeMessage(message)).endCell(),
-            }),
-        );
+        const args: RunTransactionArgs = {
+            ...this.createCommonArgs(params),
+            message: beginCell().store(storeMessage(message)).endCell(),
+        };
+
+        if (this.debug) {
+            const { uninitialized, debugInfo } = this.getDebugInfo();
+            if (debugInfo !== undefined) {
+                const executor = await this.blockchain.getDebuggerExecutor();
+                return await this.runCommon(() => debugTransaction(executor, args, debugInfo));
+            } else if (uninitialized) {
+                // eslint-disable-next-line no-console
+                console.log('Debugging uninitialized accounts is unsupported in debugger beta');
+            }
+        }
+
+        return await this.runCommon(() => this.blockchain.executor.runTransaction(args));
     }
 
     async runTickTock(which: TickOrTock, params?: MessageParams) {
@@ -385,7 +424,7 @@ export class SmartContract {
             throw new Error('Trying to run get method on non-active contract');
         }
 
-        const res = await this.blockchain.executor.runGetMethod({
+        const args: GetMethodArgs = {
             // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
             code: this.account.account?.storage.state.state.code!,
             // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
@@ -403,7 +442,24 @@ export class SmartContract {
             debugEnabled: this.verbosity.debugLogs,
             extraCurrency: this.ec,
             prevBlocksInfo: this.blockchain.prevBlocks,
-        });
+        };
+
+        let res: ExecutorGetMethodResult;
+        if (this.debug) {
+            const { uninitialized, debugInfo } = this.getDebugInfo();
+            if (debugInfo !== undefined) {
+                const executor = await this.blockchain.getDebuggerExecutor();
+                res = await debugGetMethod(executor, args, debugInfo);
+            } else {
+                if (uninitialized) {
+                    // eslint-disable-next-line no-console
+                    console.log('Debugging uninitialized accounts is unsupported in debugger beta');
+                }
+                res = await this.blockchain.executor.runGetMethod(args);
+            }
+        } else {
+            res = await this.blockchain.executor.runGetMethod(args);
+        }
 
         if (this.verbosity.print && this.verbosity.blockchainLogs && res.logs.length > 0) {
             // eslint-disable-next-line no-console
@@ -468,5 +524,13 @@ export class SmartContract {
         } else {
             this.#verbosity = verbosity;
         }
+    }
+
+    get debug() {
+        return this.#debug ?? this.blockchain.debug;
+    }
+
+    setDebug(debug: boolean | undefined) {
+        this.#debug = debug;
     }
 }
