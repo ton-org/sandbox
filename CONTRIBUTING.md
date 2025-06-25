@@ -1,49 +1,87 @@
-# Contributing to sandbox
+# Contributing
 
-We highly appreciate any contribution to sandbox ❤️
+We highly appreciate your contributions to the project ❤️
 
-## A typical workflow
+## Main flow
 
-1) Make sure your fork is up to date with the main repository:
+### Step 1 — get code
 
-```
+```shell
+git clone git@github.com:ton-org/sandbox.git
 cd sandbox
-git remote add upstream https://github.com/ton-community/sandbox.git
-git fetch upstream
-git pull --rebase upstream main
+git checkout -b name-of-your-feature origin/develop
 ```
 
-NOTE: The directory `sandbox` represents your fork's local copy.
+### Step 2 — write code
 
-2) Branch out from `main` into `fix/some-bug-#123` or `feat/some-feat` for features:
-Postfixing #123 will associate your PR with the issue #123 and make everyone's life easier
-```
-git checkout -b fix/some-bug-#123
-```
+Write the code for your change, test it locally, then commit
 
-3) Make your changes, add your files, commit, and push to your fork.
+> Git history: work log vs recipe https://www.bitsnbites.eu/git-history-work-log-vs-recipe/
+Use [Conventional Commits](https://www.conventionalcommits.org/)
 
-```
-git add SomeFile.js
-git commit "fix: issue #123"
-git push origin fix/some-bug-#123
+```shell
+git commit --message "feat: paypal payment for different users"
 ```
 
-4) Make sure tests pass and build succeeds:
+or
+
+```shell
+git commit --message "fix: hide password display when searching for a user"
+```
+
+### Step 3 — make a fork
+
+Go [here](https://github.com/ton-org/sandbox/fork) to make a fork, then setup your remote:
 
 ```bash
-yarn build
+git remote add self url_of_your_fork
 ```
-(`build` runs tests automatically)
 
-5) Go to [github.com/ton-community/sandbox](https://github.com/ton-community/sandbox) in your web browser and issue a new pull request.
+### Step 4 — make a pull request
 
-*IMPORTANT* Read the PR template very carefully and make sure to follow all the instructions.
+Push:
 
-6) Maintainers will review your code and possibly ask for changes before your code is pulled in to the main repository. We'll check that all tests pass, review the coding style, and check for general code correctness. If everything is OK, we'll merge your pull request and your code will be part of sandbox.
+```shell
+git push --set-upstream self name-of-your-feature
+```
 
-## All set!
+Then create a pull request from the [pull requests page](https://github.com/ton-org/sandbox/pulls) or directly:
 
-If you have any questions, feel free to join ton-community dev chat at Telegram: https://t.me/ton_dev_community.
+```shell
+https://github.com/ton-org/sandbox/pull/new/name-of-your-feature
+```
+(note the name of your branch in the URL)
+
+### Step 5 — update your branch from main
+
+This step may be necessary in case the `main`/`develop` branch has changed since you created your branch
+
+> [!NOTE]
+> A tidy, linear Git history  https://www.bitsnbites.eu/a-tidy-linear-git-history/
+
+Get the latest upstream changes and update the working branch:
+
+```shell
+git fetch --prune origin
+git rebase --autostash --ignore-date origin/main
+```
+> [!WARNING]
+> Please note that you get the current state of the `main` branch from the **origin** remote for pushing to your own branch
+
+During the rebase, there may be conflicts, they need to be resolved; once the conflicts are resolved, you can continue the rebase:
+
+```shell
+git rebase --continue
+```
+
+Upload the updated working branch to the repository; given that we changed the history, this should be done with the force option:
+
+```shell
+git push --force --set-upstream self name-of-your-feature
+```
+
+More details can be found in the tutorial: [git rebase](https://www.atlassian.com/git/tutorials/rewriting-history/git-rebase)
+
+## All set 🎉
 
 Thanks for your time and code!
