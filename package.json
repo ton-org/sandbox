@@ -16,7 +16,7 @@
   },
   "prettier": "@ton/toolchain/prettier",
   "devDependencies": {
-    "@ton-community/func-js": "^0.9.1",
+    "@ton-community/func-js": "^0.10.0",
     "@ton/core": "^0.61.0",
     "@ton/crypto": "3.3.0",
     "@ton/test-utils": "^0.7.0",

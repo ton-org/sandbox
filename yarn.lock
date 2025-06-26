@@ -989,22 +989,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ton-community/func-js-bin@npm:0.4.6-wasmfix.0":
-  version: 0.4.6-wasmfix.0
-  resolution: "@ton-community/func-js-bin@npm:0.4.6-wasmfix.0"
-  checksum: 10/ab51c4a1e82e98a1680600e6886a16e89696864b38bb87692ee39cf19880a5a653a89c804a8f1c75f415792abe7c343d7fb1cc2398ab4dc30f473073fadf955d
+"@ton-community/func-js-bin@npm:0.4.6-wasmfix.debugger.0":
+  version: 0.4.6-wasmfix.debugger.0
+  resolution: "@ton-community/func-js-bin@npm:0.4.6-wasmfix.debugger.0"
+  checksum: 10/8c9216aa16954cbd67ac09e37c4e96ceaa6150fa63c14766933746a258d8f018f2b1b3c508fb4bb78127d859984ed5068599fcb9a66897302cc4e50b24daaa5a
   languageName: node
   linkType: hard
 
-"@ton-community/func-js@npm:^0.9.1":
-  version: 0.9.1
-  resolution: "@ton-community/func-js@npm:0.9.1"
+"@ton-community/func-js@npm:^0.10.0":
+  version: 0.10.0
+  resolution: "@ton-community/func-js@npm:0.10.0"
   dependencies:
-    "@ton-community/func-js-bin": "npm:0.4.6-wasmfix.0"
+    "@ton-community/func-js-bin": "npm:0.4.6-wasmfix.debugger.0"
     arg: "npm:^5.0.2"
+    fflate: "npm:^0.8.2"
   bin:
     func-js: dist/cli.js
-  checksum: 10/cecf1739e1b48d2a3028e523b6cfcf845d02a2ee6dc06c7907b135d1eefa40b2e3cf4ec7e20e8565d645ad2d1e32679aecb1d581c1b0413727c50295daf081a0
+  checksum: 10/08170102e39b10d6b86720450bde6abd2fc6ef72248fa629faaf1a993809708f7f2df78f295ee6dee3bb22698a9bdbc98854bb6ae386e16abe43a4992a3592f3
   languageName: node
   linkType: hard
 
@@ -1043,7 +1044,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@ton/sandbox@workspace:."
   dependencies:
-    "@ton-community/func-js": "npm:^0.9.1"
+    "@ton-community/func-js": "npm:^0.10.0"
     "@ton/core": "npm:^0.61.0"
     "@ton/crypto": "npm:3.3.0"
     "@ton/test-utils": "npm:^0.7.0"
