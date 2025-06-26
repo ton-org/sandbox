@@ -72,3 +72,5 @@ export { fetchConfig, setGlobalVersion } from './utils/config';
 export { ExtraCurrency } from './utils/ec';
 
 export * from './metric';
+
+export { registerCompiledContract } from './debugger/DebugInfoCache';

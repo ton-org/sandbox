@@ -200,8 +200,17 @@ export class Blockchain {
     protected meta?: ContractsMeta;
     protected prevBlocksInfo?: PrevBlocksInfo;
     protected randomSeed?: Buffer;
+    protected shouldDebug = false;
 
     readonly executor: IExecutor;
+
+    protected debuggerExecutor?: Executor;
+    async getDebuggerExecutor() {
+        if (!this.debuggerExecutor) {
+            this.debuggerExecutor = await Executor.create({ debug: true });
+        }
+        return this.debuggerExecutor;
+    }
 
     /**
      * Saves snapshot of current blockchain.
@@ -261,6 +270,14 @@ export class Blockchain {
      */
     set recordStorage(v: boolean) {
         this.shouldRecordStorage = v;
+    }
+
+    get debug() {
+        return this.shouldDebug;
+    }
+
+    set debug(value: boolean) {
+        this.shouldDebug = value;
     }
 
     /**
@@ -635,6 +652,7 @@ export class Blockchain {
         const wallet = this.openContract(TreasuryContract.create(params?.workchain ?? 0, subwalletId));
 
         const contract = await this.getContract(wallet.address);
+        contract.setDebug(false);
         if (
             (params?.predeploy ?? true) &&
             (contract.accountState === undefined || contract.accountState.type === 'uninit')

@@ -1,10 +1,14 @@
-import { Address, Cell, serializeTuple, TupleItem } from '@ton/core';
+import { Address, beginCell, Cell, parseTuple, serializeTuple, TupleItem } from '@ton/core';
+import { gunzipSync } from 'fflate';
 
 import { base64Decode } from '../utils/base64';
 import { ExtraCurrency } from '../utils/ec';
+import { decodePatch } from '../utils/bpatch';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const EmulatorModule = require('./emulator-emscripten.js');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const DebuggerEmulatorModule = require('./emulator-emscripten.debugger.js');
 
 export type BlockId = {
     workchain: number;
@@ -225,6 +229,37 @@ function runCommonArgsToInternalParams(args: RunCommonArgs): EmulationInternalPa
     return p;
 }
 
+function getMethodArgsToInternalParams(args: GetMethodArgs): GetMethodInternalParams {
+    const params: GetMethodInternalParams = {
+        code: args.code.toBoc().toString('base64'),
+        data: args.data.toBoc().toString('base64'),
+        verbosity: verbosityToNum[args.verbosity],
+        libs: args.libs?.toBoc().toString('base64') ?? '',
+        address: args.address.toString(),
+        unixtime: args.unixTime,
+        balance: args.balance.toString(),
+        rand_seed: args.randomSeed.toString('hex'),
+        gas_limit: args.gasLimit.toString(),
+        method_id: args.methodId,
+        debug_enabled: args.debugEnabled,
+    };
+
+    if (args.extraCurrency !== undefined) {
+        params.extra_currencies = {};
+        for (const [k, v] of Object.entries(args.extraCurrency)) {
+            params.extra_currencies[k] = v.toString();
+        }
+    }
+
+    if (args.prevBlocksInfo !== undefined) {
+        params.prev_blocks_info = serializeTupleAsStackEntry(prevBlocksInfoToTuple(args.prevBlocksInfo))
+            .toBoc()
+            .toString('base64');
+    }
+
+    return params;
+}
+
 class Pointer {
     length: number;
     rawPointer: number;
@@ -295,6 +330,30 @@ export interface IExecutor {
     runTransaction(args: RunTransactionArgs): Promise<EmulationResult>;
 }
 
+let wasmBinary: Uint8Array | undefined = undefined;
+function getWasmBinary() {
+    if (wasmBinary !== undefined) {
+        return wasmBinary;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    wasmBinary = new Uint8Array(base64Decode(require('./emulator-emscripten.wasm.js').EmulatorEmscriptenWasm));
+    return wasmBinary;
+}
+
+let debuggerWasmBinary: Uint8Array | undefined = undefined;
+function getDebuggerWasmBinary() {
+    if (debuggerWasmBinary !== undefined) {
+        return debuggerWasmBinary;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const patch = base64Decode(require('./emulator-emscripten.debugger.bpatch.gzip.js').DebuggerPatchGzip);
+    const unzipped = gunzipSync(patch);
+    debuggerWasmBinary = decodePatch(getWasmBinary(), unzipped);
+
+    return debuggerWasmBinary;
+}
+
 export class Executor implements IExecutor {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private module: any;
@@ -305,6 +364,7 @@ export class Executor implements IExecutor {
         verbosity: number;
     };
     private debugLogs: string[] = [];
+    debugLogFunc: (s: string) => void = () => {};
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private constructor(module: any) {
@@ -312,44 +372,36 @@ export class Executor implements IExecutor {
         this.heap = new Heap(module);
     }
 
-    static async create() {
-        const ex = new Executor(
-            await EmulatorModule({
-                // eslint-disable-next-line @typescript-eslint/no-require-imports
-                wasmBinary: base64Decode(require('./emulator-emscripten.wasm.js').EmulatorEmscriptenWasm),
-                printErr: (text: string) => ex.debugLogs.push(text),
+    private handleDebugLog(text: string) {
+        this.debugLogs.push(text);
+        this.debugLogFunc(text);
+    }
+
+    static async create(opts?: { debug?: boolean }) {
+        const binary = opts?.debug ? getDebuggerWasmBinary() : getWasmBinary();
+        const module = opts?.debug ? DebuggerEmulatorModule : EmulatorModule;
+
+        let ex: Executor | undefined = undefined;
+        const printErr = (text: string) => {
+            if (ex === undefined) {
+                // eslint-disable-next-line no-console
+                console.error('Debug log received before executor was created:', text);
+            } else {
+                ex.handleDebugLog(text);
+            }
+        };
+
+        ex = new Executor(
+            await module({
+                wasmBinary: binary,
+                printErr,
             }),
         );
         return ex;
     }
 
     async runGetMethod(args: GetMethodArgs): Promise<GetMethodResult> {
-        const params: GetMethodInternalParams = {
-            code: args.code.toBoc().toString('base64'),
-            data: args.data.toBoc().toString('base64'),
-            verbosity: verbosityToNum[args.verbosity],
-            libs: args.libs?.toBoc().toString('base64') ?? '',
-            address: args.address.toString(),
-            unixtime: args.unixTime,
-            balance: args.balance.toString(),
-            rand_seed: args.randomSeed.toString('hex'),
-            gas_limit: args.gasLimit.toString(),
-            method_id: args.methodId,
-            debug_enabled: args.debugEnabled,
-        };
-
-        if (args.extraCurrency !== undefined) {
-            params.extra_currencies = {};
-            for (const [k, v] of Object.entries(args.extraCurrency)) {
-                params.extra_currencies[k] = v.toString();
-            }
-        }
-
-        if (args.prevBlocksInfo !== undefined) {
-            params.prev_blocks_info = serializeTupleAsStackEntry(prevBlocksInfoToTuple(args.prevBlocksInfo))
-                .toBoc()
-                .toString('base64');
-        }
+        const params = getMethodArgsToInternalParams(args);
 
         let stack = serializeTuple(args.stack);
 
@@ -479,6 +531,200 @@ export class Executor implements IExecutor {
         }
 
         return this.module[method](...invocationArgs);
+    }
+
+    sbsGetMethodSetup(args: GetMethodArgs) {
+        const params = getMethodArgsToInternalParams(args);
+
+        let stack = serializeTuple(args.stack);
+
+        this.debugLogs = [];
+        const res = this.invoke('_setup_sbs_get_method', [
+            JSON.stringify(params),
+            stack.toBoc().toString('base64'),
+            args.config,
+        ]);
+
+        return res;
+    }
+
+    destroyTvmEmulator(ptr: number) {
+        this.invoke('_destroy_tvm_emulator', [ptr]);
+    }
+
+    sbsGetMethodStep(ptr: number) {
+        const res = this.invoke('_sbs_step', [ptr]);
+
+        return res !== 0;
+    }
+
+    sbsGetMethodStack(ptr: number) {
+        const resp = this.extractString(this.invoke('_sbs_get_stack', [ptr]));
+
+        return parseTuple(Cell.fromBase64(resp));
+    }
+
+    sbsGetMethodC7(ptr: number) {
+        const resp = this.extractString(this.invoke('_sbs_get_c7', [ptr]));
+
+        return parseTuple(
+            beginCell().storeUint(1, 24).storeRef(Cell.EMPTY).storeSlice(Cell.fromBase64(resp).beginParse()).endCell(),
+        )[0];
+    }
+
+    sbsGetMethodGetContDistinguisher(ptr: number) {
+        return this.invoke('_sbs_get_cont_distinguisher', [ptr]);
+    }
+
+    sbsGetMethodSetContDistinguishers(
+        ptr: number,
+        distinguisher: number,
+        trueDistinguisher: number,
+        falseDistinguisher: number,
+    ) {
+        this.invoke('_sbs_set_cont_distinguishers', [ptr, distinguisher, trueDistinguisher, falseDistinguisher]);
+    }
+
+    sbsGetMethodGetContDistinguisherTriggered(ptr: number) {
+        return this.invoke('_sbs_get_cont_distinguisher_triggered', [ptr]) !== 0;
+    }
+
+    sbsGetMethodSetTryParams(ptr: number, primed: number, triggered: number) {
+        this.invoke('_sbs_set_try_params', [ptr, primed, triggered]);
+    }
+
+    sbsGetMethodGetTriggeredTryParam(ptr: number) {
+        return this.invoke('_sbs_get_triggered_try_param', [ptr]);
+    }
+
+    sbsGetMethodCodePos(ptr: number) {
+        const resp = this.extractString(this.invoke('_sbs_get_code_pos', [ptr]));
+
+        const parts = resp.split(':');
+
+        return {
+            hash: parts[0],
+            offset: parseInt(parts[1]),
+        };
+    }
+
+    sbsGetMethodResult(ptr: number): GetMethodResult {
+        const resp = JSON.parse(this.extractString(this.invoke('_sbs_get_method_result', [ptr])));
+
+        const debugLogs = this.debugLogs.join('\n');
+
+        return {
+            output: resp,
+            logs: 'BLOCKCHAIN LOGS ARE NOT AVAILABLE IN DEBUGGER BETA',
+            debugLogs,
+        };
+    }
+
+    sbsTransactionSetup(args: RunTransactionArgs) {
+        const emptr = this.invoke('_create_emulator', [args.config, verbosityToNum[args.verbosity]]);
+
+        const params: EmulationInternalParams = runCommonArgsToInternalParams(args);
+
+        this.debugLogs = [];
+        const res = this.invoke('_emulate_sbs', [
+            emptr,
+            args.libs?.toBoc().toString('base64') ?? 0,
+            args.shardAccount,
+            args.message.toBoc().toString('base64'),
+            JSON.stringify(params),
+        ]);
+
+        return { res, emptr };
+    }
+
+    destroyEmulator(ptr: number) {
+        this.invoke('_destroy_emulator', [ptr]);
+    }
+
+    sbsTransactionStep(ptr: number) {
+        const res = this.invoke('_em_sbs_step', [ptr]);
+
+        return res !== 0;
+    }
+
+    sbsTransactionCodePos(ptr: number) {
+        const resp = this.extractString(this.invoke('_em_sbs_code_pos', [ptr]));
+
+        const parts = resp.split(':');
+
+        return {
+            hash: parts[0],
+            offset: parseInt(parts[1]),
+        };
+    }
+
+    sbsTransactionStack(ptr: number) {
+        const resp = this.extractString(this.invoke('_em_sbs_stack', [ptr]));
+
+        return parseTuple(Cell.fromBase64(resp));
+    }
+
+    sbsTransactionC7(ptr: number) {
+        const resp = this.extractString(this.invoke('_em_sbs_c7', [ptr]));
+
+        return parseTuple(
+            beginCell().storeUint(1, 24).storeRef(Cell.EMPTY).storeSlice(Cell.fromBase64(resp).beginParse()).endCell(),
+        )[0];
+    }
+
+    sbsTransactionGetContDistinguisher(ptr: number) {
+        return this.invoke('_em_sbs_get_cont_distinguisher', [ptr]);
+    }
+
+    sbsTransactionSetContDistinguishers(
+        ptr: number,
+        distinguisher: number,
+        trueDistinguisher: number,
+        falseDistinguisher: number,
+    ) {
+        this.invoke('_em_sbs_set_cont_distinguishers', [ptr, distinguisher, trueDistinguisher, falseDistinguisher]);
+    }
+
+    sbsTransactionGetContDistinguisherTriggered(ptr: number) {
+        return this.invoke('_em_sbs_get_cont_distinguisher_triggered', [ptr]) !== 0;
+    }
+
+    sbsTransactionSetTryParams(ptr: number, primed: number, triggered: number) {
+        this.invoke('_em_sbs_set_try_params', [ptr, primed, triggered]);
+    }
+
+    sbsTransactionGetTriggeredTryParam(ptr: number) {
+        return this.invoke('_em_sbs_get_triggered_try_param', [ptr]);
+    }
+
+    sbsTransactionResult(ptr: number): EmulationResult {
+        const result = JSON.parse(this.extractString(this.invoke('_em_sbs_result', [ptr])));
+
+        const debugLogs = this.debugLogs.join('\n');
+
+        return {
+            result: result.success
+                ? {
+                      success: true,
+                      transaction: result.transaction,
+                      shardAccount: result.shard_account,
+                      vmLog: result.vm_log,
+                      actions: result.actions,
+                  }
+                : {
+                      success: false,
+                      error: result.error,
+                      vmResults:
+                          'vm_log' in result
+                              ? {
+                                    vmLog: result.vm_log,
+                                    vmExitCode: result.vm_exit_code,
+                                }
+                              : undefined,
+                  },
+            logs: 'BLOCKCHAIN LOGS ARE NOT AVAILABLE IN DEBUGGER BETA',
+            debugLogs,
+        };
     }
 
     private extractString(ptr: number): string {

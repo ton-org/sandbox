@@ -989,6 +989,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ton-community/func-js-bin@npm:0.4.6-wasmfix.debugger.0":
+  version: 0.4.6-wasmfix.debugger.0
+  resolution: "@ton-community/func-js-bin@npm:0.4.6-wasmfix.debugger.0"
+  checksum: 10/8c9216aa16954cbd67ac09e37c4e96ceaa6150fa63c14766933746a258d8f018f2b1b3c508fb4bb78127d859984ed5068599fcb9a66897302cc4e50b24daaa5a
+  languageName: node
+  linkType: hard
+
+"@ton-community/func-js@npm:^0.10.0":
+  version: 0.10.0
+  resolution: "@ton-community/func-js@npm:0.10.0"
+  dependencies:
+    "@ton-community/func-js-bin": "npm:0.4.6-wasmfix.debugger.0"
+    arg: "npm:^5.0.2"
+    fflate: "npm:^0.8.2"
+  bin:
+    func-js: dist/cli.js
+  checksum: 10/08170102e39b10d6b86720450bde6abd2fc6ef72248fa629faaf1a993809708f7f2df78f295ee6dee3bb22698a9bdbc98854bb6ae386e16abe43a4992a3592f3
+  languageName: node
+  linkType: hard
+
 "@ton/core@npm:^0.61.0":
   version: 0.61.0
   resolution: "@ton/core@npm:0.61.0"
@@ -1024,6 +1044,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@ton/sandbox@workspace:."
   dependencies:
+    "@ton-community/func-js": "npm:^0.10.0"
     "@ton/core": "npm:^0.61.0"
     "@ton/crypto": "npm:3.3.0"
     "@ton/test-utils": "npm:^0.7.0"
@@ -1032,8 +1053,10 @@ __metadata:
     "@ton/toolchain": "the-ton-tech/toolchain#v1.4.0"
     "@types/jest": "npm:^29.5.0"
     "@types/node": "npm:^18.15.11"
+    "@vscode/debugadapter": "npm:^1.68.0"
     chalk: "npm:^4.1.2"
     eslint: "npm:^9.28.0"
+    fflate: "npm:^0.8.2"
     jest: "npm:^29.5.0"
     jest-config: "npm:^29.7.0"
     jest-environment-node: "npm:^29.7.0"
@@ -1415,6 +1438,22 @@ __metadata:
     "@typescript-eslint/types": "npm:8.33.1"
     eslint-visitor-keys: "npm:^4.2.0"
   checksum: 10/8c1ba7373d8d47d2f2183355db278d4042ecdf268a898c5f4736d84aaa716c6b6faf354247eff8dc1337a7f64168f02e34f3781994d11e9fa8c2b0e35c652c49
+  languageName: node
+  linkType: hard
+
+"@vscode/debugadapter@npm:^1.68.0":
+  version: 1.68.0
+  resolution: "@vscode/debugadapter@npm:1.68.0"
+  dependencies:
+    "@vscode/debugprotocol": "npm:1.68.0"
+  checksum: 10/8945b85883fa13b09d23ecd8aa2d014616e06a22797d4432013e8ca5cb867ec853c6f0d05bf6cb23fbc80ebfcb4fe994d4afb132bf04d367e5f6a121f5c39b99
+  languageName: node
+  linkType: hard
+
+"@vscode/debugprotocol@npm:1.68.0":
+  version: 1.68.0
+  resolution: "@vscode/debugprotocol@npm:1.68.0"
+  checksum: 10/3e3a8d795d9d2a58c14da969c5ea0696065c1989780e7c3c221b9a65105143869a2da0a38b237fc017d39e9595c07b9b4872e7d75ebc4817a97f7654dffe4a57
   languageName: node
   linkType: hard
 
@@ -2848,6 +2887,13 @@ __metadata:
   dependencies:
     bser: "npm:2.1.1"
   checksum: 10/4f95d336fb805786759e383fd7fff342ceb7680f53efcc0ef82f502eb479ce35b98e8b207b6dfdfeea0eba845862107dc73813775fc6b56b3098c6e90a2dad77
+  languageName: node
+  linkType: hard
+
+"fflate@npm:^0.8.2":
+  version: 0.8.2
+  resolution: "fflate@npm:0.8.2"
+  checksum: 10/2bd26ba6d235d428de793c6a0cd1aaa96a06269ebd4e21b46c8fd1bd136abc631acf27e188d47c3936db090bf3e1ede11d15ce9eae9bffdc4bfe1b9dc66ca9cb
   languageName: node
   linkType: hard
 
