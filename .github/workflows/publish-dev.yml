@@ -19,7 +19,7 @@ jobs:
           always-auth: true
       - name: Install Yarn
         run: npm install -g yarn
-      - name: Bump versionAdd commentMore actions
+      - name: Bump version
         id: version
         run: |
           CURRENT_VERSION=$(jq -r '.version' package.json)
