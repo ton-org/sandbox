@@ -16,12 +16,12 @@ import {
     SnapshotMetric,
     sortByCreatedAt,
     ContractDatabase,
-    readSnapshots,
     gasReportTable,
     makeGasReport,
     defaultColor,
     ContractData,
 } from '../metric';
+import { readSnapshots } from '../metric/readSnapshots';
 
 export const defaultSnapshotDir = '.snapshot';
 export const defaultReportName = 'gas-report';
