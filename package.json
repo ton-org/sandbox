@@ -16,7 +16,6 @@
   },
   "prettier": "@ton/toolchain/prettier",
   "devDependencies": {
-    "@ton-community/func-js": "^0.10.0",
     "@ton/core": "^0.61.0",
     "@ton/crypto": "3.3.0",
     "@ton/test-utils": "^0.7.0",
@@ -59,6 +58,7 @@
   },
   "packageManager": "yarn@4.9.2",
   "dependencies": {
+    "@ton-community/func-js": "^0.10.0",
     "@vscode/debugadapter": "^1.68.0",
     "chalk": "^4.1.2",
     "fflate": "^0.8.2",
