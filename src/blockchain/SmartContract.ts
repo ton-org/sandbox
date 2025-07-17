@@ -230,7 +230,7 @@ export class SmartContract {
     }
 
     loadFrom(snapshot: SmartContractSnapshot) {
-        if (snapshot.address !== this.address) {
+        if (!snapshot.address.equals(this.address)) {
             throw new Error('Wrong snapshot address');
         }
 
