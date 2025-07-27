@@ -25,6 +25,7 @@ import { BlockchainSender } from './BlockchainSender';
 import { TreasuryContract } from '../treasury/Treasury';
 import {
     GetMethodParams,
+    GetMethodResult,
     LogsVerbosity,
     MessageParams,
     SmartContract,
@@ -39,6 +40,7 @@ import { testSubwalletId } from '../utils/testTreasurySubwalletId';
 import { collectMetric } from '../metric/collectMetric';
 import { ContractsMeta } from '../meta/ContractsMeta';
 import { deepcopy } from '../utils/deepcopy';
+import { collectTxCoverage, collectTxsCoverage, Coverage, mergeCoverages } from '../coverage';
 
 const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS';
 
@@ -201,6 +203,9 @@ export class Blockchain {
     protected prevBlocksInfo?: PrevBlocksInfo;
     protected randomSeed?: Buffer;
     protected shouldDebug = false;
+
+    protected readonly txs: BlockchainTransaction[][] = [];
+    protected readonly getMethods: GetMethodResult[] = [];
 
     readonly executor: IExecutor;
 
@@ -447,7 +452,9 @@ export class Blockchain {
      * const now = res.stackReader.readNumber();
      */
     async runGetMethod(address: Address, method: number | string, stack: TupleItem[] = [], params?: GetMethodParams) {
-        return await (await this.getContract(address)).get(method, stack, params);
+        const result = await (await this.getContract(address)).get(method, stack, params);
+        this.getMethods.push(result);
+        return result;
     }
 
     protected async pushMessage(message: Message | Cell) {
@@ -573,7 +580,7 @@ export class Blockchain {
     }
 
     protected async processQueue(params?: MessageParams) {
-        return await this.lock.with(async () => {
+        const results = await this.lock.with(async () => {
             // Locked already
             const txs = this.txIter(false, params);
             const result: BlockchainTransaction[] = [];
@@ -584,6 +591,8 @@ export class Blockchain {
 
             return result;
         });
+        this.txs.push(results);
+        return results;
     }
 
     /**
@@ -841,6 +850,23 @@ export class Blockchain {
      */
     set libs(value: Cell | undefined) {
         this.globalLibs = value;
+    }
+
+    public coverage(code: Cell): Coverage {
+        if (this.verbosity.vmLogs !== 'vm_logs_verbose') {
+            throw new Error('Please set `blockchain.verbosity.vmLogs="vm_logs_verbose"` for coverage');
+        }
+
+        const results: Coverage[] = [];
+
+        for (const tx of this.txs) {
+            collectTxsCoverage(results, code, tx);
+        }
+        for (const result of this.getMethods) {
+            collectTxCoverage(results, code, result.vmLogs);
+        }
+
+        return mergeCoverages(...results);
     }
 
     /**

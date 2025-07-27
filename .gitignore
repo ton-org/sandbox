@@ -2,6 +2,7 @@ node_modules
 dist
 .idea
 coverage/
+!src/coverage/
 .sandbox-metric-raw.jsonl
 
 # yarn

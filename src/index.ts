@@ -74,3 +74,5 @@ export { ExtraCurrency } from './utils/ec';
 export * from './metric';
 
 export { registerCompiledContract } from './debugger/DebugInfoCache';
+
+export * from './coverage';
