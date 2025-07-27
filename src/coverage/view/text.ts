@@ -1,7 +1,6 @@
 import {Coverage, CoverageSummary, generateCoverageSummary, InstructionStat, Line} from "../data"
-import {calculateTotalGas} from "./html"
 
-export const generateTextReport = (coverage: Coverage): string => {
+export function generateTextReport(coverage: Coverage): string {
     const summary = generateCoverageSummary(coverage)
 
     const lines = coverage.lines;
@@ -37,7 +36,7 @@ type LineInfo = {
     readonly status: string
 }
 
-const lineInfo = (line: Line): LineInfo => {
+function lineInfo(line: Line): LineInfo {
     if (line.info.$ === "Covered") {
         const totalGas = calculateTotalGas(line.info.gasCosts)
         const gasInfo = ` gas:${totalGas}`
@@ -52,10 +51,15 @@ const lineInfo = (line: Line): LineInfo => {
     return {gasInfo: "", hitsInfo: "", status: "  "}
 }
 
-const instructionsStats = (summary: CoverageSummary) =>
-    summary.instructionStats.map(stat => formatInstructionStat(stat, summary.totalGas))
+function calculateTotalGas(gasCosts: readonly number[]): number {
+    return gasCosts.reduce((sum, gas) => sum + gas, 0)
+}
 
-const formatInstructionStat = (stat: InstructionStat, totalGas: number) => {
+function instructionsStats(summary: CoverageSummary) {
+    return summary.instructionStats.map(stat => formatInstructionStat(stat, summary.totalGas))
+}
+
+function formatInstructionStat(stat: InstructionStat, totalGas: number) {
     const name = stat.name.padEnd(15)
     const totalGasStr = stat.totalGas.toString().padEnd(3, "")
     const percent = ((stat.totalGas / totalGas) * 100).toFixed(2)

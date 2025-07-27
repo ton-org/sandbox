@@ -1,7 +1,7 @@
 import {Cell} from "@ton/core";
 import {Coverage, Line} from "./data";
 
-export const coverageToJson = (coverage: Coverage): string => {
+export function coverageToJson(coverage: Coverage): string {
     const lines = coverage.lines;
     return JSON.stringify({
         code: coverage.code.toBoc().toString("hex"),
@@ -21,9 +21,9 @@ export const coverageToJson = (coverage: Coverage): string => {
             };
         }),
     });
-};
+}
 
-export const coverageFromJson = (string: string): Coverage => {
+export function coverageFromJson(string: string): Coverage {
     type CoverageJson = {
         readonly code: string;
         readonly lines: readonly Line[];
@@ -34,4 +34,4 @@ export const coverageFromJson = (string: string): Coverage => {
         code: Cell.fromHex(data.code),
         lines: data.lines
     };
-};
+}

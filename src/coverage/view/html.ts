@@ -1,5 +1,5 @@
 import type {Coverage, CoverageSummary, Line} from "../data"
-import { generateCoverageSummary} from "../data"
+import {generateCoverageSummary} from "../data"
 import {MAIN_TEMPLATE, SUMMARY_TEMPLATE} from "./templates/templates"
 
 const templates = {
@@ -7,14 +7,14 @@ const templates = {
     summary: SUMMARY_TEMPLATE,
 }
 
-const renderTemplate = (template: string, data: Record<string, unknown>): string => {
+function renderTemplate(template: string, data: Record<string, unknown>): string {
     return template.replaceAll(/{{(\w+)}}/g, (_, key) => {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         return data[key]?.toString() ?? ""
     })
 }
 
-const formatGasCosts = (gasCosts: readonly number[]): string => {
+function formatGasCosts(gasCosts: readonly number[]): string {
     if (gasCosts.length === 0) return ""
     if (gasCosts.length === 1) return gasCosts[0]?.toString() ?? "0"
 
@@ -34,16 +34,12 @@ const formatGasCosts = (gasCosts: readonly number[]): string => {
         .join(", ")
 }
 
-export const calculateTotalGas = (gasCosts: readonly number[]): number => {
-    return gasCosts.reduce((sum, gas) => sum + gas, 0)
-}
-
-const generateLineHtml = (
+function generateLineHtml(
     line: Line,
     index: number,
     maxGasPerLine: number,
     totalGas: number,
-): string => {
+): string {
     const lineNumber = index + 1
     const className = line.info.$
 
@@ -76,7 +72,11 @@ const generateLineHtml = (
 </div>`
 }
 
-const generateInstructionRowsHtml = (summary: CoverageSummary): string => {
+function calculateTotalGas(gasCosts: readonly number[]): number {
+    return gasCosts.reduce((sum, gas) => sum + gas, 0)
+}
+
+function generateInstructionRowsHtml(summary: CoverageSummary): string {
     return summary.instructionStats
         .map(stat => {
             const percentValue = (stat.totalGas / summary.totalGas) * 100
@@ -98,7 +98,7 @@ const generateInstructionRowsHtml = (summary: CoverageSummary): string => {
         .join("\n")
 }
 
-export const generateHtmlReport = (coverage: Coverage): string => {
+export function generateHtmlReport(coverage: Coverage): string {
     const summary = generateCoverageSummary(coverage)
 
     const lines = coverage.lines;

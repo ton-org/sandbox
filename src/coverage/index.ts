@@ -20,7 +20,7 @@ export function collectAsmCoverage(cell: Cell, logs: string) {
     };
 }
 
-export const recompileCell = (cell: Cell): [Cell, Mapping] => {
+function recompileCell(cell: Cell): [Cell, Mapping] {
     const instructionsWithoutPositions = decompileCell(cell)
     const assemblyForPositionsRaw = print(instructionsWithoutPositions)
 
@@ -54,7 +54,7 @@ export function collectTxsCoverage(code: Cell, address: Address | undefined, tra
     return results
 }
 
-const bigintToAddress = (addr: bigint | undefined): Address | undefined => {
+function bigintToAddress(addr: bigint | undefined): Address | undefined {
     if (addr === undefined) return undefined
 
     try {

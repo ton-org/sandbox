@@ -42,7 +42,7 @@ export type CoverageSummary = {
     readonly instructionStats: readonly InstructionStat[]
 }
 
-export const buildLineInfo = (trace: TraceInfo, asm: string): readonly Line[] => {
+export function buildLineInfo(trace: TraceInfo, asm: string): readonly Line[] {
     const lines = asm.split("\n")
 
     const perLineSteps: Map<number, Step[]> = new Map()
@@ -93,7 +93,7 @@ export const buildLineInfo = (trace: TraceInfo, asm: string): readonly Line[] =>
     })
 }
 
-const normalizeGas = (gas: number): number => {
+function normalizeGas(gas: number): number {
     if (gas > 10000) {
         // Normalize first SETCP to normal value
         return 26
@@ -101,7 +101,7 @@ const normalizeGas = (gas: number): number => {
     return gas
 }
 
-export const isExecutableLine = (line: string): boolean => {
+export function isExecutableLine(line: string): boolean {
     const trimmed = line.trim()
     return (
         !trimmed.includes("=>") && // dictionary
@@ -111,9 +111,7 @@ export const isExecutableLine = (line: string): boolean => {
     )
 }
 
-export const generateCoverageSummary = (
-    coverage: Coverage,
-): CoverageSummary => {
+export function generateCoverageSummary(coverage: Coverage): CoverageSummary {
     const lines = coverage.lines;
     const totalExecutableLines = lines.filter(line => isExecutableLine(line.line)).length
 
@@ -166,7 +164,7 @@ export const generateCoverageSummary = (
     }
 }
 
-export const mergeCoverages = (...coverages: readonly Coverage[]): Coverage => {
+export function mergeCoverages(...coverages: readonly Coverage[]): Coverage {
     if (coverages.length === 0) {
         return {
             code: new Cell(),
@@ -184,10 +182,10 @@ export const mergeCoverages = (...coverages: readonly Coverage[]): Coverage => {
     };
 };
 
-export const mergeTwoLines = (
+export function mergeTwoLines(
     first: readonly Line[],
     second: readonly Line[],
-): readonly Line[] => {
+): readonly Line[] {
     if (first.length !== second.length) return first;
 
     const result: Line[] = [...first];
