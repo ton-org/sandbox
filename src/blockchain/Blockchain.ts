@@ -43,8 +43,8 @@ import { deepcopy } from '../utils/deepcopy';
 import {
     collectAsmCoverage,
     collectTxsCoverage,
-    Coverage,
     mergeCoverages,
+    Coverage,
 } from '../coverage';
 
 const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS';
@@ -897,7 +897,7 @@ export class Blockchain {
         const gets = this.getMethods.flatMap(get => collectAsmCoverage(code, get.vmLogs));
 
         const coverages = [...txs, ...gets];
-        return mergeCoverages(...coverages);
+        return new Coverage(mergeCoverages(...coverages));
     }
 
     /**

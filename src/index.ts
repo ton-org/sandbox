@@ -83,4 +83,11 @@ export {
     generateTextReport,
     coverageFromJson,
     coverageToJson,
+    CoverageSummary,
+    CoverageData,
+    Line,
+    Covered,
+    Skipped,
+    Uncovered,
+    Coverage,
 } from './coverage';

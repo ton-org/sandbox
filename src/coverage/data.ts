@@ -1,7 +1,7 @@
 import type {Step, TraceInfo} from "ton-assembly-dev-test/dist/trace"
 import {Cell} from "@ton/core"
 
-export type Coverage = {
+export type CoverageData = {
     readonly code: Cell;
     readonly lines: readonly Line[];
 };
@@ -111,7 +111,7 @@ export function isExecutableLine(line: string): boolean {
     )
 }
 
-export function generateCoverageSummary(coverage: Coverage): CoverageSummary {
+export function generateCoverageSummary(coverage: CoverageData): CoverageSummary {
     const lines = coverage.lines;
     const totalExecutableLines = lines.filter(line => isExecutableLine(line.line)).length
 
@@ -164,7 +164,7 @@ export function generateCoverageSummary(coverage: Coverage): CoverageSummary {
     }
 }
 
-export function mergeCoverages(...coverages: readonly Coverage[]): Coverage {
+export function mergeCoverages(...coverages: readonly CoverageData[]): CoverageData {
     if (coverages.length === 0) {
         return {
             code: new Cell(),

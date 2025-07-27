@@ -1,4 +1,4 @@
-import type {Coverage, CoverageSummary, Line} from "../data"
+import type {CoverageData, CoverageSummary, Line} from "../data"
 import {generateCoverageSummary} from "../data"
 import {MAIN_TEMPLATE, SUMMARY_TEMPLATE} from "./templates/templates"
 
@@ -98,7 +98,7 @@ function generateInstructionRowsHtml(summary: CoverageSummary): string {
         .join("\n")
 }
 
-export function generateHtmlReport(coverage: Coverage): string {
+export function generateHtmlReport(coverage: CoverageData): string {
     const summary = generateCoverageSummary(coverage)
 
     const lines = coverage.lines;

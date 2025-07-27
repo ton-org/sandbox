@@ -1,6 +1,6 @@
-import {Coverage, CoverageSummary, generateCoverageSummary, InstructionStat, Line} from "../data"
+import {CoverageData, CoverageSummary, generateCoverageSummary, InstructionStat, Line} from "../data"
 
-export function generateTextReport(coverage: Coverage): string {
+export function generateTextReport(coverage: CoverageData): string {
     const summary = generateCoverageSummary(coverage)
 
     const lines = coverage.lines;

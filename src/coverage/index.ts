@@ -3,7 +3,7 @@ import type {Mapping} from "ton-assembly-dev-test/dist/runtime";
 import {compileCellWithMapping, decompileCell} from "ton-assembly-dev-test/dist/runtime"
 import {print, parse} from "ton-assembly-dev-test/dist/text"
 import {createMappingInfo, createTraceInfoPerTransaction} from "ton-assembly-dev-test/dist/trace"
-import {buildLineInfo, Coverage} from "./data"
+import {buildLineInfo, CoverageData} from "./data"
 import {BlockchainTransaction} from "../blockchain/Blockchain";
 
 export function collectAsmCoverage(cell: Cell, logs: string) {
@@ -38,8 +38,8 @@ function recompileCell(cell: Cell): [Cell, Mapping] {
     return compileCellWithMapping(parseResult.instructions)
 }
 
-export function collectTxsCoverage(code: Cell, address: Address | undefined, transactions: readonly BlockchainTransaction[]): Coverage[] {
-    const results: Coverage[] = []
+export function collectTxsCoverage(code: Cell, address: Address | undefined, transactions: readonly BlockchainTransaction[]): CoverageData[] {
+    const results: CoverageData[] = []
 
     for (const transaction of transactions) {
         const txAddress = bigintToAddress(transaction.address);
@@ -69,3 +69,4 @@ export {generateHtmlReport} from "./view/html"
 export {generateTextReport} from "./view/text"
 export * from "./data"
 export * from "./json"
+export * from "./coverage"
