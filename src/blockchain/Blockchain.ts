@@ -40,7 +40,12 @@ import { testSubwalletId } from '../utils/testTreasurySubwalletId';
 import { collectMetric } from '../metric/collectMetric';
 import { ContractsMeta } from '../meta/ContractsMeta';
 import { deepcopy } from '../utils/deepcopy';
-import { collectTxCoverage, collectTxsCoverage, Coverage, mergeCoverages } from '../coverage';
+import {
+    collectAsmCoverage,
+    collectTxsCoverage,
+    Coverage,
+    mergeCoverages,
+} from '../coverage';
 
 const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS';
 
@@ -852,21 +857,47 @@ export class Blockchain {
         this.globalLibs = value;
     }
 
-    public coverage(code: Cell): Coverage {
+    /**
+     * Returns coverage for passed contract code cell
+     *
+     * @param contract Contract for coverage calculation
+     *
+     * @example
+     *
+     * const coverage = blockchain.coverage(counter);
+     * await fs.writeFile("out.html", generateHtmlReport(coverage))
+     */
+    public coverage(contract: Contract): Coverage {
+        const code = contract.init?.code
+        if (!code) {
+            throw new Error("No code is available for contract")
+        }
+
+        const address = contract.address;
+        return this.coverageForCell(code, address)
+    }
+
+    /**
+     * Returns coverage for passed contract code cell
+     *
+     * @param code Cell with code for coverage calculation
+     * @param address Optional address for transactions filtering
+     *
+     * @example
+     *
+     * const coverage = blockchain.coverageForCell(cell);
+     * await fs.writeFile("out.html", generateHtmlReport(coverage))
+     */
+    public coverageForCell(code: Cell, address?: Address): Coverage {
         if (this.verbosity.vmLogs !== 'vm_logs_verbose') {
             throw new Error('Please set `blockchain.verbosity.vmLogs="vm_logs_verbose"` for coverage');
         }
 
-        const results: Coverage[] = [];
+        const txs = this.txs.flatMap(tx => collectTxsCoverage(code, address, tx));
+        const gets = this.getMethods.flatMap(get => collectAsmCoverage(code, get.vmLogs));
 
-        for (const tx of this.txs) {
-            collectTxsCoverage(results, code, tx);
-        }
-        for (const result of this.getMethods) {
-            collectTxCoverage(results, code, result.vmLogs);
-        }
-
-        return mergeCoverages(...results);
+        const coverages = [...txs, ...gets];
+        return mergeCoverages(...coverages);
     }
 
     /**

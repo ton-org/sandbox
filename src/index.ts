@@ -75,4 +75,12 @@ export * from './metric';
 
 export { registerCompiledContract } from './debugger/DebugInfoCache';
 
-export * from './coverage';
+export {
+    generateCoverageSummary,
+    mergeCoverages,
+    collectAsmCoverage,
+    generateHtmlReport,
+    generateTextReport,
+    coverageFromJson,
+    coverageToJson,
+} from './coverage';

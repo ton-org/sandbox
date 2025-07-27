@@ -106,18 +106,6 @@ export const isExecutableLine = (line: string): boolean => {
         !trimmed.includes("=>") && // dictionary
         trimmed !== "}" && // close braces
         trimmed !== "]" && // close bracket
-        !trimmed.includes("} {") && // IFREFELSEREF
-        !trimmed.includes(";;") && // FunC comment line
-        !trimmed.includes("#pragma ") &&
-        !trimmed.includes("#include") &&
-        !trimmed.includes("inline {") && // function signature
-        !trimmed.includes("inline;") && // function signature
-        !trimmed.includes("inline_ref {") && // function signature
-        !trimmed.includes("inline_ref;") && // function signature
-        !trimmed.includes(" method_id {") && // method signature
-        !trimmed.includes('asm """') && // function signature
-        !trimmed.includes('asm "') && // function signature
-        !trimmed.includes("asm(") && // function signature
         trimmed.length > 0
     )
 }
@@ -137,7 +125,7 @@ export const generateCoverageSummary = (
     let totalGas = 0
     let totalHits = 0
 
-    const instructionMap: Map<string, {readonly totalGas: number; readonly hits: number}> =
+    const instructionMap: Map<string, { readonly totalGas: number; readonly hits: number }> =
         new Map()
 
     for (const line of lines) {

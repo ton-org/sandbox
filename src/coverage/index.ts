@@ -1,5 +1,5 @@
-import type {Cell} from "@ton/core"
-import type { Mapping} from "ton-assembly-dev-test/dist/runtime";
+import {Address, Cell, beginCell} from "@ton/core"
+import type {Mapping} from "ton-assembly-dev-test/dist/runtime";
 import {compileCellWithMapping, decompileCell} from "ton-assembly-dev-test/dist/runtime"
 import {print, parse} from "ton-assembly-dev-test/dist/text"
 import {createMappingInfo, createTraceInfoPerTransaction} from "ton-assembly-dev-test/dist/trace"
@@ -28,9 +28,9 @@ export const recompileCell = (cell: Cell, forFunC: boolean): [Cell, Mapping] => 
     const assemblyForPositions = forFunC
         ? assemblyForPositionsRaw
         : assemblyForPositionsRaw
-              .split("\n")
-              .filter(it => !it.includes("DEBUGMARK"))
-              .join("\n")
+            .split("\n")
+            .filter(it => !it.includes("DEBUGMARK"))
+            .join("\n")
 
     const parseResult = parse("out.tasm", assemblyForPositions)
     if (parseResult.$ === "ParseFailure") {
@@ -40,17 +40,32 @@ export const recompileCell = (cell: Cell, forFunC: boolean): [Cell, Mapping] => 
     return compileCellWithMapping(parseResult.instructions)
 }
 
-export function collectTxsCoverage(results: Coverage[], code: Cell, transactions: readonly BlockchainTransaction[]) {
+export function collectTxsCoverage(code: Cell, address: Address | undefined, transactions: readonly BlockchainTransaction[]): Coverage[] {
+    const results: Coverage[] = []
+
     for (const transaction of transactions) {
-        collectTxCoverage(results, code, transaction.vmLogs);
+        if (address !== undefined && bigintToAddress(transaction.address)?.toString() !== address.toString()) {
+            // other contract transaction
+            continue
+        }
+
+        results.push(collectAsmCoverage(code, transaction.vmLogs));
+    }
+
+    return results
+}
+
+const bigintToAddress = (addr: bigint | undefined): Address | undefined => {
+    if (addr === undefined) return undefined
+
+    try {
+        const slice = beginCell().storeUint(4, 3).storeUint(0, 8).storeUint(addr, 256).asSlice()
+        return slice.loadAddress()
+    } catch {
+        return undefined
     }
 }
 
-export function collectTxCoverage(results: Coverage[], code: Cell, vmLogs: string) {
-    const coverage = collectAsmCoverage(code, vmLogs);
-    results.push(coverage);
-}
-
-export {generateHtml} from "./html"
+export {generateHtmlReport} from "./html"
 export {generateTextReport} from "./text"
 export * from "./data"

@@ -98,7 +98,7 @@ const generateInstructionRowsHtml = (summary: CoverageSummary): string => {
         .join("\n")
 }
 
-export const generateHtml = (coverage: Coverage): string => {
+export const generateHtmlReport = (coverage: Coverage): string => {
     const summary = generateCoverageSummary(coverage)
 
     const lines = coverage.lines;
