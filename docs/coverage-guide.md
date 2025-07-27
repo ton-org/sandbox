@@ -12,7 +12,6 @@ Before running tests, add `blockchain.enableCoverage()` to collect coverage data
 
 ```typescript
 import {Blockchain} from '@ton/sandbox';
-import process = require("node:process");
 
 describe('Contract Tests', () => {
     let blockchain: Blockchain;
