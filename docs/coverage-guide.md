@@ -50,7 +50,7 @@ afterAll(() => {
 ```typescript
 import {writeFileSync} from 'fs';
 
-afterAll(async () => {
+afterAll(() => {
     const coverage = blockchain.coverage(contract);
     blockchain.enableCoverage();
 
@@ -87,8 +87,8 @@ summary.instructionStats.forEach(stat => {
 
 ### Coverage Reports
 
-- **HTML Report**: Interactive report with syntax highlighting and line-by-line coverage details
-- **Text Report**: Console-friendly summary with basic coverage information
+- **HTML Report**: Interactive report with highlighting and line-by-line coverage details
+- **Text Report**: Console-friendly report with coverage information and marked code
 
 ## Advanced Usage Patterns
 
@@ -109,28 +109,12 @@ if (!coverage2) return;
 const coverage2Json = coverage2.toJson();
 writeFileSync("coverage2.json", coverage2Json);
 
-// Merge coverage data
+// Merge coverage data in separate script after tests
 const savedCoverage1 = Coverage.fromJson(readFileSync("coverage1.json", "utf-8"));
 const savedCoverage2 = Coverage.fromJson(readFileSync("coverage2.json", "utf-8"));
 const totalCoverage = savedCoverage1.mergeWith(savedCoverage2);
 
 console.log(`Combined coverage: ${totalCoverage.summary().coveragePercentage}%`);
-```
-
-### Get Method Coverage
-
-Coverage includes both transactions and get method calls:
-
-```typescript
-// Execute transactions
-await contract.send(sender, {value: toNano('1')}, 'setValue');
-
-// Execute get methods
-const value = await contract.getValue();
-const balance = await contract.getBalance();
-
-// Coverage includes both transaction and get method execution
-const coverage = blockchain.coverage(contract);
 ```
 
 ## Coverage for Multiple Contracts
