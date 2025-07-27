@@ -40,12 +40,7 @@ import { testSubwalletId } from '../utils/testTreasurySubwalletId';
 import { collectMetric } from '../metric/collectMetric';
 import { ContractsMeta } from '../meta/ContractsMeta';
 import { deepcopy } from '../utils/deepcopy';
-import {
-    collectAsmCoverage,
-    collectTxsCoverage,
-    mergeCoverages,
-    Coverage,
-} from '../coverage';
+import { collectAsmCoverage, collectTxsCoverage, mergeCoverages, Coverage } from '../coverage';
 
 const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS';
 
@@ -858,43 +853,67 @@ export class Blockchain {
     }
 
     /**
-     * Returns coverage for passed contract code cell
+     * Returns coverage analysis for the specified contract.
+     * Coverage is collected at the TVM assembly instruction level from all executed transactions and get method calls.
      *
-     * @param contract Contract for coverage calculation
+     * @param contract Contract to analyze coverage for
+     * @returns Coverage object with detailed coverage data
+     * @throws Error if the contract has no code
+     * @throws Error if verbose VM logs are not enabled (blockchain.verbosity.vmLogs !== "vm_logs_verbose")
      *
      * @example
+     * // Enable verbose VM logs for coverage collection
+     * blockchain.verbosity.vmLogs = "vm_logs_verbose";
      *
-     * const coverage = blockchain.coverage(counter);
-     * await fs.writeFile("out.html", generateHtmlReport(coverage))
+     * // Execute contract methods
+     * await contract.send(sender, { value: toNano('1') }, 'increment');
+     *
+     * // Get coverage analysis
+     * const coverage = blockchain.coverage(contract);
+     * const summary = coverage.summary();
+     * console.log(`Coverage: ${summary.coveragePercentage.toFixed(2)}%`);
+     *
+     * // Generate HTML report
+     * const htmlReport = coverage.report("html");
+     * await fs.writeFile("coverage.html", htmlReport);
      */
     public coverage(contract: Contract): Coverage {
-        const code = contract.init?.code
+        const code = contract.init?.code;
         if (!code) {
-            throw new Error("No code is available for contract")
+            throw new Error('No code is available for contract');
         }
 
         const address = contract.address;
-        return this.coverageForCell(code, address)
+        return this.coverageForCell(code, address);
     }
 
     /**
-     * Returns coverage for passed contract code cell
+     * Returns coverage analysis for the specified code cell.
+     * This method allows analyzing coverage for code cells directly, with optional address filtering.
      *
-     * @param code Cell with code for coverage calculation
-     * @param address Optional address for transactions filtering
+     * @param code Cell containing contract code to analyze
+     * @param address Optional contract address to filter transactions by.
+     *                If provided, only transactions from this address will be analyzed
+     * @returns Coverage object with detailed coverage data
+     * @throws Error if verbose VM logs are not enabled (blockchain.verbosity.vmLogs !== "vm_logs_verbose")
      *
      * @example
+     * // Analyze coverage for a specific code cell
+     * blockchain.verbosity.vmLogs = "vm_logs_verbose";
+     * const coverage = blockchain.coverageForCell(codeCell, contractAddress);
      *
-     * const coverage = blockchain.coverageForCell(cell);
-     * await fs.writeFile("out.html", generateHtmlReport(coverage))
+     * // Analyze coverage for code without address filtering
+     * const allCoverage = blockchain.coverageForCell(codeCell);
+     *
+     * console.log(coverage.summary());
      */
     public coverageForCell(code: Cell, address?: Address): Coverage {
         if (this.verbosity.vmLogs !== 'vm_logs_verbose') {
             throw new Error('Please set `blockchain.verbosity.vmLogs="vm_logs_verbose"` for coverage');
         }
 
-        const txs = this.txs.flatMap(tx => collectTxsCoverage(code, address, tx));
-        const gets = this.getMethods.flatMap(get => collectAsmCoverage(code, get.vmLogs));
+        const txs = this.txs.flatMap((tx) => collectTxsCoverage(code, address, tx));
+        const gets = this.getMethods.flatMap((get) => collectAsmCoverage(code, get.vmLogs));
 
         const coverages = [...txs, ...gets];
         return new Coverage(mergeCoverages(...coverages));
