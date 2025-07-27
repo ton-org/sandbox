@@ -20,12 +20,10 @@ describe('Contract Tests', () => {
 
     beforeEach(async () => {
         blockchain = await Blockchain.create();
+
         blockchain.enableCoverage();
         // or for COVERAGE=true mode only
         // blockchain.enableCoverage(process.env["COVERAGE"] === "true");
-
-        // Enable coverage collection
-        blockchain.verbosity.vmLogs = "vm_logs_verbose";
 
         // Deploy your contract
         contract = blockchain.openContract(MyContract.fromInit());
