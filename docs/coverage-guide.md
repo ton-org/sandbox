@@ -50,14 +50,14 @@ import {writeFileSync} from 'fs';
 
 afterAll(() => {
     const coverage = blockchain.coverage(contract);
-    blockchain.enableCoverage();
-
+    if (!coverage) return;
+    
     // Generate HTML report for detailed analysis
     const htmlReport = coverage.report("html");
     writeFileSync("coverage.html", htmlReport);
 
     // Print text text report to console
-    const textReport = coverage?.report("text");
+    const textReport = coverage.report("text");
     console.log(textReport);
 });
 ```
