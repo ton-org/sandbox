@@ -1,4 +1,4 @@
-import {Coverage, CoverageSummary, generateCoverageSummary, InstructionStat, Line} from "./data"
+import {Coverage, CoverageSummary, generateCoverageSummary, InstructionStat, Line} from "../data"
 import {calculateTotalGas} from "./html"
 
 export const generateTextReport = (coverage: Coverage): string => {

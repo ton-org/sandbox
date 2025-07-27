@@ -7,7 +7,7 @@ import {buildLineInfo, Coverage} from "./data"
 import {BlockchainTransaction} from "../blockchain/Blockchain";
 
 export function collectAsmCoverage(cell: Cell, logs: string) {
-    const [cleanCell, mapping] = recompileCell(cell, false)
+    const [cleanCell, mapping] = recompileCell(cell)
     const info = createMappingInfo(mapping)
 
     const traceInfos = createTraceInfoPerTransaction(logs, info, undefined)
@@ -20,17 +20,15 @@ export function collectAsmCoverage(cell: Cell, logs: string) {
     };
 }
 
-export const recompileCell = (cell: Cell, forFunC: boolean): [Cell, Mapping] => {
+export const recompileCell = (cell: Cell): [Cell, Mapping] => {
     const instructionsWithoutPositions = decompileCell(cell)
     const assemblyForPositionsRaw = print(instructionsWithoutPositions)
 
     // filter out all DEBUGMARK lines from the assembly
-    const assemblyForPositions = forFunC
-        ? assemblyForPositionsRaw
-        : assemblyForPositionsRaw
-            .split("\n")
-            .filter(it => !it.includes("DEBUGMARK"))
-            .join("\n")
+    const assemblyForPositions = assemblyForPositionsRaw
+        .split("\n")
+        .filter(it => !it.includes("DEBUGMARK"))
+        .join("\n")
 
     const parseResult = parse("out.tasm", assemblyForPositions)
     if (parseResult.$ === "ParseFailure") {
@@ -44,8 +42,9 @@ export function collectTxsCoverage(code: Cell, address: Address | undefined, tra
     const results: Coverage[] = []
 
     for (const transaction of transactions) {
-        if (address !== undefined && bigintToAddress(transaction.address)?.toString() !== address.toString()) {
-            // other contract transaction
+        const txAddress = bigintToAddress(transaction.address);
+        if (address !== undefined && txAddress?.toString() !== address.toString()) {
+            // other contract transaction, skip
             continue
         }
 
@@ -66,6 +65,7 @@ const bigintToAddress = (addr: bigint | undefined): Address | undefined => {
     }
 }
 
-export {generateHtmlReport} from "./html"
-export {generateTextReport} from "./text"
+export {generateHtmlReport} from "./view/html"
+export {generateTextReport} from "./view/text"
 export * from "./data"
+export * from "./json"

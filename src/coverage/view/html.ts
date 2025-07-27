@@ -1,5 +1,5 @@
-import type {Coverage, CoverageSummary, Line} from "./data"
-import { generateCoverageSummary} from "./data"
+import type {Coverage, CoverageSummary, Line} from "../data"
+import { generateCoverageSummary} from "../data"
 import {MAIN_TEMPLATE, SUMMARY_TEMPLATE} from "./templates/templates"
 
 const templates = {
