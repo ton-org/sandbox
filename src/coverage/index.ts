@@ -6,7 +6,7 @@ import {createMappingInfo, createTraceInfoPerTransaction} from "ton-assembly-dev
 import {buildLineInfo, CoverageData} from "./data"
 import {BlockchainTransaction} from "../blockchain/Blockchain";
 
-export function collectAsmCoverage(cell: Cell, logs: string) {
+export function collectAsmCoverage(cell: Cell, logs: string): CoverageData {
     const [cleanCell, mapping] = recompileCell(cell)
     const info = createMappingInfo(mapping)
 

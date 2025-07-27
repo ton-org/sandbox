@@ -8,10 +8,11 @@ coverage.
 
 ### 1. Enable Coverage Collection
 
-Before running tests, enable verbose VM logs to collect coverage data:
+Before running tests, add `blockchain.enableCoverage()` to collect coverage data:
 
 ```typescript
 import {Blockchain} from '@ton/sandbox';
+import process = require("node:process");
 
 describe('Contract Tests', () => {
     let blockchain: Blockchain;
@@ -19,6 +20,9 @@ describe('Contract Tests', () => {
 
     beforeEach(async () => {
         blockchain = await Blockchain.create();
+        blockchain.enableCoverage();
+        // or if you want to enable coverage only with the ENV variable
+        // blockchain.enableCoverage(process.env["COVERAGE"] === "true");
 
         // Enable coverage collection
         blockchain.verbosity.vmLogs = "vm_logs_verbose";
@@ -37,7 +41,7 @@ describe('Contract Tests', () => {
 ```typescript
 afterAll(() => {
     const coverage = blockchain.coverage(contract);
-    console.log(coverage.summary());
+    console.log(coverage?.summary());
 })
 ```
 
@@ -48,13 +52,14 @@ import {writeFileSync} from 'fs';
 
 afterAll(async () => {
     const coverage = blockchain.coverage(contract);
+    blockchain.enableCoverage();
 
     // Generate HTML report for detailed analysis
     const htmlReport = coverage.report("html");
     writeFileSync("coverage.html", htmlReport);
 
     // Print text text report to console
-    const textReport = coverage.report("text");
+    const textReport = coverage?.report("text");
     console.log(textReport);
 });
 ```
@@ -94,11 +99,13 @@ When running multiple test files, you might want to merge coverage data:
 ```typescript
 // In first test file
 const coverage1 = blockchain.coverage(contract);
+if (!coverage1) return;
 const coverage1Json = coverage1.toJson();
 writeFileSync("coverage1.json", coverage1Json);
 
 // In second test file  
 const coverage2 = blockchain.coverage(contract);
+if (!coverage2) return;
 const coverage2Json = coverage2.toJson();
 writeFileSync("coverage2.json", coverage2Json);
 
@@ -138,7 +145,7 @@ describe('Multi-Contract System', () => {
 
     beforeEach(async () => {
         blockchain = await Blockchain.create();
-        blockchain.verbosity.vmLogs = "vm_logs_verbose";
+        blockchain.enableCoverage();
 
         // Deploy multiple contracts
         contract1 = blockchain.openContract(Contract1.fromInit());
@@ -149,6 +156,8 @@ describe('Multi-Contract System', () => {
         // Get coverage for each contract separately
         const coverage1 = blockchain.coverage(contract1);
         const coverage2 = blockchain.coverage(contract2);
+
+        if (!coverage1 || !coverage2) return;
 
         console.log('Contract 1 Coverage:', coverage1.summary().coveragePercentage);
         console.log('Contract 2 Coverage:', coverage2.summary().coveragePercentage);

@@ -204,6 +204,7 @@ export class Blockchain {
     protected randomSeed?: Buffer;
     protected shouldDebug = false;
 
+    protected collectCoverage: boolean = false;
     protected readonly txs: BlockchainTransaction[][] = [];
     protected readonly getMethods: GetMethodResult[] = [];
 
@@ -853,6 +854,16 @@ export class Blockchain {
     }
 
     /**
+     * Enable coverage collection.
+     *
+     * @param enable if false, disable coverage collection
+     */
+    public enableCoverage(enable: boolean = true) {
+        this.collectCoverage = enable;
+        this.verbosity.vmLogs = 'vm_logs_verbose';
+    }
+
+    /**
      * Returns coverage analysis for the specified contract.
      * Coverage is collected at the TVM assembly instruction level from all executed transactions and get method calls.
      *
@@ -862,22 +873,22 @@ export class Blockchain {
      * @throws Error if verbose VM logs are not enabled (blockchain.verbosity.vmLogs !== "vm_logs_verbose")
      *
      * @example
-     * // Enable verbose VM logs for coverage collection
-     * blockchain.verbosity.vmLogs = "vm_logs_verbose";
+     * // Enable coverage collection
+     * blockchain.enableCoverage();
      *
      * // Execute contract methods
      * await contract.send(sender, { value: toNano('1') }, 'increment');
      *
      * // Get coverage analysis
      * const coverage = blockchain.coverage(contract);
-     * const summary = coverage.summary();
-     * console.log(`Coverage: ${summary.coveragePercentage.toFixed(2)}%`);
+     * const summary = coverage?.summary();
+     * console.log(`Coverage: ${summary?.coveragePercentage?.toFixed(2)}%`);
      *
      * // Generate HTML report
-     * const htmlReport = coverage.report("html");
+     * const htmlReport = coverage?.report("html");
      * await fs.writeFile("coverage.html", htmlReport);
      */
-    public coverage(contract: Contract): Coverage {
+    public coverage(contract: Contract): Coverage | undefined {
         const code = contract.init?.code;
         if (!code) {
             throw new Error('No code is available for contract');
@@ -898,18 +909,18 @@ export class Blockchain {
      * @throws Error if verbose VM logs are not enabled (blockchain.verbosity.vmLogs !== "vm_logs_verbose")
      *
      * @example
+     * blockchain.enableCoverage();
      * // Analyze coverage for a specific code cell
-     * blockchain.verbosity.vmLogs = "vm_logs_verbose";
      * const coverage = blockchain.coverageForCell(codeCell, contractAddress);
      *
      * // Analyze coverage for code without address filtering
      * const allCoverage = blockchain.coverageForCell(codeCell);
      *
-     * console.log(coverage.summary());
+     * console.log(coverage?.summary());
      */
-    public coverageForCell(code: Cell, address?: Address): Coverage {
-        if (this.verbosity.vmLogs !== 'vm_logs_verbose') {
-            throw new Error('Please set `blockchain.verbosity.vmLogs="vm_logs_verbose"` for coverage');
+    public coverageForCell(code: Cell, address?: Address): Coverage | undefined {
+        if (!this.collectCoverage || this.verbosity.vmLogs !== 'vm_logs_verbose') {
+            return undefined;
         }
 
         const txs = this.txs.flatMap((tx) => collectTxsCoverage(code, address, tx));
