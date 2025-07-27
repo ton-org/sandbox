@@ -21,7 +21,7 @@ describe('Contract Tests', () => {
     beforeEach(async () => {
         blockchain = await Blockchain.create();
         blockchain.enableCoverage();
-        // or if you want to enable coverage only with the ENV variable
+        // or for COVERAGE=true mode only
         // blockchain.enableCoverage(process.env["COVERAGE"] === "true");
 
         // Enable coverage collection
