@@ -1,4 +1,4 @@
-import type {Step, TraceInfo} from "ton-assembly-dev-test/dist/trace"
+import type {trace} from "ton-assembly-dev-test"
 import {Cell} from "@ton/core"
 
 export type CoverageData = {
@@ -42,10 +42,10 @@ export type CoverageSummary = {
     readonly instructionStats: readonly InstructionStat[]
 }
 
-export function buildLineInfo(trace: TraceInfo, asm: string): readonly Line[] {
+export function buildLineInfo(trace: trace.TraceInfo, asm: string): readonly Line[] {
     const lines = asm.split("\n")
 
-    const perLineSteps: Map<number, Step[]> = new Map()
+    const perLineSteps: Map<number, trace.Step[]> = new Map()
 
     for (const step of trace.steps) {
         if (step.loc === undefined) continue
