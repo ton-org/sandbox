@@ -1,6 +1,6 @@
-import {runtime, text} from "ton-assembly"
-import {generateTextReport, generateHtmlReport} from "../"
-import {mkdirSync, writeFileSync, existsSync} from "node:fs"
+import {runtime, text} from "ton-assembly";
+import {generateTextReport, generateHtmlReport} from "../";
+import {mkdirSync, writeFileSync, existsSync} from "node:fs";
 import {executeInstructions} from "./execute";
 import {collectAsmCoverage} from "../collect";
 
@@ -136,6 +136,31 @@ describe("asm coverage", () => {
                     }
                     2 => {
                         PUSHINT_4 5
+                        INC
+                    }
+                ]
+                DICTIGETJMPZ
+                THROWARG 11
+            `,
+            2,
+        ),
+    );
+
+    // In this test, methods 0 and 1 have the same code, so it will be cells that will be deduplicated.
+    // Because of this, it is impossible to distinguish from the logs which method was called, so in the
+    // next test both methods are considered covered.
+    it(
+        "dictionary with same code methods",
+        test(
+            "dictionary with same code methods",
+            `
+                DICTPUSHCONST 19 [
+                    0 => {
+                        PUSHINT_4 10
+                        INC
+                    }
+                    2 => {
+                        PUSHINT_4 10
                         INC
                     }
                 ]

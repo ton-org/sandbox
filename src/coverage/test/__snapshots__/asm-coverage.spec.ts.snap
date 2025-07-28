@@ -56,6 +56,34 @@ Annotated Code:
 13   |                                          |           |"
 `;
 
+exports[`asm coverage dictionary with same code methods 1`] = `
+"Coverage Summary:
+Lines: 6/7 (85.71%)
+Total Gas: 306
+Total Hits: 6
+
+Instruction Stats:
+  DICTIGETJMPZ  | 226 gas | 1 hits | 226 avg gas |  73.86%
+  PUSHINT_4     |  36 gas | 2 hits |  18 avg gas |  11.76%
+  DICTPUSHCONST |  34 gas | 1 hits |  34 avg gas |  11.11%
+  INC           |  10 gas | 2 hits |   5 avg gas |   3.27%
+
+Annotated Code:
+ 1 ✓ | DICTPUSHCONST 19 [                       | gas:34    | hits:1
+ 2   |     0 => {                               |           |
+ 3 ✓ |         PUSHINT_4 10                     | gas:18    | hits:1
+ 4 ✓ |         INC                              | gas:5     | hits:1
+ 5   |     }                                    |           |
+ 6   |     2 => {                               |           |
+ 7 ✓ |         PUSHINT_4 10                     | gas:18    | hits:1
+ 8 ✓ |         INC                              | gas:5     | hits:1
+ 9   |     }                                    |           |
+10   | ]                                        |           |
+11 ✓ | DICTIGETJMPZ                             | gas:226   | hits:1
+12 ✗ | THROWARG 11                              |           |
+13   |                                          |           |"
+`;
+
 exports[`asm coverage if ret 1`] = `
 "Coverage Summary:
 Lines: 3/6 (50.00%)
