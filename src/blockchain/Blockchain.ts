@@ -206,7 +206,7 @@ export class Blockchain {
 
     protected collectCoverage: boolean = false;
     protected readonly txs: BlockchainTransaction[][] = [];
-    protected readonly getMethods: GetMethodResult[] = [];
+    protected readonly getMethodResults: GetMethodResult[] = [];
 
     readonly executor: IExecutor;
 
@@ -454,7 +454,7 @@ export class Blockchain {
      */
     async runGetMethod(address: Address, method: number | string, stack: TupleItem[] = [], params?: GetMethodParams) {
         const result = await (await this.getContract(address)).get(method, stack, params);
-        this.getMethods.push(result);
+        this.getMethodResults.push(result);
         return result;
     }
 
@@ -924,7 +924,7 @@ export class Blockchain {
         }
 
         const txs = this.txs.flatMap((tx) => collectTxsCoverage(code, address, tx));
-        const gets = this.getMethods.flatMap((get) => collectAsmCoverage(code, get.vmLogs));
+        const gets = this.getMethodResults.flatMap((get) => collectAsmCoverage(code, get.vmLogs));
 
         const coverages = [...txs, ...gets];
         return new Coverage(mergeCoverages(...coverages));
