@@ -6,8 +6,10 @@ import {collectAsmCoverage} from "../collect";
 
 describe("asm coverage", () => {
     const test =
-        (name: string, code: string, id: number = 0) =>
+        (code: string, id: number = 0) =>
             async () => {
+                const name = expect.getState().currentTestName;
+
                 const res = text.parse("test.asm", code);
                 if (res.$ === "ParseFailure") {
                     throw new Error(res.error.msg);
@@ -32,7 +34,6 @@ describe("asm coverage", () => {
     it(
         "simple if",
         test(
-            "simple if",
             `
                 PUSHINT_4 0
                 PUSHINT_4 0
@@ -49,7 +50,6 @@ describe("asm coverage", () => {
     it(
         "if ret",
         test(
-            "if ret",
             `
                 DROP
                 PUSHINT_4 -1 // cond
@@ -66,7 +66,6 @@ describe("asm coverage", () => {
     it(
         "simple if-else",
         test(
-            "simple if-else",
             `
                 PUSHINT_4 0
                 PUSHINT_4 -1
@@ -84,7 +83,6 @@ describe("asm coverage", () => {
     it(
         "while loop with break",
         test(
-            "while loop with break",
             `
                 PUSHINT_4 10 // a = 10
                 
@@ -106,7 +104,6 @@ describe("asm coverage", () => {
     it(
         "dictionary",
         test(
-            "dictionary",
             `
                 DICTPUSHCONST 19 [
                     0 => {
@@ -127,7 +124,6 @@ describe("asm coverage", () => {
     it(
         "dictionary 2",
         test(
-            "dictionary 2",
             `
                 DICTPUSHCONST 19 [
                     0 => {
@@ -152,7 +148,6 @@ describe("asm coverage", () => {
     it(
         "dictionary with same code methods",
         test(
-            "dictionary with same code methods",
             `
                 DICTPUSHCONST 19 [
                     0 => {
@@ -174,7 +169,6 @@ describe("asm coverage", () => {
     it(
         "try without throw",
         test(
-            "try without throw",
             `
                 PUSHINT_4 10
                 PUSHCONT {
@@ -191,7 +185,6 @@ describe("asm coverage", () => {
     it(
         "try with throw",
         test(
-            "try with throw",
             `
                 PUSHINT_4 10
                 PUSHCONT {
@@ -208,7 +201,6 @@ describe("asm coverage", () => {
     it(
         "nested try with rethrow",
         test(
-            "nested try with rethrow",
             `
                 PUSHCONT {
                     PUSHCONT {

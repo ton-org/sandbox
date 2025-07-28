@@ -9,8 +9,10 @@ import {decompileCell} from "ton-assembly/dist/runtime";
 
 describe("func asm coverage", () => {
     const test =
-        (name: string, code: string, id: number = 0) =>
+        (code: string, id: number = 0) =>
             async () => {
+                const name = expect.getState().currentTestName;
+
                 const funcCompiled = await compile(code);
                 const funcInstructions = decompileCell(funcCompiled);
 
@@ -33,7 +35,6 @@ describe("func asm coverage", () => {
     it(
         "simple if",
         test(
-            "simple if",
             `
                 global int foo;
             
