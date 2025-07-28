@@ -1,4 +1,4 @@
-import type {trace} from "ton-assembly-dev-test";
+import type {trace} from "ton-assembly";
 import {Cell} from "@ton/core";
 
 export type CoverageData = {

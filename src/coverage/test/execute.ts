@@ -1,4 +1,4 @@
-import {runtime} from "ton-assembly-dev-test/";
+import {runtime} from "ton-assembly/";
 import type {Address, Contract, ContractProvider, Sender, StateInit, TupleReader} from "@ton/core";
 import {Cell, contractAddress, toNano, TupleBuilder} from "@ton/core";
 import {SandboxContract, TreasuryContract, Blockchain} from "../../";
