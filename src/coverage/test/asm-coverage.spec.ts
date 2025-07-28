@@ -1,7 +1,8 @@
 import {runtime, text} from "ton-assembly-dev-test"
-import {collectAsmCoverage, generateTextReport, generateHtmlReport} from "../"
+import {generateTextReport, generateHtmlReport} from "../"
 import {mkdirSync, writeFileSync, existsSync} from "node:fs"
 import {executeInstructions} from "./execute";
+import {collectAsmCoverage} from "../collect";
 
 describe("asm coverage", () => {
     const test =

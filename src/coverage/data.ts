@@ -1,5 +1,5 @@
-import type {trace} from "ton-assembly-dev-test"
-import {Cell} from "@ton/core"
+import type {trace} from "ton-assembly-dev-test";
+import {Cell} from "@ton/core";
 
 export type CoverageData = {
     readonly code: Cell;
@@ -43,27 +43,27 @@ export type CoverageSummary = {
 }
 
 export function buildLineInfo(trace: trace.TraceInfo, asm: string): readonly Line[] {
-    const lines = asm.split("\n")
+    const lines = asm.split("\n");
 
-    const perLineSteps: Map<number, trace.Step[]> = new Map()
+    const perLineSteps: Map<number, trace.Step[]> = new Map();
 
     for (const step of trace.steps) {
-        if (step.loc === undefined) continue
-        const line = step.loc.line
+        if (step.loc === undefined) continue;
+        const line = step.loc.line;
 
-        perLineSteps.set(line + 1, [...(perLineSteps.get(line + 1) ?? []), step])
+        perLineSteps.set(line + 1, [...(perLineSteps.get(line + 1) ?? []), step]);
 
         if (step.loc.otherLines.length > 0) {
             for (const otherLine of step.loc.otherLines) {
-                perLineSteps.set(otherLine + 1, [...(perLineSteps.get(otherLine + 1) ?? []), step])
+                perLineSteps.set(otherLine + 1, [...(perLineSteps.get(otherLine + 1) ?? []), step]);
             }
         }
     }
 
     return lines.map((line, idx): Line => {
-        const info = perLineSteps.get(idx + 1)
+        const info = perLineSteps.get(idx + 1);
         if (info) {
-            const gasInfo = info.map(step => normalizeGas(step.gasCost))
+            const gasInfo = info.map(step => normalizeGas(step.gasCost));
 
             return {
                 line,
@@ -72,7 +72,7 @@ export function buildLineInfo(trace: trace.TraceInfo, asm: string): readonly Lin
                     hits: gasInfo.length,
                     gasCosts: gasInfo,
                 },
-            }
+            };
         }
 
         if (!isExecutableLine(line)) {
@@ -81,7 +81,7 @@ export function buildLineInfo(trace: trace.TraceInfo, asm: string): readonly Lin
                 info: {
                     $: "Skipped",
                 },
-            }
+            };
         }
 
         return {
@@ -89,58 +89,58 @@ export function buildLineInfo(trace: trace.TraceInfo, asm: string): readonly Lin
             info: {
                 $: "Uncovered",
             },
-        }
-    })
+        };
+    });
 }
 
 function normalizeGas(gas: number): number {
     if (gas > 10000) {
         // Normalize first SETCP to normal value
-        return 26
+        return 26;
     }
-    return gas
+    return gas;
 }
 
 export function isExecutableLine(line: string): boolean {
-    const trimmed = line.trim()
+    const trimmed = line.trim();
     return (
         !trimmed.includes("=>") && // dictionary
         trimmed !== "}" && // close braces
         trimmed !== "]" && // close bracket
         trimmed.length > 0
-    )
+    );
 }
 
 export function generateCoverageSummary(coverage: CoverageData): CoverageSummary {
     const lines = coverage.lines;
-    const totalExecutableLines = lines.filter(line => isExecutableLine(line.line)).length
+    const totalExecutableLines = lines.filter(line => isExecutableLine(line.line)).length;
 
     const coveredLines = lines.filter(
         line => isExecutableLine(line.line) && line.info.$ === "Covered",
-    ).length
-    const uncoveredLines = totalExecutableLines - coveredLines
-    const coveragePercentage = totalExecutableLines === 0 ? 0 : (coveredLines / totalExecutableLines) * 100
+    ).length;
+    const uncoveredLines = totalExecutableLines - coveredLines;
+    const coveragePercentage = totalExecutableLines === 0 ? 0 : (coveredLines / totalExecutableLines) * 100;
 
-    let totalGas = 0
-    let totalHits = 0
+    let totalGas = 0;
+    let totalHits = 0;
 
     const instructionMap: Map<string, { readonly totalGas: number; readonly hits: number }> =
-        new Map()
+        new Map();
 
     for (const line of lines) {
-        if (line.info.$ !== "Covered") continue
+        if (line.info.$ !== "Covered") continue;
 
-        const lineGas = line.info.gasCosts.reduce((sum, gas) => sum + gas, 0)
-        totalGas += lineGas
-        totalHits += line.info.hits
-        const trimmedLine = line.line.trim()
-        const instructionName = trimmedLine.split(/\s+/)[0]
+        const lineGas = line.info.gasCosts.reduce((sum, gas) => sum + gas, 0);
+        totalGas += lineGas;
+        totalHits += line.info.hits;
+        const trimmedLine = line.line.trim();
+        const instructionName = trimmedLine.split(/\s+/)[0];
         if (instructionName !== undefined) {
-            const current = instructionMap.get(instructionName) ?? {totalGas: 0, hits: 0}
+            const current = instructionMap.get(instructionName) ?? {totalGas: 0, hits: 0};
             instructionMap.set(instructionName, {
                 totalGas: current.totalGas + lineGas,
                 hits: current.hits + line.info.hits,
-            })
+            });
         }
     }
 
@@ -151,7 +151,7 @@ export function generateCoverageSummary(coverage: CoverageData): CoverageSummary
             totalHits: stats.hits,
             avgGas: stats.hits === 0 ? 0 : Math.round((stats.totalGas / stats.hits) * 100) / 100,
         }))
-        .sort((a, b) => b.totalGas - a.totalGas)
+        .sort((a, b) => b.totalGas - a.totalGas);
 
     return {
         totalLines: totalExecutableLines,
@@ -161,7 +161,7 @@ export function generateCoverageSummary(coverage: CoverageData): CoverageSummary
         totalGas,
         totalHits,
         instructionStats,
-    }
+    };
 }
 
 export function mergeCoverages(...coverages: readonly CoverageData[]): CoverageData {

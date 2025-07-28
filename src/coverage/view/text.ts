@@ -1,21 +1,21 @@
-import {CoverageData, CoverageSummary, generateCoverageSummary, InstructionStat, Line} from "../data"
+import {CoverageData, CoverageSummary, generateCoverageSummary, InstructionStat, Line} from "../data";
 
 export function generateTextReport(coverage: CoverageData): string {
-    const summary = generateCoverageSummary(coverage)
+    const summary = generateCoverageSummary(coverage);
 
     const lines = coverage.lines;
-    const maxLineNumberWidth = lines.length.toString().length
+    const maxLineNumberWidth = lines.length.toString().length;
 
     const annotatedLines = lines
         .map((line, index) => {
-            const {gasInfo, hitsInfo, status} = lineInfo(line)
+            const {gasInfo, hitsInfo, status} = lineInfo(line);
 
-            const lineNumber = index + 1
-            const lineNumberPres = lineNumber.toString().padStart(maxLineNumberWidth)
+            const lineNumber = index + 1;
+            const lineNumberPres = lineNumber.toString().padStart(maxLineNumberWidth);
 
-            return `${lineNumberPres} ${status}| ${line.line.padEnd(40)} |${gasInfo.padEnd(10)} |${hitsInfo}`
+            return `${lineNumberPres} ${status}| ${line.line.padEnd(40)} |${gasInfo.padEnd(10)} |${hitsInfo}`;
         })
-        .join("\n")
+        .join("\n");
 
     const summaryText = [
         "Coverage Summary:",
@@ -25,9 +25,9 @@ export function generateTextReport(coverage: CoverageData): string {
         "",
         "Instruction Stats:",
         ...instructionsStats(summary),
-    ].join("\n")
+    ].join("\n");
 
-    return `${summaryText}\n\nAnnotated Code:\n${annotatedLines}`
+    return `${summaryText}\n\nAnnotated Code:\n${annotatedLines}`;
 }
 
 type LineInfo = {
@@ -38,36 +38,36 @@ type LineInfo = {
 
 function lineInfo(line: Line): LineInfo {
     if (line.info.$ === "Covered") {
-        const totalGas = calculateTotalGas(line.info.gasCosts)
-        const gasInfo = ` gas:${totalGas}`
-        const hitInfo = ` hits:${line.info.hits}`
-        return {gasInfo, hitsInfo: hitInfo, status: "✓ "}
+        const totalGas = calculateTotalGas(line.info.gasCosts);
+        const gasInfo = ` gas:${totalGas}`;
+        const hitInfo = ` hits:${line.info.hits}`;
+        return {gasInfo, hitsInfo: hitInfo, status: "✓ "};
     }
 
     if (line.info.$ === "Uncovered") {
-        return {gasInfo: "", hitsInfo: "", status: "✗ "}
+        return {gasInfo: "", hitsInfo: "", status: "✗ "};
     }
 
-    return {gasInfo: "", hitsInfo: "", status: "  "}
+    return {gasInfo: "", hitsInfo: "", status: "  "};
 }
 
 function calculateTotalGas(gasCosts: readonly number[]): number {
-    return gasCosts.reduce((sum, gas) => sum + gas, 0)
+    return gasCosts.reduce((sum, gas) => sum + gas, 0);
 }
 
 function instructionsStats(summary: CoverageSummary) {
     if (summary.instructionStats.length === 0) {
-        return []
+        return [];
     }
 
-    const maxNameWidth = Math.max(...summary.instructionStats.map(stat => stat.name.length))
-    const maxGasWidth = Math.max(...summary.instructionStats.map(stat => stat.totalGas.toString().length))
-    const maxHitsWidth = Math.max(...summary.instructionStats.map(stat => stat.totalHits.toString().length))
-    const maxAvgGasWidth = Math.max(...summary.instructionStats.map(stat => stat.avgGas.toString().length))
+    const maxNameWidth = Math.max(...summary.instructionStats.map(stat => stat.name.length));
+    const maxGasWidth = Math.max(...summary.instructionStats.map(stat => stat.totalGas.toString().length));
+    const maxHitsWidth = Math.max(...summary.instructionStats.map(stat => stat.totalHits.toString().length));
+    const maxAvgGasWidth = Math.max(...summary.instructionStats.map(stat => stat.avgGas.toString().length));
 
     return summary.instructionStats.map(stat =>
         formatInstructionStat(stat, summary.totalGas, maxNameWidth, maxGasWidth, maxHitsWidth, maxAvgGasWidth)
-    )
+    );
 }
 
 function formatInstructionStat(
@@ -78,11 +78,11 @@ function formatInstructionStat(
     hitsWidth: number,
     avgGasWidth: number
 ) {
-    const name = stat.name.padEnd(nameWidth)
-    const totalGasStr = stat.totalGas.toString().padStart(gasWidth)
-    const hitsStr = stat.totalHits.toString().padStart(hitsWidth)
-    const avgGasStr = stat.avgGas.toString().padStart(avgGasWidth)
-    const percent = ((stat.totalGas / totalGas) * 100).toFixed(2).padStart(6)
+    const name = stat.name.padEnd(nameWidth);
+    const totalGasStr = stat.totalGas.toString().padStart(gasWidth);
+    const hitsStr = stat.totalHits.toString().padStart(hitsWidth);
+    const avgGasStr = stat.avgGas.toString().padStart(avgGasWidth);
+    const percent = ((stat.totalGas / totalGas) * 100).toFixed(2).padStart(6);
 
-    return `  ${name} | ${totalGasStr} gas | ${hitsStr} hits | ${avgGasStr} avg gas | ${percent}%`
+    return `  ${name} | ${totalGasStr} gas | ${hitsStr} hits | ${avgGasStr} avg gas | ${percent}%`;
 }

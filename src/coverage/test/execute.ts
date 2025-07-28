@@ -1,15 +1,12 @@
-import {runtime} from "ton-assembly-dev-test/"
-import type {Address, Contract, ContractProvider, Sender, StateInit, TupleReader} from "@ton/core"
-import {Cell, contractAddress, toNano, TupleBuilder} from "@ton/core"
-import {SandboxContract, TreasuryContract, Blockchain} from "../../"
-import type {ContractGetMethodResult} from "@ton/core/dist/contract/ContractProvider"
+import {runtime} from "ton-assembly-dev-test/";
+import type {Address, Contract, ContractProvider, Sender, StateInit, TupleReader} from "@ton/core";
+import {Cell, contractAddress, toNano, TupleBuilder} from "@ton/core";
+import {SandboxContract, TreasuryContract, Blockchain} from "../../";
+import type {ContractGetMethodResult} from "@ton/core/dist/contract/ContractProvider";
 
 export type ExtendedGetResult = ContractGetMethodResult & { vmLogs: string };
 
-export const executeInstructions = async (
-    code: runtime.Instr[],
-    id: number = 0,
-): Promise<[TupleReader, string]> => {
+export async function executeInstructions(code: runtime.Instr[], id: number = 0): Promise<[TupleReader, string]> {
     class TestContract implements Contract {
         public readonly address: Address;
         public readonly init?: StateInit;
