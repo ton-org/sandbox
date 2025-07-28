@@ -1072,7 +1072,7 @@ __metadata:
     jest-config: "npm:^29.7.0"
     jest-environment-node: "npm:^29.7.0"
     table: "npm:^6.9.0"
-    ton-assembly-dev-test: "npm:0.0.19"
+    ton-assembly: "npm:0.1.0"
     ts-jest: "npm:^29.0.5"
     ts-node: "npm:^10.9.1"
     typescript: "npm:^5.8.3"
@@ -5883,9 +5883,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ton-assembly-dev-test@npm:0.0.19":
-  version: 0.0.19
-  resolution: "ton-assembly-dev-test@npm:0.0.19"
+"ton-assembly@npm:0.1.0":
+  version: 0.1.0
+  resolution: "ton-assembly@npm:0.1.0"
   dependencies:
     "@ton/core": "npm:^0.60.1"
     "@tonstudio/parser-runtime": "npm:^0.0.1"
@@ -5895,7 +5895,7 @@ __metadata:
   bin:
     tasm: dist/cli/assembler.js
     tdisasm: dist/cli/disassembler.js
-  checksum: 10/ec5bafbcac9800225089efd46e9ab5823eea8fe53024f72c7921d87d9f12b735fbede26f98842767a224d27d31a18afe4cac9115a6a69d2b462602bf48976cd8
+  checksum: 10/dadd76a2b817706eed61c604496fb75690c30f8b63b6f81c4061375705cd4a84578dcc34ac42af75b03df090c6bdbf20148bac85ffdd4b384a5828d86591027a
   languageName: node
   linkType: hard
 
