@@ -16,6 +16,7 @@ The key difference of this package from [ton-contract-executor](https://github.c
   * [Testing key points](#testing-key-points)
   * [Test examples](#test-examples)
   * [Using assets in tests](#using-assets-in-tests)
+  * [Code coverage](#code-coverage)
 * [Benchmark contracts](#benchmark-contracts)
 * [Sandbox pitfalls](#sandbox-pitfalls)
 * [Viewing logs](#viewing-logs)
@@ -337,6 +338,50 @@ Learn more from examples:
 
 * [FunC Test Examples](https://docs.ton.org/develop/smart-contracts/examples#examples-of-tests-for-smart-contracts)
 * [Tact Test Examples](docs/tact-testing-examples.md) 
+
+### Code coverage
+
+Sandbox supports collecting code coverage data to analyze which parts of your smart contract code are tested.
+This helps identify untested code paths and improve test quality.
+
+#### Enable coverage collection
+
+Add `blockchain.enableCoverage()` before running tests:
+
+```typescript
+import {Blockchain} from '@ton/sandbox';
+
+describe('Contract Tests', () => {
+  let blockchain: Blockchain;
+  let contract: SandboxContract<MyContract>;
+
+  beforeEach(async () => {
+    blockchain = await Blockchain.create();
+    blockchain.enableCoverage();
+
+    // Deploy your contract
+    contract = blockchain.openContract(MyContract.fromInit());
+  });
+});
+```
+
+#### Generate coverage reports
+
+```typescript
+import * as fs from 'fs';
+
+afterAll(() => {
+  const coverage = blockchain.coverage(contract);
+  if (!coverage) return;
+
+  // Generate HTML report for detailed analysis
+  const htmlReport = coverage.report("html");
+  fs.writeFileSync("coverage.html", htmlReport);
+});
+```
+
+For more detailed information about coverage features, merging coverage data from multiple test suites, and advanced
+usage patterns, see the [Coverage Guide](docs/coverage-guide.md).
 
 ## Benchmark contracts
 
