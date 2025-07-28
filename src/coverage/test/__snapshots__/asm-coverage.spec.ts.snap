@@ -7,10 +7,10 @@ Total Gas: 283
 Total Hits: 4
 
 Instruction Stats:
-  DICTIGETJMPZ    | 226 gas | 1 hits | 226 avg gas | 79.86%
-  DICTPUSHCONST   | 34 gas | 1 hits | 34 avg gas | 12.01%
-  PUSHINT_4       | 18 gas | 1 hits | 18 avg gas | 6.36%
-  INC             | 5 gas | 1 hits | 5 avg gas | 1.77%
+  DICTIGETJMPZ  | 226 gas | 1 hits | 226 avg gas |  79.86%
+  DICTPUSHCONST |  34 gas | 1 hits |  34 avg gas |  12.01%
+  PUSHINT_4     |  18 gas | 1 hits |  18 avg gas |   6.36%
+  INC           |   5 gas | 1 hits |   5 avg gas |   1.77%
 
 Annotated Code:
  1 ✓ | DICTPUSHCONST 19 [                       | gas:34    | hits:1
@@ -35,10 +35,10 @@ Total Gas: 283
 Total Hits: 4
 
 Instruction Stats:
-  DICTIGETJMPZ    | 226 gas | 1 hits | 226 avg gas | 79.86%
-  DICTPUSHCONST   | 34 gas | 1 hits | 34 avg gas | 12.01%
-  PUSHINT_4       | 18 gas | 1 hits | 18 avg gas | 6.36%
-  INC             | 5 gas | 1 hits | 5 avg gas | 1.77%
+  DICTIGETJMPZ  | 226 gas | 1 hits | 226 avg gas |  79.86%
+  DICTPUSHCONST |  34 gas | 1 hits |  34 avg gas |  12.01%
+  PUSHINT_4     |  18 gas | 1 hits |  18 avg gas |   6.36%
+  INC           |   5 gas | 1 hits |   5 avg gas |   1.77%
 
 Annotated Code:
  1 ✓ | DICTPUSHCONST 19 [                       | gas:34    | hits:1
@@ -63,9 +63,9 @@ Total Gas: 54
 Total Hits: 3
 
 Instruction Stats:
-  DROP            | 18 gas | 1 hits | 18 avg gas | 33.33%
-  PUSHINT_4       | 18 gas | 1 hits | 18 avg gas | 33.33%
-  IFRET           | 18 gas | 1 hits | 18 avg gas | 33.33%
+  DROP      | 18 gas | 1 hits | 18 avg gas |  33.33%
+  PUSHINT_4 | 18 gas | 1 hits | 18 avg gas |  33.33%
+  IFRET     | 18 gas | 1 hits | 18 avg gas |  33.33%
 
 Annotated Code:
 1 ✓ | DROP                                     | gas:18    | hits:1
@@ -84,11 +84,11 @@ Total Gas: 321
 Total Hits: 9
 
 Instruction Stats:
-  PUSHCONT        | 104 gas | 4 hits | 26 avg gas | 32.40%
-  THROW           | 84 gas | 1 hits | 84 avg gas | 26.17%
-  THROWANY        | 76 gas | 1 hits | 76 avg gas | 23.68%
-  TRY             | 52 gas | 2 hits | 26 avg gas | 16.20%
-  PUSHINT_4       | 5 gas | 1 hits | 5 avg gas | 1.56%
+  PUSHCONT  | 104 gas | 4 hits | 26 avg gas |  32.40%
+  THROW     |  84 gas | 1 hits | 84 avg gas |  26.17%
+  THROWANY  |  76 gas | 1 hits | 76 avg gas |  23.68%
+  TRY       |  52 gas | 2 hits | 26 avg gas |  16.20%
+  PUSHINT_4 |   5 gas | 1 hits |  5 avg gas |   1.56%
 
 Annotated Code:
  1 ✓ | PUSHCONT {                               | gas:26    | hits:1
@@ -114,9 +114,9 @@ Total Gas: 67
 Total Hits: 4
 
 Instruction Stats:
-  PUSHINT_4       | 36 gas | 2 hits | 18 avg gas | 53.73%
-  PUSHCONT        | 26 gas | 1 hits | 26 avg gas | 38.81%
-  IF              | 5 gas | 1 hits | 5 avg gas | 7.46%
+  PUSHINT_4 | 36 gas | 2 hits | 18 avg gas |  53.73%
+  PUSHCONT  | 26 gas | 1 hits | 26 avg gas |  38.81%
+  IF        |  5 gas | 1 hits |  5 avg gas |   7.46%
 
 Annotated Code:
 1 ✓ | PUSHINT_4 0                              | gas:18    | hits:1
@@ -137,10 +137,10 @@ Total Gas: 111
 Total Hits: 6
 
 Instruction Stats:
-  PUSHCONT        | 52 gas | 2 hits | 26 avg gas | 46.85%
-  PUSHINT_4       | 36 gas | 2 hits | 18 avg gas | 32.43%
-  IFELSE          | 18 gas | 1 hits | 18 avg gas | 16.22%
-  INC             | 5 gas | 1 hits | 5 avg gas | 4.50%
+  PUSHCONT  | 52 gas | 2 hits | 26 avg gas |  46.85%
+  PUSHINT_4 | 36 gas | 2 hits | 18 avg gas |  32.43%
+  IFELSE    | 18 gas | 1 hits | 18 avg gas |  16.22%
+  INC       |  5 gas | 1 hits |  5 avg gas |   4.50%
 
 Annotated Code:
  1 ✓ | PUSHINT_4 0                              | gas:18    | hits:1
@@ -162,11 +162,11 @@ Total Gas: 185
 Total Hits: 6
 
 Instruction Stats:
-  THROW           | 84 gas | 1 hits | 84 avg gas | 45.41%
-  PUSHCONT        | 52 gas | 2 hits | 26 avg gas | 28.11%
-  TRY             | 26 gas | 1 hits | 26 avg gas | 14.05%
-  PUSHINT_4       | 18 gas | 1 hits | 18 avg gas | 9.73%
-  SUB             | 5 gas | 1 hits | 5 avg gas | 2.70%
+  THROW     | 84 gas | 1 hits | 84 avg gas |  45.41%
+  PUSHCONT  | 52 gas | 2 hits | 26 avg gas |  28.11%
+  TRY       | 26 gas | 1 hits | 26 avg gas |  14.05%
+  PUSHINT_4 | 18 gas | 1 hits | 18 avg gas |   9.73%
+  SUB       |  5 gas | 1 hits |  5 avg gas |   2.70%
 
 Annotated Code:
 1 ✓ | PUSHINT_4 10                             | gas:18    | hits:1
@@ -187,10 +187,10 @@ Total Gas: 101
 Total Hits: 5
 
 Instruction Stats:
-  PUSHCONT        | 52 gas | 2 hits | 26 avg gas | 51.49%
-  TRY             | 26 gas | 1 hits | 26 avg gas | 25.74%
-  PUSHINT_4       | 18 gas | 1 hits | 18 avg gas | 17.82%
-  INC             | 5 gas | 1 hits | 5 avg gas | 4.95%
+  PUSHCONT  | 52 gas | 2 hits | 26 avg gas |  51.49%
+  TRY       | 26 gas | 1 hits | 26 avg gas |  25.74%
+  PUSHINT_4 | 18 gas | 1 hits | 18 avg gas |  17.82%
+  INC       |  5 gas | 1 hits |  5 avg gas |   4.95%
 
 Annotated Code:
 1 ✓ | PUSHINT_4 10                             | gas:18    | hits:1
@@ -211,14 +211,14 @@ Total Gas: 756
 Total Hits: 45
 
 Instruction Stats:
-  DUP             | 252 gas | 14 hits | 18 avg gas | 33.33%
-  LESSINT         | 182 gas | 7 hits | 26 avg gas | 24.07%
-  IFRETALT        | 161 gas | 7 hits | 23 avg gas | 21.30%
-  PUSHCONT        | 52 gas | 2 hits | 26 avg gas | 6.88%
-  GTINT           | 35 gas | 7 hits | 5 avg gas | 4.63%
-  DEC             | 30 gas | 6 hits | 5 avg gas | 3.97%
-  WHILEBRK        | 26 gas | 1 hits | 26 avg gas | 3.44%
-  PUSHINT_4       | 18 gas | 1 hits | 18 avg gas | 2.38%
+  DUP       | 252 gas | 14 hits | 18 avg gas |  33.33%
+  LESSINT   | 182 gas |  7 hits | 26 avg gas |  24.07%
+  IFRETALT  | 161 gas |  7 hits | 23 avg gas |  21.30%
+  PUSHCONT  |  52 gas |  2 hits | 26 avg gas |   6.88%
+  GTINT     |  35 gas |  7 hits |  5 avg gas |   4.63%
+  DEC       |  30 gas |  6 hits |  5 avg gas |   3.97%
+  WHILEBRK  |  26 gas |  1 hits | 26 avg gas |   3.44%
+  PUSHINT_4 |  18 gas |  1 hits | 18 avg gas |   2.38%
 
 Annotated Code:
  1 ✓ | PUSHINT_4 10                             | gas:18    | hits:1

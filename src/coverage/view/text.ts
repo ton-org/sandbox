@@ -56,12 +56,33 @@ function calculateTotalGas(gasCosts: readonly number[]): number {
 }
 
 function instructionsStats(summary: CoverageSummary) {
-    return summary.instructionStats.map(stat => formatInstructionStat(stat, summary.totalGas))
+    if (summary.instructionStats.length === 0) {
+        return []
+    }
+
+    const maxNameWidth = Math.max(...summary.instructionStats.map(stat => stat.name.length))
+    const maxGasWidth = Math.max(...summary.instructionStats.map(stat => stat.totalGas.toString().length))
+    const maxHitsWidth = Math.max(...summary.instructionStats.map(stat => stat.totalHits.toString().length))
+    const maxAvgGasWidth = Math.max(...summary.instructionStats.map(stat => stat.avgGas.toString().length))
+
+    return summary.instructionStats.map(stat =>
+        formatInstructionStat(stat, summary.totalGas, maxNameWidth, maxGasWidth, maxHitsWidth, maxAvgGasWidth)
+    )
 }
 
-function formatInstructionStat(stat: InstructionStat, totalGas: number) {
-    const name = stat.name.padEnd(15)
-    const totalGasStr = stat.totalGas.toString().padEnd(3, "")
-    const percent = ((stat.totalGas / totalGas) * 100).toFixed(2)
-    return `  ${name} | ${totalGasStr} gas | ${stat.totalHits} hits | ${stat.avgGas} avg gas | ${percent}%`
+function formatInstructionStat(
+    stat: InstructionStat,
+    totalGas: number,
+    nameWidth: number,
+    gasWidth: number,
+    hitsWidth: number,
+    avgGasWidth: number
+) {
+    const name = stat.name.padEnd(nameWidth)
+    const totalGasStr = stat.totalGas.toString().padStart(gasWidth)
+    const hitsStr = stat.totalHits.toString().padStart(hitsWidth)
+    const avgGasStr = stat.avgGas.toString().padStart(avgGasWidth)
+    const percent = ((stat.totalGas / totalGas) * 100).toFixed(2).padStart(6)
+
+    return `  ${name} | ${totalGasStr} gas | ${hitsStr} hits | ${avgGasStr} avg gas | ${percent}%`
 }
