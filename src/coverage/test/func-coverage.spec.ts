@@ -1,4 +1,4 @@
-import {runtime, text} from "ton-assembly";
+import {runtime} from "ton-assembly";
 import {generateTextReport, generateHtmlReport} from "../";
 import {mkdirSync, writeFileSync, existsSync} from "node:fs";
 import {executeInstructions} from "./execute";
