@@ -29,7 +29,7 @@ describe("func asm coverage", () => {
                 }
 
                 const htmlReport = generateHtmlReport(coverage);
-                writeFileSync(`${__dirname}/output/func-${name}.html`, htmlReport);
+                writeFileSync(`${__dirname}/output/${name}.html`, htmlReport);
             };
 
     it(
@@ -40,6 +40,26 @@ describe("func asm coverage", () => {
             
                 () recv_internal() {
                     foo = 10;
+                    if (foo > 10) {
+                        foo = 20;
+                        return ();
+                    }
+                    
+                    foo = 15;
+                    return ();
+                }
+            `,
+        ),
+    );
+
+    it(
+        "simple if 2",
+        test(
+            `
+                global int foo;
+            
+                () recv_internal() {
+                    foo = 15;
                     if (foo > 10) {
                         foo = 20;
                         return ();

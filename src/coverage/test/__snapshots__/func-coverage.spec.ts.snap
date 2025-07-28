@@ -39,3 +39,42 @@ Annotated Code:
 18 ✗ | THROWARG 11                              |           |
 19   |                                          |           |"
 `;
+
+exports[`func asm coverage simple if 2 1`] = `
+"Coverage Summary:
+Lines: 11/14 (78.57%)
+Total Gas: 359
+Total Hits: 11
+
+Instruction Stats:
+  DICTIGETJMPZ   | 126 gas | 1 hits |  126 avg gas |  35.10%
+  PUSHINT_8      |  52 gas | 2 hits |   26 avg gas |  14.48%
+  DICTPUSHCONST  |  34 gas | 1 hits |   34 avg gas |   9.47%
+  SETGLOB        |  33 gas | 2 hits | 16.5 avg gas |   9.19%
+  SETCP          |  26 gas | 1 hits |   26 avg gas |   7.24%
+  GETGLOB        |  26 gas | 1 hits |   26 avg gas |   7.24%
+  GTINT          |  26 gas | 1 hits |   26 avg gas |   7.24%
+  PUSHCONT_SHORT |  18 gas | 1 hits |   18 avg gas |   5.01%
+  IFJMP          |  18 gas | 1 hits |   18 avg gas |   5.01%
+
+Annotated Code:
+ 1 ✓ | SETCP 0                                  | gas:26    | hits:1
+ 2 ✓ | DICTPUSHCONST 19 [                       | gas:34    | hits:1
+ 3   |     0 => {                               |           |
+ 4 ✓ |         PUSHINT_8 15                     | gas:26    | hits:1
+ 5 ✓ |         SETGLOB 1                        | gas:28    | hits:1
+ 6 ✓ |         GETGLOB 1                        | gas:26    | hits:1
+ 7 ✓ |         GTINT 10                         | gas:26    | hits:1
+ 8 ✓ |         PUSHCONT_SHORT {                 | gas:18    | hits:1
+ 9 ✓ |             PUSHINT_8 20                 | gas:26    | hits:1
+10 ✓ |             SETGLOB 1                    | gas:5     | hits:1
+11   |         }                                |           |
+12 ✓ |         IFJMP                            | gas:18    | hits:1
+13 ✗ |         PUSHINT_8 15                     |           |
+14 ✗ |         SETGLOB 1                        |           |
+15   |     }                                    |           |
+16   | ]                                        |           |
+17 ✓ | DICTIGETJMPZ                             | gas:126   | hits:1
+18 ✗ | THROWARG 11                              |           |
+19   |                                          |           |"
+`;
