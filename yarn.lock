@@ -1065,6 +1065,7 @@ __metadata:
     ts-node: "npm:^10.9.1"
     typescript: "npm:^4.9.5"
   peerDependencies:
+    "@ton-community/func-js": ^0.10.0
     "@ton/core": ">=0.61.0"
     "@ton/crypto": ">=3.3.0"
     "@ton/test-utils": ">=0.7.0"
