@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.35.0] - 2025-07-07
 
-### Changed
+### Changed 
 
 - Updated config to match update https://t.me/tonstatus/171
 
@@ -435,7 +435,7 @@ type LogsVerbosity = {
 
 ## [0.2.2] - 2023-02-03
 
-### Added
+### Added 
 
 - Added `blockchain.runGetMethod(address, method, stack)` to run a get method on the specified address
 - Added `blockchain.setShardAccount(address, account)` to directly set the state of smart contracts
