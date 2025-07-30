@@ -13,6 +13,10 @@ import {
     StateInit,
     OpenedContract,
     OutActionSendMsg,
+    OutActionChangeLibrary,
+    OutAction,
+    Dictionary,
+    beginCell,
 } from '@ton/core';
 import { getSecureRandomBytes } from '@ton/crypto';
 
@@ -178,6 +182,7 @@ export type BlockchainSnapshot = {
     nextCreateWalletIndex: number;
     prevBlocksInfo?: PrevBlocksInfo;
     randomSeed?: Buffer;
+    autoDeployLibs: boolean;
 };
 
 export class Blockchain {
@@ -201,10 +206,12 @@ export class Blockchain {
     protected prevBlocksInfo?: PrevBlocksInfo;
     protected randomSeed?: Buffer;
     protected shouldDebug = false;
+    protected autoDeployLibs: boolean;
 
     readonly executor: IExecutor;
 
     protected debuggerExecutor?: Executor;
+
     async getDebuggerExecutor() {
         if (!this.debuggerExecutor) {
             this.debuggerExecutor = await Executor.create({ debug: true });
@@ -230,6 +237,7 @@ export class Blockchain {
             nextCreateWalletIndex: this.nextCreateWalletIndex,
             prevBlocksInfo: deepcopy(this.prevBlocksInfo),
             randomSeed: deepcopy(this.randomSeed),
+            autoDeployLibs: this.autoDeployLibs,
         };
     }
 
@@ -255,6 +263,7 @@ export class Blockchain {
         this.nextCreateWalletIndex = snapshot.nextCreateWalletIndex;
         this.prevBlocksInfo = deepcopy(snapshot.prevBlocksInfo);
         this.randomSeed = deepcopy(snapshot.randomSeed);
+        this.autoDeployLibs = snapshot.autoDeployLibs;
     }
 
     get recordStorage() {
@@ -307,11 +316,13 @@ export class Blockchain {
         config?: BlockchainConfig;
         storage: BlockchainStorage;
         meta?: ContractsMeta;
+        autoDeployLibs?: boolean;
     }) {
         this.networkConfig = blockchainConfigToBase64(opts.config);
         this.executor = opts.executor;
         this.storage = opts.storage;
         this.meta = opts.meta;
+        this.autoDeployLibs = opts.autoDeployLibs ?? false;
     }
 
     /**
@@ -502,6 +513,7 @@ export class Blockchain {
             const message = this.messageQueue.shift()!;
 
             let tx: SmartContractTransaction;
+            let smartContract: SmartContract;
             if (message.type === 'message') {
                 if (message.info.type === 'external-out') {
                     done = this.messageQueue.length == 0;
@@ -509,10 +521,12 @@ export class Blockchain {
                 }
 
                 this.currentLt += LT_ALIGN;
-                tx = await (await this.getContract(message.info.dest)).receiveMessage(message, params);
+                smartContract = await this.getContract(message.info.dest);
+                tx = await smartContract.receiveMessage(message, params);
             } else {
                 this.currentLt += LT_ALIGN;
-                tx = await (await this.getContract(message.on)).runTickTock(message.which, params);
+                smartContract = await this.getContract(message.on);
+                tx = await smartContract.runTickTock(message.which, params);
             }
 
             const transaction: BlockchainTransaction = {
@@ -523,6 +537,7 @@ export class Blockchain {
                 externals: [],
                 mode: message.type === 'message' ? message.mode : undefined,
             };
+
             transaction.parent?.children.push(transaction);
 
             result = transaction;
@@ -558,8 +573,60 @@ export class Blockchain {
                     this.startFetchingContract(message.info.dest);
                 }
             }
+
+            const isMasterchain = smartContract.account?.account?.addr.workChain === -1;
+            if (isMasterchain && this.autoDeployLibs) {
+                this.libs = this.applyLibraryActions(this.libs, transaction?.outActions);
+            }
         }
         return result === undefined ? { value: result, done: true } : { value: result, done: false };
+    }
+
+    private applyLibraryActions(originalLibraries?: Cell, outActions?: OutAction[]): Cell | undefined {
+        if (!outActions) {
+            return originalLibraries;
+        }
+
+        const changeLibraryActions = outActions.filter(
+            (action): action is OutActionChangeLibrary => action.type === 'changeLibrary',
+        );
+
+        if (changeLibraryActions.length === 0) {
+            return originalLibraries;
+        }
+
+        const keyType = Dictionary.Keys.Buffer(32);
+        const valueType = Dictionary.Values.Cell();
+
+        const libsDict =
+            originalLibraries?.beginParse().loadDictDirect(keyType, valueType) ?? Dictionary.empty(keyType, valueType);
+
+        for (const action of changeLibraryActions) {
+            let { mode, libRef } = action;
+
+            mode &= ~16;
+
+            if (mode === 0) {
+                console.warn('Removing libraries not supported');
+            } else if (mode === 1) {
+                console.warn('Private libraries are not supported');
+            } else if (mode === 2) {
+                if (libRef.type !== 'ref') {
+                    throw new Error('When deploying a library, libRef should be a cell, not a hash');
+                }
+
+                const { library } = libRef;
+                libsDict.set(library.hash(), library);
+            } else {
+                throw new Error(`Unknown changeLibraryAction mode ${mode}`);
+            }
+        }
+
+        if (libsDict.keys().length === 0) {
+            return originalLibraries;
+        }
+
+        return beginCell().storeDictDirect(libsDict).endCell();
     }
 
     protected async processTx(
@@ -867,6 +934,7 @@ export class Blockchain {
         config?: BlockchainConfig;
         storage?: BlockchainStorage;
         meta?: ContractsMeta;
+        autoDeployLibs?: boolean;
     }) {
         return new Blockchain({
             executor: opts?.executor ?? (await Executor.create()),
