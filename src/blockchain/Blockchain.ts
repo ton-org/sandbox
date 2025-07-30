@@ -607,8 +607,10 @@ export class Blockchain {
             mode &= ~16;
 
             if (mode === 0) {
+                // eslint-disable-next-line no-console
                 console.warn('Removing libraries not supported');
             } else if (mode === 1) {
+                // eslint-disable-next-line no-console
                 console.warn('Private libraries are not supported');
             } else if (mode === 2) {
                 if (libRef.type !== 'ref') {
