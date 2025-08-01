@@ -37,6 +37,7 @@ import { collectMetric } from '../metric/collectMetric';
 import { ContractsMeta } from '../meta/ContractsMeta';
 import { deepcopy } from '../utils/deepcopy';
 import { MessageQueueManager } from './MessageQueueManager';
+import { AsyncLock } from '../utils/AsyncLock';
 
 const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS';
 
@@ -178,7 +179,13 @@ export type BlockchainSnapshot = {
     randomSeed?: Buffer;
 };
 
+export type SendMessageIterParams = MessageParams & {
+    allowParallel?: boolean;
+};
+
 export class Blockchain {
+    protected lock = new AsyncLock();
+
     protected storage: BlockchainStorage;
     protected networkConfig: string;
     protected currentLt = 0n;
@@ -315,7 +322,7 @@ export class Blockchain {
     }
 
     protected createQueueManager(): MessageQueueManager {
-        return new MessageQueueManager({
+        return new MessageQueueManager(this.lock, {
             getContract: (address) => this.getContract(address),
             startFetchingContract: (address) => this.startFetchingContract(address),
             increaseLt: () => this.increaseLt(),
@@ -399,7 +406,7 @@ export class Blockchain {
      *
      * @param message Message to send
      * @param params Optional params
-     * @param allowParralel - When `true`, allows many consequential executions of this method. Useful for emulating interactions based on transaction order (MITM).
+     * @param params.allowParallel - When `true`, allows many consequential executions of this method. Useful for emulating interactions based on transaction order (MITM).
      *                        When `false` (default), only one execution of transactions is allowed.
      * @returns Async iterable of {@link BlockchainTransaction}
      *
@@ -416,10 +423,9 @@ export class Blockchain {
      */
     async sendMessageIter(
         message: Message | Cell,
-        params?: MessageParams,
-        allowParralel: boolean = false,
+        params?: SendMessageIterParams,
     ): Promise<AsyncIterator<BlockchainTransaction> & AsyncIterable<BlockchainTransaction>> {
-        const queue = allowParralel ? this.createQueueManager() : this.defaultQueueManager;
+        const queue = params?.allowParallel ? this.createQueueManager() : this.defaultQueueManager;
         await queue.pushMessage(message);
         // Iterable will lock on per tx basis
         return queue.runQueueIter(true, params);

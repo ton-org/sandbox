@@ -1003,8 +1003,7 @@ describe('Blockchain', () => {
                 to: target,
                 value: toNano('0.5'),
             }),
-            {},
-            true,
+            { allowParallel: true },
         );
 
         const attackerQueue = await blockchain.sendMessageIter(
@@ -1014,8 +1013,7 @@ describe('Blockchain', () => {
                 to: target,
                 value: toNano('0.5'),
             }),
-            {},
-            true,
+            { allowParallel: true },
         );
 
         const senderFirstTransactions = await executeTill(senderQueue, { from: sender, to: target });

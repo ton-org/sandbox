@@ -11,6 +11,7 @@ export {
     ExternalOutInfo,
     BlockchainConfig,
     BlockchainSnapshot,
+    SendMessageIterParams,
 } from './blockchain/Blockchain';
 
 export { BlockchainContractProvider, SandboxContractProvider } from './blockchain/BlockchainContractProvider';

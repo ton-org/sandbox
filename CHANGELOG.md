@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added `allowParralel` flag to `Blockchain.sendMessageIter` method, allowing for testing MITM attack
+- Added `allowParallel` flag to `Blockchain.sendMessageIter` method, allowing for testing MITM attack
 
 ## [0.35.1] - 2025-07-08
 

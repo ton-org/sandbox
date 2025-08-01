@@ -7,10 +7,10 @@ import { MessageParams, SmartContract, SmartContractTransaction } from './SmartC
 import { extractEvents } from '../event/Event';
 
 export class MessageQueueManager {
-    private lock = new AsyncLock();
     private messageQueue: PendingMessage[] = [];
 
     constructor(
+        private readonly lock: AsyncLock,
         private readonly blockchain: {
             startFetchingContract(address: Address): Promise<SmartContract>;
             getContract(address: Address): Promise<SmartContract>;

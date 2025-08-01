@@ -300,8 +300,7 @@ const senderQueue = await blockchain.sendMessageIter(
         value: toNano('0.05'),
         body: niceBody,
     }),
-    {},
-    true // use separate queue
+    { allowParallel: true },
 );
 
 const attackerQueue = await blockchain.sendMessageIter(
@@ -311,8 +310,7 @@ const attackerQueue = await blockchain.sendMessageIter(
         value: toNano('0.05'),
         body: notNiceBody,
     }),
-    {},
-    true // use separate queue
+    { allowParallel: true },
 );
 
 // sender's message arrives at target first
