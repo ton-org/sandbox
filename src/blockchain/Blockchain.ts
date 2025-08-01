@@ -11,11 +11,6 @@ import {
     ExternalAddress,
     StateInit,
     OpenedContract,
-    OutActionSendMsg,
-    OutActionChangeLibrary,
-    OutAction,
-    Dictionary,
-    beginCell,
 } from '@ton/core';
 import { getSecureRandomBytes } from '@ton/crypto';
 
@@ -287,6 +282,14 @@ export class Blockchain {
         this.shouldRecordStorage = v;
     }
 
+    get autoDeployLibraries(): boolean {
+        return this.autoDeployLibs;
+    }
+
+    set autoDeployLibraries(value: boolean) {
+        this.autoDeployLibs = value;
+    }
+
     get debug() {
         return this.shouldDebug;
     }
@@ -338,6 +341,9 @@ export class Blockchain {
             getContract: (address) => this.getContract(address),
             startFetchingContract: (address) => this.startFetchingContract(address),
             increaseLt: () => this.increaseLt(),
+            getLibs: () => this.libs,
+            setLibs: (value: Cell | undefined) => (this.libs = value),
+            getAutoDeployLibs: () => this.autoDeployLibs,
         });
     }
 
@@ -482,198 +488,6 @@ export class Blockchain {
 
     protected increaseLt() {
         this.currentLt += LT_ALIGN;
-    protected async pushMessage(message: Message | Cell) {
-        const msg = message instanceof Cell ? loadMessage(message.beginParse()) : message;
-        if (msg.info.type === 'external-out') {
-            throw new Error('Cannot send external out message');
-        }
-        await this.lock.with(async () => {
-            this.messageQueue.push({
-                type: 'message',
-                ...msg,
-            });
-        });
-    }
-
-    protected async pushTickTock(on: Address, which: TickOrTock) {
-        await this.lock.with(async () => {
-            this.messageQueue.push({
-                type: 'ticktock',
-                on,
-                which,
-            });
-        });
-    }
-
-    protected async runQueue(params?: MessageParams): Promise<SendMessageResult> {
-        const txes = await this.processQueue(params);
-        return {
-            transactions: txes,
-            events: txes.map((tx) => tx.events).flat(),
-            externals: txes.map((tx) => tx.externals).flat(),
-        };
-    }
-
-    protected txIter(
-        needsLocking: boolean,
-        params?: MessageParams,
-    ): AsyncIterator<BlockchainTransaction> & AsyncIterable<BlockchainTransaction> {
-        const it = {
-            next: () => this.processTx(needsLocking, params),
-            [Symbol.asyncIterator]() {
-                return it;
-            },
-        };
-        return it;
-    }
-
-    protected async processInternal(params?: MessageParams): Promise<IteratorResult<BlockchainTransaction>> {
-        let result: BlockchainTransaction | undefined = undefined;
-        let done = this.messageQueue.length == 0;
-        while (!done) {
-            const message = this.messageQueue.shift()!;
-
-            let tx: SmartContractTransaction;
-            let smartContract: SmartContract;
-            if (message.type === 'message') {
-                if (message.info.type === 'external-out') {
-                    done = this.messageQueue.length == 0;
-                    continue;
-                }
-
-                this.currentLt += LT_ALIGN;
-                smartContract = await this.getContract(message.info.dest);
-                tx = await smartContract.receiveMessage(message, params);
-            } else {
-                this.currentLt += LT_ALIGN;
-                smartContract = await this.getContract(message.on);
-                tx = await smartContract.runTickTock(message.which, params);
-            }
-
-            const transaction: BlockchainTransaction = {
-                ...tx,
-                events: extractEvents(tx),
-                parent: message.parentTransaction,
-                children: [],
-                externals: [],
-                mode: message.type === 'message' ? message.mode : undefined,
-            };
-
-            transaction.parent?.children.push(transaction);
-
-            result = transaction;
-            done = true;
-
-            const sendMsgActions = (transaction.outActions?.filter((action) => action.type === 'sendMsg') ??
-                []) as OutActionSendMsg[];
-
-            for (const [index, message] of transaction.outMessages) {
-                if (message.info.type === 'external-out') {
-                    transaction.externals.push({
-                        info: {
-                            type: 'external-out',
-                            src: message.info.src,
-                            dest: message.info.dest ?? undefined,
-                            createdAt: message.info.createdAt,
-                            createdLt: message.info.createdLt,
-                        },
-                        init: message.init ?? undefined,
-                        body: message.body,
-                    });
-                    continue;
-                }
-
-                this.messageQueue.push({
-                    type: 'message',
-                    parentTransaction: transaction,
-                    mode: sendMsgActions[index]?.mode,
-                    ...message,
-                });
-
-                if (message.info.type === 'internal') {
-                    this.startFetchingContract(message.info.dest);
-                }
-            }
-
-            const isMasterchain = smartContract.account?.account?.addr.workChain === -1;
-            if (isMasterchain && this.autoDeployLibs) {
-                this.libs = this.applyLibraryActions(this.libs, transaction?.outActions);
-            }
-        }
-        return result === undefined ? { value: result, done: true } : { value: result, done: false };
-    }
-
-    private applyLibraryActions(originalLibraries?: Cell, outActions?: OutAction[]): Cell | undefined {
-        if (!outActions) {
-            return originalLibraries;
-        }
-
-        const changeLibraryActions = outActions.filter(
-            (action): action is OutActionChangeLibrary => action.type === 'changeLibrary',
-        );
-
-        if (changeLibraryActions.length === 0) {
-            return originalLibraries;
-        }
-
-        const keyType = Dictionary.Keys.Buffer(32);
-        const valueType = Dictionary.Values.Cell();
-
-        const libsDict =
-            originalLibraries?.beginParse().loadDictDirect(keyType, valueType) ?? Dictionary.empty(keyType, valueType);
-
-        for (const action of changeLibraryActions) {
-            let { mode, libRef } = action;
-
-            mode &= ~16;
-
-            if (mode === 0) {
-                // eslint-disable-next-line no-console
-                console.warn('Removing libraries not supported');
-            } else if (mode === 1) {
-                // eslint-disable-next-line no-console
-                console.warn('Private libraries are not supported');
-            } else if (mode === 2) {
-                if (libRef.type !== 'ref') {
-                    throw new Error('When deploying a library, libRef should be a cell, not a hash');
-                }
-
-                const { library } = libRef;
-                libsDict.set(library.hash(), library);
-            } else {
-                throw new Error(`Unknown changeLibraryAction mode ${mode}`);
-            }
-        }
-
-        if (libsDict.keys().length === 0) {
-            return originalLibraries;
-        }
-
-        return beginCell().storeDictDirect(libsDict).endCell();
-    }
-
-    protected async processTx(
-        needsLocking: boolean,
-        params?: MessageParams,
-    ): Promise<IteratorResult<BlockchainTransaction>> {
-        // Lock only if not locked already
-        return needsLocking
-            ? await this.lock.with(async () => this.processInternal(params))
-            : await this.processInternal(params);
-    }
-
-    protected async processQueue(params?: MessageParams) {
-        return await this.lock.with(async () => {
-            // Locked already
-            const txs = this.txIter(false, params);
-            const result: BlockchainTransaction[] = [];
-
-            for await (const tx of txs) {
-                result.push(tx);
-            }
-
-            return result;
-        });
     }
 
     /**

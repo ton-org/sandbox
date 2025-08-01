@@ -1,4 +1,14 @@
-import { Address, Cell, loadMessage, Message, OutActionSendMsg } from '@ton/core';
+import {
+    Address,
+    beginCell,
+    Cell,
+    Dictionary,
+    loadMessage,
+    Message,
+    OutAction,
+    OutActionChangeLibrary,
+    OutActionSendMsg,
+} from '@ton/core';
 
 import { BlockchainTransaction, PendingMessage, SendMessageResult } from './Blockchain';
 import { AsyncLock } from '../utils/AsyncLock';
@@ -15,6 +25,9 @@ export class MessageQueueManager {
             startFetchingContract(address: Address): Promise<SmartContract>;
             getContract(address: Address): Promise<SmartContract>;
             increaseLt(): void;
+            getLibs(): Cell | undefined;
+            setLibs(libs: Cell | undefined): void;
+            getAutoDeployLibs(): boolean;
         },
     ) {}
 
@@ -94,6 +107,7 @@ export class MessageQueueManager {
             const message = this.messageQueue.shift()!;
 
             let tx: SmartContractTransaction;
+            let smartContract: SmartContract;
             if (message.type === 'message') {
                 if (message.info.type === 'external-out') {
                     done = this.messageQueue.length == 0;
@@ -101,10 +115,12 @@ export class MessageQueueManager {
                 }
 
                 this.blockchain.increaseLt();
-                tx = await (await this.blockchain.getContract(message.info.dest)).receiveMessage(message, params);
+                smartContract = await this.blockchain.getContract(message.info.dest);
+                tx = await smartContract.receiveMessage(message, params);
             } else {
                 this.blockchain.increaseLt();
-                tx = await (await this.blockchain.getContract(message.on)).runTickTock(message.which, params);
+                smartContract = await this.blockchain.getContract(message.on);
+                tx = await smartContract.runTickTock(message.which, params);
             }
 
             const transaction: BlockchainTransaction = {
@@ -150,7 +166,61 @@ export class MessageQueueManager {
                     this.blockchain.startFetchingContract(message.info.dest);
                 }
             }
+
+            const isMasterchain = smartContract.account?.account?.addr.workChain === -1;
+            if (isMasterchain && this.blockchain.getAutoDeployLibs()) {
+                this.blockchain.setLibs(this.applyLibraryActions(this.blockchain.getLibs(), transaction?.outActions));
+            }
         }
         return result === undefined ? { value: result, done: true } : { value: result, done: false };
+    }
+
+    private applyLibraryActions(originalLibraries?: Cell, outActions?: OutAction[]): Cell | undefined {
+        if (!outActions) {
+            return originalLibraries;
+        }
+
+        const changeLibraryActions = outActions.filter(
+            (action): action is OutActionChangeLibrary => action.type === 'changeLibrary',
+        );
+
+        if (changeLibraryActions.length === 0) {
+            return originalLibraries;
+        }
+
+        const keyType = Dictionary.Keys.Buffer(32);
+        const valueType = Dictionary.Values.Cell();
+
+        const libsDict =
+            originalLibraries?.beginParse().loadDictDirect(keyType, valueType) ?? Dictionary.empty(keyType, valueType);
+
+        for (const action of changeLibraryActions) {
+            let { mode, libRef } = action;
+
+            mode &= ~16;
+
+            if (mode === 0) {
+                // eslint-disable-next-line no-console
+                console.warn('Removing libraries not supported');
+            } else if (mode === 1) {
+                // eslint-disable-next-line no-console
+                console.warn('Private libraries are not supported');
+            } else if (mode === 2) {
+                if (libRef.type !== 'ref') {
+                    throw new Error('When deploying a library, libRef should be a cell, not a hash');
+                }
+
+                const { library } = libRef;
+                libsDict.set(library.hash(), library);
+            } else {
+                throw new Error(`Unknown changeLibraryAction mode ${mode}`);
+            }
+        }
+
+        if (libsDict.keys().length === 0) {
+            return originalLibraries;
+        }
+
+        return beginCell().storeDictDirect(libsDict).endCell();
     }
 }
