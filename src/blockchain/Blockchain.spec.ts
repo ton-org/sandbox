@@ -14,7 +14,7 @@ import {
     internal as msgInternal,
     SendMode,
 } from '@ton/core';
-import { compareTransaction, flattenTransaction, randomAddress } from '@ton/test-utils';
+import { compareTransaction, executeFrom, executeTill, flattenTransaction, randomAddress } from '@ton/test-utils';
 import { getSecureRandomBytes } from '@ton/crypto';
 
 import { Blockchain, BlockchainTransaction } from './Blockchain';
@@ -987,6 +987,45 @@ describe('Blockchain', () => {
         expect(res2.transactions[2]!.inMessage!.info.src).toEqualAddress(addr);
         expect(res2.transactions[2]!.inMessage!.info.dest).toEqualAddress(addr2);
         expect(res2.transactions[2].mode).toEqual(SendMode.CARRY_ALL_REMAINING_INCOMING_VALUE);
+    });
+
+    it('should emulate message in the middle', async () => {
+        const blockchain = await Blockchain.create();
+
+        const sender = randomAddress();
+        const attacker = randomAddress();
+        const target = randomAddress();
+
+        const senderQueue = await blockchain.sendMessageIter(
+            internal({
+                bounce: true,
+                from: sender,
+                to: target,
+                value: toNano('0.5'),
+            }),
+            { allowParallel: true },
+        );
+
+        const attackerQueue = await blockchain.sendMessageIter(
+            internal({
+                bounce: true,
+                from: attacker,
+                to: target,
+                value: toNano('0.5'),
+            }),
+            { allowParallel: true },
+        );
+
+        const senderFirstTransactions = await executeTill(senderQueue, { from: sender, to: target });
+        expect(senderFirstTransactions).toHaveTransaction({ from: sender, to: target });
+        expect(senderFirstTransactions).not.toHaveTransaction({ from: target, to: sender });
+
+        const attackerTransactions = await executeFrom(attackerQueue);
+        expect(attackerTransactions).toHaveTransaction({ from: attacker, to: target });
+        expect(attackerTransactions).toHaveTransaction({ from: target, to: attacker });
+
+        const senderLastTransactions = await executeFrom(senderQueue);
+        expect(senderLastTransactions).toHaveTransaction({ from: target, to: sender });
     });
 
     describe('snapshots', () => {

@@ -269,6 +269,63 @@ it('minter admin should be able to mint jettons', async () => {
 });
 ```
 
+### Testing Man In The Middle 
+
+This is an example of simulating a man-in-the-middle (MITM) attack scenario. It demonstrates emulation of an attacker exploiting a race condition by injecting a malicious message in other transaction queue.
+
+```typescript
+import { Blockchain, internal } from '@ton/sandbox';
+import { executeFrom, executeTill, randomAddress } from '@ton/test-utils';
+import { toNano } from '@ton/core';
+
+// initialize sandbox blockchain
+const blockchain = await Blockchain.create();
+
+// simulate two participants
+const sender = randomAddress();
+const attacker = randomAddress();
+
+// open the target contract you want to test
+const target = await blockchain.openContract(...);
+
+// prepare message body payloads
+const niceBody = ...;      // body for sender
+const notNiceBody = ...;   // malicious body for attacker
+
+// create independent message queues for both participants
+const senderQueue = await blockchain.sendMessageIter(
+    internal({
+        from: sender,
+        to: target,
+        value: toNano('0.05'),
+        body: niceBody,
+    }),
+    { allowParallel: true },
+);
+
+const attackerQueue = await blockchain.sendMessageIter(
+    internal({
+        from: attacker,
+        to: target,
+        value: toNano('0.05'),
+        body: notNiceBody,
+    }),
+    { allowParallel: true },
+);
+
+// sender's message arrives at target first
+const senderFirstTransactions = await executeTill(senderQueue, {
+    from: sender,
+    to: target,
+});
+
+// attacker exploits potential race condition
+const attackerResult = await executeFrom(attackerQueue);
+
+// remaining sender transaction proceeds
+const senderSecondResult = await executeFrom(senderQueue);
+```
+
 ### Testing key points
 
 In order to make sure that the contract will work as expected, you need to follow the following points in testing

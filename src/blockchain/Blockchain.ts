@@ -6,20 +6,18 @@ import {
     Contract,
     Sender,
     toNano,
-    loadMessage,
     ShardAccount,
     TupleItem,
     ExternalAddress,
     StateInit,
     OpenedContract,
-    OutActionSendMsg,
 } from '@ton/core';
 import { getSecureRandomBytes } from '@ton/crypto';
 
 import { defaultConfig } from '../config/defaultConfig';
 import { IExecutor, Executor, TickOrTock, PrevBlocksInfo } from '../executor/Executor';
 import { BlockchainStorage, LocalBlockchainStorage } from './BlockchainStorage';
-import { extractEvents, Event } from '../event/Event';
+import { Event } from '../event/Event';
 import { BlockchainContractProvider, SandboxContractProvider } from './BlockchainContractProvider';
 import { BlockchainSender } from './BlockchainSender';
 import { TreasuryContract } from '../treasury/Treasury';
@@ -32,13 +30,14 @@ import {
     SmartContractTransaction,
     Verbosity,
 } from './SmartContract';
-import { AsyncLock } from '../utils/AsyncLock';
 import { internal } from '../utils/message';
 import { slimConfig } from '../config/slimConfig';
 import { testSubwalletId } from '../utils/testTreasurySubwalletId';
 import { collectMetric } from '../metric/collectMetric';
 import { ContractsMeta } from '../meta/ContractsMeta';
 import { deepcopy } from '../utils/deepcopy';
+import { MessageQueueManager } from './MessageQueueManager';
+import { AsyncLock } from '../utils/AsyncLock';
 
 const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS';
 
@@ -180,12 +179,17 @@ export type BlockchainSnapshot = {
     randomSeed?: Buffer;
 };
 
+export type SendMessageIterParams = MessageParams & {
+    allowParallel?: boolean;
+};
+
 export class Blockchain {
+    protected lock = new AsyncLock();
+
     protected storage: BlockchainStorage;
     protected networkConfig: string;
     protected currentLt = 0n;
     protected currentTime?: number;
-    protected messageQueue: PendingMessage[] = [];
     protected logsVerbosity: LogsVerbosity = {
         print: true,
         blockchainLogs: false,
@@ -193,7 +197,6 @@ export class Blockchain {
         debugLogs: true,
     };
     protected globalLibs?: Cell;
-    protected lock = new AsyncLock();
     protected contractFetches = new Map<string, Promise<SmartContract>>();
     protected nextCreateWalletIndex = 0;
     protected shouldRecordStorage = false;
@@ -201,6 +204,8 @@ export class Blockchain {
     protected prevBlocksInfo?: PrevBlocksInfo;
     protected randomSeed?: Buffer;
     protected shouldDebug = false;
+
+    protected defaultQueueManager: MessageQueueManager;
 
     readonly executor: IExecutor;
 
@@ -312,6 +317,16 @@ export class Blockchain {
         this.executor = opts.executor;
         this.storage = opts.storage;
         this.meta = opts.meta;
+
+        this.defaultQueueManager = this.createQueueManager();
+    }
+
+    protected createQueueManager(): MessageQueueManager {
+        return new MessageQueueManager(this.lock, {
+            getContract: (address) => this.getContract(address),
+            startFetchingContract: (address) => this.startFetchingContract(address),
+            increaseLt: () => this.increaseLt(),
+        });
     }
 
     /**
@@ -382,8 +397,8 @@ export class Blockchain {
      * }));
      */
     async sendMessage(message: Message | Cell, params?: MessageParams): Promise<SendMessageResult> {
-        await this.pushMessage(message);
-        return await this.runQueue(params);
+        await this.defaultQueueManager.pushMessage(message);
+        return await this.defaultQueueManager.runQueue(params);
     }
 
     /**
@@ -391,6 +406,8 @@ export class Blockchain {
      *
      * @param message Message to send
      * @param params Optional params
+     * @param params.allowParallel - When `true`, allows many consequential executions of this method. Useful for emulating interactions based on transaction order (MITM).
+     *                        When `false` (default), only one execution of transactions is allowed.
      * @returns Async iterable of {@link BlockchainTransaction}
      *
      * @example
@@ -399,18 +416,19 @@ export class Blockchain {
      *     to: address,
      *     value: toNano('1'),
      *     body: beginCell().storeUint(0, 32).endCell(),
-     * }, { randomSeed: crypto.randomBytes(32) });
-     * for await (const tx of await blockchain.sendMessageIter(message)) {
+     * });
+     * for await (const tx of await blockchain.sendMessageIter(message, { randomSeed: crypto.randomBytes(32) })) {
      *     // process transaction
      * }
      */
     async sendMessageIter(
         message: Message | Cell,
-        params?: MessageParams,
+        params?: SendMessageIterParams,
     ): Promise<AsyncIterator<BlockchainTransaction> & AsyncIterable<BlockchainTransaction>> {
-        await this.pushMessage(message);
+        const queue = params?.allowParallel ? this.createQueueManager() : this.defaultQueueManager;
+        await queue.pushMessage(message);
         // Iterable will lock on per tx basis
-        return await this.txIter(true, params);
+        return queue.runQueueIter(true, params);
     }
 
     /**
@@ -426,9 +444,9 @@ export class Blockchain {
      */
     async runTickTock(on: Address | Address[], which: TickOrTock, params?: MessageParams): Promise<SendMessageResult> {
         for (const addr of Array.isArray(on) ? on : [on]) {
-            await this.pushTickTock(addr, which);
+            await this.defaultQueueManager.pushTickTock(addr, which);
         }
-        return await this.runQueue(params);
+        return await this.defaultQueueManager.runQueue(params);
     }
 
     /**
@@ -450,140 +468,8 @@ export class Blockchain {
         return await (await this.getContract(address)).get(method, stack, params);
     }
 
-    protected async pushMessage(message: Message | Cell) {
-        const msg = message instanceof Cell ? loadMessage(message.beginParse()) : message;
-        if (msg.info.type === 'external-out') {
-            throw new Error('Cannot send external out message');
-        }
-        await this.lock.with(async () => {
-            this.messageQueue.push({
-                type: 'message',
-                ...msg,
-            });
-        });
-    }
-
-    protected async pushTickTock(on: Address, which: TickOrTock) {
-        await this.lock.with(async () => {
-            this.messageQueue.push({
-                type: 'ticktock',
-                on,
-                which,
-            });
-        });
-    }
-
-    protected async runQueue(params?: MessageParams): Promise<SendMessageResult> {
-        const txes = await this.processQueue(params);
-        return {
-            transactions: txes,
-            events: txes.map((tx) => tx.events).flat(),
-            externals: txes.map((tx) => tx.externals).flat(),
-        };
-    }
-
-    protected txIter(
-        needsLocking: boolean,
-        params?: MessageParams,
-    ): AsyncIterator<BlockchainTransaction> & AsyncIterable<BlockchainTransaction> {
-        const it = {
-            next: () => this.processTx(needsLocking, params),
-            [Symbol.asyncIterator]() {
-                return it;
-            },
-        };
-        return it;
-    }
-
-    protected async processInternal(params?: MessageParams): Promise<IteratorResult<BlockchainTransaction>> {
-        let result: BlockchainTransaction | undefined = undefined;
-        let done = this.messageQueue.length == 0;
-        while (!done) {
-            const message = this.messageQueue.shift()!;
-
-            let tx: SmartContractTransaction;
-            if (message.type === 'message') {
-                if (message.info.type === 'external-out') {
-                    done = this.messageQueue.length == 0;
-                    continue;
-                }
-
-                this.currentLt += LT_ALIGN;
-                tx = await (await this.getContract(message.info.dest)).receiveMessage(message, params);
-            } else {
-                this.currentLt += LT_ALIGN;
-                tx = await (await this.getContract(message.on)).runTickTock(message.which, params);
-            }
-
-            const transaction: BlockchainTransaction = {
-                ...tx,
-                events: extractEvents(tx),
-                parent: message.parentTransaction,
-                children: [],
-                externals: [],
-                mode: message.type === 'message' ? message.mode : undefined,
-            };
-            transaction.parent?.children.push(transaction);
-
-            result = transaction;
-            done = true;
-
-            const sendMsgActions = (transaction.outActions?.filter((action) => action.type === 'sendMsg') ??
-                []) as OutActionSendMsg[];
-
-            for (const [index, message] of transaction.outMessages) {
-                if (message.info.type === 'external-out') {
-                    transaction.externals.push({
-                        info: {
-                            type: 'external-out',
-                            src: message.info.src,
-                            dest: message.info.dest ?? undefined,
-                            createdAt: message.info.createdAt,
-                            createdLt: message.info.createdLt,
-                        },
-                        init: message.init ?? undefined,
-                        body: message.body,
-                    });
-                    continue;
-                }
-
-                this.messageQueue.push({
-                    type: 'message',
-                    parentTransaction: transaction,
-                    mode: sendMsgActions[index]?.mode,
-                    ...message,
-                });
-
-                if (message.info.type === 'internal') {
-                    this.startFetchingContract(message.info.dest);
-                }
-            }
-        }
-        return result === undefined ? { value: result, done: true } : { value: result, done: false };
-    }
-
-    protected async processTx(
-        needsLocking: boolean,
-        params?: MessageParams,
-    ): Promise<IteratorResult<BlockchainTransaction>> {
-        // Lock only if not locked already
-        return needsLocking
-            ? await this.lock.with(async () => this.processInternal(params))
-            : await this.processInternal(params);
-    }
-
-    protected async processQueue(params?: MessageParams) {
-        return await this.lock.with(async () => {
-            // Locked already
-            const txs = this.txIter(false, params);
-            const result: BlockchainTransaction[] = [];
-
-            for await (const tx of txs) {
-                result.push(tx);
-            }
-
-            return result;
-        });
+    protected increaseLt() {
+        this.currentLt += LT_ALIGN;
     }
 
     /**
@@ -599,9 +485,9 @@ export class Blockchain {
         return new BlockchainContractProvider(
             {
                 getContract: (addr) => this.getContract(addr),
-                pushMessage: (msg) => this.pushMessage(msg),
+                pushMessage: (msg) => this.defaultQueueManager.pushMessage(msg),
                 runGetMethod: (addr, method, args) => this.runGetMethod(addr, method, args),
-                pushTickTock: (on, which) => this.pushTickTock(on, which),
+                pushTickTock: (on, which) => this.defaultQueueManager.pushTickTock(on, which),
                 openContract: <T extends Contract>(contract: T) => this.openContract(contract) as OpenedContract<T>,
             },
             address,
@@ -624,7 +510,7 @@ export class Blockchain {
     sender(address: Address): Sender {
         return new BlockchainSender(
             {
-                pushMessage: (msg) => this.pushMessage(msg),
+                pushMessage: (msg) => this.defaultQueueManager.pushMessage(msg),
             },
             address,
         );
@@ -745,7 +631,7 @@ export class Blockchain {
                                 ret = await ret;
                             }
                             const out = {
-                                ...(await this.runQueue()),
+                                ...(await this.defaultQueueManager.runQueue()),
                                 result: ret,
                             };
                             await collectMetric(this, ctx, out);
