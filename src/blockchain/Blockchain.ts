@@ -6,7 +6,6 @@ import {
     Contract,
     Sender,
     toNano,
-    loadMessage,
     ShardAccount,
     TupleItem,
     ExternalAddress,
@@ -23,7 +22,7 @@ import { getSecureRandomBytes } from '@ton/crypto';
 import { defaultConfig } from '../config/defaultConfig';
 import { IExecutor, Executor, TickOrTock, PrevBlocksInfo } from '../executor/Executor';
 import { BlockchainStorage, LocalBlockchainStorage } from './BlockchainStorage';
-import { extractEvents, Event } from '../event/Event';
+import { Event } from '../event/Event';
 import { BlockchainContractProvider, SandboxContractProvider } from './BlockchainContractProvider';
 import { BlockchainSender } from './BlockchainSender';
 import { TreasuryContract } from '../treasury/Treasury';
@@ -36,13 +35,14 @@ import {
     SmartContractTransaction,
     Verbosity,
 } from './SmartContract';
-import { AsyncLock } from '../utils/AsyncLock';
 import { internal } from '../utils/message';
 import { slimConfig } from '../config/slimConfig';
 import { testSubwalletId } from '../utils/testTreasurySubwalletId';
 import { collectMetric } from '../metric/collectMetric';
 import { ContractsMeta } from '../meta/ContractsMeta';
 import { deepcopy } from '../utils/deepcopy';
+import { MessageQueueManager } from './MessageQueueManager';
+import { AsyncLock } from '../utils/AsyncLock';
 
 const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS';
 
@@ -185,12 +185,17 @@ export type BlockchainSnapshot = {
     autoDeployLibs: boolean;
 };
 
+export type SendMessageIterParams = MessageParams & {
+    allowParallel?: boolean;
+};
+
 export class Blockchain {
+    protected lock = new AsyncLock();
+
     protected storage: BlockchainStorage;
     protected networkConfig: string;
     protected currentLt = 0n;
     protected currentTime?: number;
-    protected messageQueue: PendingMessage[] = [];
     protected logsVerbosity: LogsVerbosity = {
         print: true,
         blockchainLogs: false,
@@ -198,7 +203,6 @@ export class Blockchain {
         debugLogs: true,
     };
     protected globalLibs?: Cell;
-    protected lock = new AsyncLock();
     protected contractFetches = new Map<string, Promise<SmartContract>>();
     protected nextCreateWalletIndex = 0;
     protected shouldRecordStorage = false;
@@ -207,6 +211,8 @@ export class Blockchain {
     protected randomSeed?: Buffer;
     protected shouldDebug = false;
     protected autoDeployLibs: boolean;
+
+    protected defaultQueueManager: MessageQueueManager;
 
     readonly executor: IExecutor;
 
@@ -323,6 +329,16 @@ export class Blockchain {
         this.storage = opts.storage;
         this.meta = opts.meta;
         this.autoDeployLibs = opts.autoDeployLibs ?? false;
+
+        this.defaultQueueManager = this.createQueueManager();
+    }
+
+    protected createQueueManager(): MessageQueueManager {
+        return new MessageQueueManager(this.lock, {
+            getContract: (address) => this.getContract(address),
+            startFetchingContract: (address) => this.startFetchingContract(address),
+            increaseLt: () => this.increaseLt(),
+        });
     }
 
     /**
@@ -393,8 +409,8 @@ export class Blockchain {
      * }));
      */
     async sendMessage(message: Message | Cell, params?: MessageParams): Promise<SendMessageResult> {
-        await this.pushMessage(message);
-        return await this.runQueue(params);
+        await this.defaultQueueManager.pushMessage(message);
+        return await this.defaultQueueManager.runQueue(params);
     }
 
     /**
@@ -402,6 +418,8 @@ export class Blockchain {
      *
      * @param message Message to send
      * @param params Optional params
+     * @param params.allowParallel - When `true`, allows many consequential executions of this method. Useful for emulating interactions based on transaction order (MITM).
+     *                        When `false` (default), only one execution of transactions is allowed.
      * @returns Async iterable of {@link BlockchainTransaction}
      *
      * @example
@@ -410,18 +428,19 @@ export class Blockchain {
      *     to: address,
      *     value: toNano('1'),
      *     body: beginCell().storeUint(0, 32).endCell(),
-     * }, { randomSeed: crypto.randomBytes(32) });
-     * for await (const tx of await blockchain.sendMessageIter(message)) {
+     * });
+     * for await (const tx of await blockchain.sendMessageIter(message, { randomSeed: crypto.randomBytes(32) })) {
      *     // process transaction
      * }
      */
     async sendMessageIter(
         message: Message | Cell,
-        params?: MessageParams,
+        params?: SendMessageIterParams,
     ): Promise<AsyncIterator<BlockchainTransaction> & AsyncIterable<BlockchainTransaction>> {
-        await this.pushMessage(message);
+        const queue = params?.allowParallel ? this.createQueueManager() : this.defaultQueueManager;
+        await queue.pushMessage(message);
         // Iterable will lock on per tx basis
-        return await this.txIter(true, params);
+        return queue.runQueueIter(true, params);
     }
 
     /**
@@ -437,9 +456,9 @@ export class Blockchain {
      */
     async runTickTock(on: Address | Address[], which: TickOrTock, params?: MessageParams): Promise<SendMessageResult> {
         for (const addr of Array.isArray(on) ? on : [on]) {
-            await this.pushTickTock(addr, which);
+            await this.defaultQueueManager.pushTickTock(addr, which);
         }
-        return await this.runQueue(params);
+        return await this.defaultQueueManager.runQueue(params);
     }
 
     /**
@@ -461,6 +480,8 @@ export class Blockchain {
         return await (await this.getContract(address)).get(method, stack, params);
     }
 
+    protected increaseLt() {
+        this.currentLt += LT_ALIGN;
     protected async pushMessage(message: Message | Cell) {
         const msg = message instanceof Cell ? loadMessage(message.beginParse()) : message;
         if (msg.info.type === 'external-out') {
@@ -668,9 +689,9 @@ export class Blockchain {
         return new BlockchainContractProvider(
             {
                 getContract: (addr) => this.getContract(addr),
-                pushMessage: (msg) => this.pushMessage(msg),
+                pushMessage: (msg) => this.defaultQueueManager.pushMessage(msg),
                 runGetMethod: (addr, method, args) => this.runGetMethod(addr, method, args),
-                pushTickTock: (on, which) => this.pushTickTock(on, which),
+                pushTickTock: (on, which) => this.defaultQueueManager.pushTickTock(on, which),
                 openContract: <T extends Contract>(contract: T) => this.openContract(contract) as OpenedContract<T>,
             },
             address,
@@ -693,7 +714,7 @@ export class Blockchain {
     sender(address: Address): Sender {
         return new BlockchainSender(
             {
-                pushMessage: (msg) => this.pushMessage(msg),
+                pushMessage: (msg) => this.defaultQueueManager.pushMessage(msg),
             },
             address,
         );
@@ -814,7 +835,7 @@ export class Blockchain {
                                 ret = await ret;
                             }
                             const out = {
-                                ...(await this.runQueue()),
+                                ...(await this.defaultQueueManager.runQueue()),
                                 result: ret,
                             };
                             await collectMetric(this, ctx, out);
@@ -919,6 +940,7 @@ export class Blockchain {
      * @param [opts.config] Config used in blockchain. If omitted {@link defaultConfig} is used.
      * @param [opts.storage] Contracts storage used for blockchain. If omitted {@link LocalBlockchainStorage} is used.
      * @param [opts.meta] Optional contracts metadata provider. If not provided, {@link @ton/test-utils.contractsMeta} will be used to accumulate contracts metadata.
+     * @param [opts.autoDeployLibs] Optional flag. If set to true, libraries will be collected automatically
      * @example
      * const blockchain = await Blockchain.create({ config: 'slim' });
      *
