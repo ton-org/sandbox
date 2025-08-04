@@ -33,23 +33,6 @@ function deepcopyDict(dict: Dictionary<DictionaryKeyTypes, unknown>) {
     return new Dictionary(deepcopy(rawDict._map), rawDict._key, rawDict._value);
 }
 
-export function deepcopyTransactions(transactions: BlockchainTransaction[]): BlockchainTransaction[] {
-    return deepcopy(
-        transactions.map((transaction) => ({
-            ...transaction,
-            children: [],
-        })),
-    );
-}
-
-export function restoreTransactions(transactions: BlockchainTransaction[]) {
-    const copy = deepcopy(transactions);
-    for (const transaction of copy) {
-        transaction.parent?.children?.push(transaction);
-    }
-    return copy;
-}
-
 // TypeScript by design does not treat interfaces as structurally assignable to plain record types
 // Related issue: https://github.com/microsoft/TypeScript/issues/15300
 // This is a workaround
