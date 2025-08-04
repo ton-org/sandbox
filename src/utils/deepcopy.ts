@@ -1,7 +1,5 @@
 import { Address, Cell, Dictionary, DictionaryKeyTypes } from '@ton/core';
 
-import type { BlockchainTransaction } from '../blockchain/Blockchain';
-
 function deepcopyBuffer(buffer: Buffer | undefined): Buffer | undefined {
     if (!buffer) return;
 
