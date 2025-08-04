@@ -20,7 +20,7 @@
     "@ton/core": "^0.61.0",
     "@ton/crypto": "3.3.0",
     "@ton/test-utils": "^0.7.0",
-    "@ton/tolk-js": "^0.13.0",
+    "@ton/tolk-js": "^1.0.0",
     "@ton/ton": "^15.2.1",
     "@ton/toolchain": "the-ton-tech/toolchain#v1.4.0",
     "@types/jest": "^29.5.0",
@@ -34,6 +34,7 @@
     "typescript": "^5.8.3"
   },
   "peerDependencies": {
+    "@ton-community/func-js": ">=0.10.0",
     "@ton/core": ">=0.61.0",
     "@ton/crypto": ">=3.3.0",
     "@ton/test-utils": ">=0.7.0",

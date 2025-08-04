@@ -3,6 +3,7 @@ dist
 .idea
 coverage/
 !src/coverage/
+src/coverage/test/output
 .sandbox-metric-raw.jsonl
 
 # yarn
