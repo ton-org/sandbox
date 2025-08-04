@@ -180,6 +180,7 @@ export type BlockchainSnapshot = {
     prevBlocksInfo?: PrevBlocksInfo;
     randomSeed?: Buffer;
     autoDeployLibs: boolean;
+    transactions: BlockchainTransaction[];
 };
 
 export type SendMessageIterParams = MessageParams & {
@@ -208,12 +209,13 @@ export class Blockchain {
     protected randomSeed?: Buffer;
     protected shouldDebug = false;
     protected autoDeployLibs: boolean;
+    protected transactions: BlockchainTransaction[] = [];
 
     protected defaultQueueManager: MessageQueueManager;
 
     protected collectCoverage: boolean = false;
-    protected readonly txs: BlockchainTransaction[][] = [];
-    protected readonly getMethodResults: GetMethodResult[] = [];
+    protected readonly coverageTransactions: BlockchainTransaction[][] = [];
+    protected readonly coverageGetMethodResults: GetMethodResult[] = [];
 
     readonly executor: IExecutor;
 
@@ -245,6 +247,7 @@ export class Blockchain {
             prevBlocksInfo: deepcopy(this.prevBlocksInfo),
             randomSeed: deepcopy(this.randomSeed),
             autoDeployLibs: this.autoDeployLibs,
+            transactions: this.transactions.map((tx) => tx),
         };
     }
 
@@ -271,6 +274,7 @@ export class Blockchain {
         this.prevBlocksInfo = deepcopy(snapshot.prevBlocksInfo);
         this.randomSeed = deepcopy(snapshot.randomSeed);
         this.autoDeployLibs = snapshot.autoDeployLibs;
+        this.transactions = snapshot.transactions.map((tx) => tx);
     }
 
     get recordStorage() {
@@ -351,6 +355,7 @@ export class Blockchain {
             setLibs: (value: Cell | undefined) => (this.libs = value),
             getAutoDeployLibs: () => this.autoDeployLibs,
             registerTxsForCoverage: (txs) => this.registerTxsForCoverage(txs),
+            addTransaction: (transaction: BlockchainTransaction) => this.transactions.push(transaction),
         });
     }
 
@@ -495,6 +500,58 @@ export class Blockchain {
         return result;
     }
 
+    /**
+     * Retrieves transactions for the specified address. Transactions are ordered from newest to oldest.
+     *
+     * If both `lt` and `hash` are provided, the result will include transactions up to and including the one matching them.
+     *
+     * @param {Address} address - The address to retrieve transactions for.
+     * @param opts - Options to fetch transactions
+     * @param [opts.lt] - Logical time of the transaction to start from. Must be used together with `hash`.
+     * @param [opts.hash] - Hash of the transaction to start from. Must be used together with `lt`.
+     * @param [opts.limit] - Maximum number of transactions to return.
+     *
+     * @returns {Promise<BlockchainTransaction[]>} Promise resolving to an array of transactions involving the given address.
+     *
+     * @throws {Error} If both `lt` and `hash` are provided but no matching transaction is found.
+     *
+     * @example
+     * const transactions = await blockchain.getTransactions(Address.parse(...), {
+     *   lt: '1234567890',
+     *   hash: 'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+     *   limit: 10
+     * });
+     */
+    async getTransactions(
+        address: Address,
+        opts?: {
+            limit?: number;
+            lt?: string | bigint;
+            hash?: string | Buffer;
+        },
+    ): Promise<BlockchainTransaction[]> {
+        const transactionByAddress = this.transactions.reverse().filter((transaction) => {
+            const dst = transaction.inMessage?.info?.dest;
+            return Address.isAddress(dst) && dst.equals(address);
+        });
+
+        const { lt, hash, limit } = opts ?? {};
+
+        let resultTransactions = transactionByAddress;
+
+        if (lt !== undefined && hash !== undefined) {
+            const hashBuffer = typeof hash === 'string' ? Buffer.from(hash, 'hex') : hash;
+            const transaction = transactionByAddress.find((tx) => tx.lt === BigInt(lt) && tx.hash() === hashBuffer);
+            if (!transaction) {
+                throw new Error('Transaction with provided lt and hash not found.');
+            }
+
+            resultTransactions = resultTransactions.filter((tx) => tx.lt <= transaction.lt);
+        }
+
+        return resultTransactions.slice(0, limit);
+    }
+
     protected increaseLt() {
         this.currentLt += LT_ALIGN;
     }
@@ -511,6 +568,7 @@ export class Blockchain {
     provider(address: Address, init?: StateInit | null): ContractProvider {
         return new BlockchainContractProvider(
             {
+                getTransactions: (address: Address, opts) => this.getTransactions(address, opts),
                 getContract: (addr) => this.getContract(addr),
                 pushMessage: (msg) => this.defaultQueueManager.pushMessage(msg),
                 runGetMethod: (addr, method, args) => this.runGetMethod(addr, method, args),
@@ -803,12 +861,12 @@ export class Blockchain {
 
     protected registerTxsForCoverage(txs: BlockchainTransaction[]) {
         if (!this.collectCoverage) return;
-        this.txs.push(txs);
+        this.coverageTransactions.push(txs);
     }
 
     protected registerGetMethodForCoverage(get: GetMethodResult) {
         if (!this.collectCoverage) return;
-        this.getMethodResults.push(get);
+        this.coverageGetMethodResults.push(get);
     }
 
     /**
@@ -836,8 +894,8 @@ export class Blockchain {
             return undefined;
         }
 
-        const txs = this.txs.flatMap((tx) => collectTxsCoverage(code, address, tx));
-        const gets = this.getMethodResults.flatMap((get) => collectAsmCoverage(code, get.vmLogs));
+        const txs = this.coverageTransactions.flatMap((tx) => collectTxsCoverage(code, address, tx));
+        const gets = this.coverageGetMethodResults.flatMap((get) => collectAsmCoverage(code, get.vmLogs));
 
         const coverages = [...txs, ...gets];
         return new Coverage(mergeCoverages(...coverages));

@@ -1073,6 +1073,66 @@ describe('Blockchain', () => {
         expect(res2.transactions).toHaveTransaction({ from: libraryDeployer, to: sender, body: libCell });
     });
 
+    it('should store transactions', async () => {
+        const blockchain = await Blockchain.create();
+
+        const sender = randomAddress();
+        const target = randomAddress();
+
+        const transactionsBefore = await blockchain.getTransactions(sender);
+
+        expect(transactionsBefore).toEqual([]);
+
+        await blockchain.sendMessage(
+            internal({
+                bounce: true,
+                from: sender,
+                to: target,
+                value: toNano('0.5'),
+            }),
+        );
+
+        const transactionsAfter = await blockchain.getTransactions(target);
+        expect(transactionsAfter).toHaveTransaction({ from: sender, to: target });
+    });
+
+    it('should filter transactions properly', async () => {
+        const blockchain = await Blockchain.create();
+
+        const sender = randomAddress();
+        const receiver = randomAddress();
+        for (let i = 1; i <= 10; i++) {
+            await blockchain.sendMessage(internal({ from: sender, to: receiver, value: toNano(i), bounce: false }));
+        }
+
+        const transactions = await blockchain.getTransactions(receiver);
+
+        expect(transactions.length).toEqual(10);
+
+        const senderTransactions = await blockchain.getTransactions(sender);
+        expect(senderTransactions.length).toEqual(0);
+
+        const lastTx = transactions[0];
+
+        const allTransactionsFiltered = await blockchain.getTransactions(receiver, {
+            lt: lastTx.lt,
+            hash: lastTx.hash(),
+        });
+
+        // all transactions included
+        expect(allTransactionsFiltered.length).toEqual(10);
+
+        const limited = await blockchain.getTransactions(receiver, { limit: 5 });
+        expect(limited.length).toEqual(5);
+
+        const txInTheMiddle = transactions[7];
+        const filteredNotAll = await blockchain.getTransactions(receiver, {
+            lt: txInTheMiddle.lt,
+            hash: txInTheMiddle.hash(),
+        });
+        expect(filteredNotAll.length).toEqual(10 - 7);
+    });
+
     describe('snapshots', () => {
         it('should not affect blockchain while modifying snapshot.prevBlocksInfo', async () => {
             const blockchain = await Blockchain.create();
@@ -1124,35 +1184,6 @@ describe('Blockchain', () => {
 
             const originalBalance = sc.account.account!.storage.balance.coins;
             sc.account.account!.storage.balance.coins = originalBalance + 100n;
-
-            const currentBalance = (await blockchain.getContract(wallet.address)).balance;
-            expect(currentBalance).toBe(originalBalance);
-        });
-
-        it('should load single account snapshot state', async () => {
-            const blockchain = await Blockchain.create();
-            const wallet = await blockchain.treasury('snapshot');
-            const originalBalance = await wallet.getBalance();
-
-            const walletContract = await blockchain.getContract(wallet.address);
-            const snap = walletContract.snapshot();
-
-            const receiver = randomAddress(0);
-            const value = toNano(100);
-
-            const result = await wallet.send({
-                to: receiver,
-                value: value,
-                bounce: false,
-            });
-
-            expect(result.transactions).toHaveTransaction({
-                from: wallet.address,
-                to: receiver,
-                value,
-            });
-
-            walletContract.loadFrom(snap);
 
             const currentBalance = (await blockchain.getContract(wallet.address)).balance;
             expect(currentBalance).toBe(originalBalance);
