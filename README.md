@@ -14,8 +14,10 @@ The key difference of this package from [ton-contract-executor](https://github.c
   * [Testing transaction fees](#testing-transaction-fees)
   * [Cross contract tests](#cross-contract-tests)
   * [Testing key points](#testing-key-points)
-  * [Test examples](#test-examples)
   * [Using assets in tests](#using-assets-in-tests)
+  * [Using libraries](#using-libraries)
+  * [Test examples](#test-examples)
+  * [Code coverage](#code-coverage)
 * [Benchmark contracts](#benchmark-contracts)
 * [Sandbox pitfalls](#sandbox-pitfalls)
 * [Viewing logs](#viewing-logs)
@@ -269,6 +271,63 @@ it('minter admin should be able to mint jettons', async () => {
 });
 ```
 
+### Testing Man In The Middle 
+
+This is an example of simulating a man-in-the-middle (MITM) attack scenario. It demonstrates emulation of an attacker exploiting a race condition by injecting a malicious message in other transaction queue.
+
+```typescript
+import { Blockchain, internal } from '@ton/sandbox';
+import { executeFrom, executeTill, randomAddress } from '@ton/test-utils';
+import { toNano } from '@ton/core';
+
+// initialize sandbox blockchain
+const blockchain = await Blockchain.create();
+
+// simulate two participants
+const sender = randomAddress();
+const attacker = randomAddress();
+
+// open the target contract you want to test
+const target = await blockchain.openContract(...);
+
+// prepare message body payloads
+const niceBody = ...;      // body for sender
+const notNiceBody = ...;   // malicious body for attacker
+
+// create independent message queues for both participants
+const senderQueue = await blockchain.sendMessageIter(
+    internal({
+        from: sender,
+        to: target,
+        value: toNano('0.05'),
+        body: niceBody,
+    }),
+    { allowParallel: true },
+);
+
+const attackerQueue = await blockchain.sendMessageIter(
+    internal({
+        from: attacker,
+        to: target,
+        value: toNano('0.05'),
+        body: notNiceBody,
+    }),
+    { allowParallel: true },
+);
+
+// sender's message arrives at target first
+const senderFirstTransactions = await executeTill(senderQueue, {
+    from: sender,
+    to: target,
+});
+
+// attacker exploits potential race condition
+const attackerResult = await executeFrom(attackerQueue);
+
+// remaining sender transaction proceeds
+const senderSecondResult = await executeFrom(senderQueue);
+```
+
 ### Testing key points
 
 In order to make sure that the contract will work as expected, you need to follow the following points in testing
@@ -331,12 +390,99 @@ describe('Jetton', () => {
 });
 ```
 
+### Using Libraries
+
+When testing smart contracts locally, there are **two ways to register libraries** in your blockchain environment.
+
+#### Option 1: **Automatic Library Deployment**
+
+Enable automatic library detection by passing the `autoDeployLibs` flag when creating the blockchain:
+
+```ts
+const blockchain = await Blockchain.create({ autoDeployLibs: true });
+```
+
+In your contract, deployed in **Masterchain**, deploy the library using the `SETLIBCODE` opcode:
+
+```tolk
+fun setlibcode(lib: cell, mode: int): void
+    asm "SETLIBCODE";
+
+...
+
+setlibcode(anyCell, 2); // Mode 2 = deploy public library
+```
+
+This allows the contract to dynamically install and register the library at runtime, with the environment automatically tracking and using it as needed.
+
+#### Option 2: **Manual Library Deployment**
+
+If `autoDeployLibs` is **not enabled**, you'll need to register libraries manually:
+
+```ts
+const blockchain = await Blockchain.create();
+const code = await compile('Contract');
+
+// Create a dictionary of library hash → library cell
+const libsDict = Dictionary.empty(Dictionary.Keys.Buffer(32), Dictionary.Values.Cell());
+libsDict.set(code.hash(), code);
+
+// Manually assign the libraries
+blockchain.libs = beginCell().storeDictDirect(libsDict).endCell();
+```
+
+This gives you full control but requires explicitly managing which libraries are available during testing.
+
 ### Test Examples
 You can typically find various tests for Sandbox-based project contracts in the `./tests` directory. 
 Learn more from examples:
 
 * [FunC Test Examples](https://docs.ton.org/develop/smart-contracts/examples#examples-of-tests-for-smart-contracts)
 * [Tact Test Examples](docs/tact-testing-examples.md) 
+
+### Code coverage
+
+Sandbox supports collecting code coverage data to analyze which parts of your smart contract code are tested.
+This helps identify untested code paths and improve test quality.
+
+#### Enable coverage collection
+
+Add `blockchain.enableCoverage()` before running tests:
+
+```typescript
+import {Blockchain} from '@ton/sandbox';
+
+describe('Contract Tests', () => {
+  let blockchain: Blockchain;
+  let contract: SandboxContract<MyContract>;
+
+  beforeEach(async () => {
+    blockchain = await Blockchain.create();
+    blockchain.enableCoverage();
+
+    // Deploy your contract
+    contract = blockchain.openContract(MyContract.fromInit());
+  });
+});
+```
+
+#### Generate coverage reports
+
+```typescript
+import * as fs from 'fs';
+
+afterAll(() => {
+  const coverage = blockchain.coverage(contract);
+  if (!coverage) return;
+
+  // Generate HTML report for detailed analysis
+  const htmlReport = coverage.report("html");
+  fs.writeFileSync("coverage.html", htmlReport);
+});
+```
+
+For more detailed information about coverage features, merging coverage data from multiple test suites, and advanced
+usage patterns, see the [Coverage Guide](docs/coverage-guide.md).
 
 ## Benchmark contracts
 
@@ -446,19 +592,6 @@ By default, the reporter generates:
 
 There are several pitfalls in the sandbox due to the limitations of emulation. Be aware of it while testing your smart contracts.
 
-* Libs cells not updating in contract by `SETLIBCODE`, `CHANGELIB`. They need to be updated manually.
-```typescript
-const blockchain = await Blockchain.create();
-const code = await compile('Contract');
-
-// consist of a hash of a lib cell and its representation
-const libsDict = Dictionary.empty(Dictionary.Keys.Buffer(32), Dictionary.Values.Cell());
-libsDict.set(code.hash(), code);
-
-// manualy set libs
-blockchain.libs = beginCell().storeDictDirect(libsDict).endCell();
-```
-* There is no blocks in emulation, so opcodes like `PREVBLOCKSINFO`, `PREVMCBLOCKS`, `PREVKEYBLOCK`  will return empty tuple.
 * The randomness in the TON is always deterministic and the same randomSeed always gives the same random number sequence. If necessary, you can change the randomSeed to make `RAND` provide result based on provided seed.
 ```typescript
 const res = await blockchain.runGetMethod(example.address,

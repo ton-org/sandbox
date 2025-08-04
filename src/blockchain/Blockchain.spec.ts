@@ -14,7 +14,7 @@ import {
     internal as msgInternal,
     SendMode,
 } from '@ton/core';
-import { compareTransaction, flattenTransaction, randomAddress } from '@ton/test-utils';
+import { compareTransaction, executeFrom, executeTill, flattenTransaction, randomAddress } from '@ton/test-utils';
 import { getSecureRandomBytes } from '@ton/crypto';
 
 import { Blockchain, BlockchainTransaction } from './Blockchain';
@@ -987,6 +987,90 @@ describe('Blockchain', () => {
         expect(res2.transactions[2]!.inMessage!.info.src).toEqualAddress(addr);
         expect(res2.transactions[2]!.inMessage!.info.dest).toEqualAddress(addr2);
         expect(res2.transactions[2].mode).toEqual(SendMode.CARRY_ALL_REMAINING_INCOMING_VALUE);
+    });
+
+    it('should emulate message in the middle', async () => {
+        const blockchain = await Blockchain.create();
+
+        const sender = randomAddress();
+        const attacker = randomAddress();
+        const target = randomAddress();
+
+        const senderQueue = await blockchain.sendMessageIter(
+            internal({
+                bounce: true,
+                from: sender,
+                to: target,
+                value: toNano('0.5'),
+            }),
+            { allowParallel: true },
+        );
+
+        const attackerQueue = await blockchain.sendMessageIter(
+            internal({
+                bounce: true,
+                from: attacker,
+                to: target,
+                value: toNano('0.5'),
+            }),
+            { allowParallel: true },
+        );
+
+        const senderFirstTransactions = await executeTill(senderQueue, { from: sender, to: target });
+        expect(senderFirstTransactions).toHaveTransaction({ from: sender, to: target });
+        expect(senderFirstTransactions).not.toHaveTransaction({ from: target, to: sender });
+
+        const attackerTransactions = await executeFrom(attackerQueue);
+        expect(attackerTransactions).toHaveTransaction({ from: attacker, to: target });
+        expect(attackerTransactions).toHaveTransaction({ from: target, to: attacker });
+
+        const senderLastTransactions = await executeFrom(senderQueue);
+        expect(senderLastTransactions).toHaveTransaction({ from: target, to: sender });
+    });
+
+    it('should deploy library and use library', async () => {
+        const code = await compileLocal('library_deployer.tolk');
+        const data = new Cell();
+
+        const blockchain = await Blockchain.create({ autoDeployLibs: true });
+        const libraryDeployer = randomAddress(-1); // library deployer should be in masterchain
+
+        await blockchain.setShardAccount(
+            libraryDeployer,
+            createShardAccount({
+                address: libraryDeployer,
+                code,
+                data,
+                balance: toNano('1'),
+            }),
+        );
+
+        const libCell = beginCell().storeStringTail('Hello from library!').endCell();
+
+        const sender = randomAddress();
+        const res = await blockchain.sendMessage(
+            internal({
+                from: sender,
+                to: libraryDeployer,
+                value: toNano('0.5'),
+                body: beginCell().storeUint(0x1, 32).storeUint(2, 8).storeRef(libCell).endCell(),
+            }),
+        );
+
+        expect(res.transactions).toHaveTransaction({ from: sender, to: libraryDeployer, success: true });
+
+        let libExotic = beginCell().storeUint(2, 8).storeBuffer(libCell.hash()).endCell({ exotic: true });
+
+        const res2 = await blockchain.sendMessage(
+            internal({
+                from: sender,
+                to: libraryDeployer,
+                value: toNano('0.5'),
+                body: beginCell().storeUint(0x2, 32).storeRef(libExotic).endCell(),
+            }),
+        );
+
+        expect(res2.transactions).toHaveTransaction({ from: libraryDeployer, to: sender, body: libCell });
     });
 
     describe('snapshots', () => {

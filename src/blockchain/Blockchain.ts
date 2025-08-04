@@ -6,25 +6,24 @@ import {
     Contract,
     Sender,
     toNano,
-    loadMessage,
     ShardAccount,
     TupleItem,
     ExternalAddress,
     StateInit,
     OpenedContract,
-    OutActionSendMsg,
 } from '@ton/core';
 import { getSecureRandomBytes } from '@ton/crypto';
 
 import { defaultConfig } from '../config/defaultConfig';
 import { IExecutor, Executor, TickOrTock, PrevBlocksInfo } from '../executor/Executor';
 import { BlockchainStorage, LocalBlockchainStorage } from './BlockchainStorage';
-import { extractEvents, Event } from '../event/Event';
+import { Event } from '../event/Event';
 import { BlockchainContractProvider, SandboxContractProvider } from './BlockchainContractProvider';
 import { BlockchainSender } from './BlockchainSender';
 import { TreasuryContract } from '../treasury/Treasury';
 import {
     GetMethodParams,
+    GetMethodResult,
     LogsVerbosity,
     MessageParams,
     SmartContract,
@@ -32,13 +31,15 @@ import {
     SmartContractTransaction,
     Verbosity,
 } from './SmartContract';
-import { AsyncLock } from '../utils/AsyncLock';
 import { internal } from '../utils/message';
 import { slimConfig } from '../config/slimConfig';
 import { testSubwalletId } from '../utils/testTreasurySubwalletId';
 import { collectMetric } from '../metric/collectMetric';
 import { ContractsMeta } from '../meta/ContractsMeta';
 import { deepcopy } from '../utils/deepcopy';
+import { collectAsmCoverage, collectTxsCoverage, mergeCoverages, Coverage } from '../coverage';
+import { MessageQueueManager } from './MessageQueueManager';
+import { AsyncLock } from '../utils/AsyncLock';
 
 const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS';
 
@@ -178,14 +179,20 @@ export type BlockchainSnapshot = {
     nextCreateWalletIndex: number;
     prevBlocksInfo?: PrevBlocksInfo;
     randomSeed?: Buffer;
+    autoDeployLibs: boolean;
+};
+
+export type SendMessageIterParams = MessageParams & {
+    allowParallel?: boolean;
 };
 
 export class Blockchain {
+    protected lock = new AsyncLock();
+
     protected storage: BlockchainStorage;
     protected networkConfig: string;
     protected currentLt = 0n;
     protected currentTime?: number;
-    protected messageQueue: PendingMessage[] = [];
     protected logsVerbosity: LogsVerbosity = {
         print: true,
         blockchainLogs: false,
@@ -193,7 +200,6 @@ export class Blockchain {
         debugLogs: true,
     };
     protected globalLibs?: Cell;
-    protected lock = new AsyncLock();
     protected contractFetches = new Map<string, Promise<SmartContract>>();
     protected nextCreateWalletIndex = 0;
     protected shouldRecordStorage = false;
@@ -201,10 +207,18 @@ export class Blockchain {
     protected prevBlocksInfo?: PrevBlocksInfo;
     protected randomSeed?: Buffer;
     protected shouldDebug = false;
+    protected autoDeployLibs: boolean;
+
+    protected defaultQueueManager: MessageQueueManager;
+
+    protected collectCoverage: boolean = false;
+    protected readonly txs: BlockchainTransaction[][] = [];
+    protected readonly getMethodResults: GetMethodResult[] = [];
 
     readonly executor: IExecutor;
 
     protected debuggerExecutor?: Executor;
+
     async getDebuggerExecutor() {
         if (!this.debuggerExecutor) {
             this.debuggerExecutor = await Executor.create({ debug: true });
@@ -230,6 +244,7 @@ export class Blockchain {
             nextCreateWalletIndex: this.nextCreateWalletIndex,
             prevBlocksInfo: deepcopy(this.prevBlocksInfo),
             randomSeed: deepcopy(this.randomSeed),
+            autoDeployLibs: this.autoDeployLibs,
         };
     }
 
@@ -255,6 +270,7 @@ export class Blockchain {
         this.nextCreateWalletIndex = snapshot.nextCreateWalletIndex;
         this.prevBlocksInfo = deepcopy(snapshot.prevBlocksInfo);
         this.randomSeed = deepcopy(snapshot.randomSeed);
+        this.autoDeployLibs = snapshot.autoDeployLibs;
     }
 
     get recordStorage() {
@@ -270,6 +286,14 @@ export class Blockchain {
      */
     set recordStorage(v: boolean) {
         this.shouldRecordStorage = v;
+    }
+
+    get autoDeployLibraries(): boolean {
+        return this.autoDeployLibs;
+    }
+
+    set autoDeployLibraries(value: boolean) {
+        this.autoDeployLibs = value;
     }
 
     get debug() {
@@ -307,11 +331,27 @@ export class Blockchain {
         config?: BlockchainConfig;
         storage: BlockchainStorage;
         meta?: ContractsMeta;
+        autoDeployLibs?: boolean;
     }) {
         this.networkConfig = blockchainConfigToBase64(opts.config);
         this.executor = opts.executor;
         this.storage = opts.storage;
         this.meta = opts.meta;
+        this.autoDeployLibs = opts.autoDeployLibs ?? false;
+
+        this.defaultQueueManager = this.createQueueManager();
+    }
+
+    protected createQueueManager(): MessageQueueManager {
+        return new MessageQueueManager(this.lock, {
+            getContract: (address) => this.getContract(address),
+            startFetchingContract: (address) => this.startFetchingContract(address),
+            increaseLt: () => this.increaseLt(),
+            getLibs: () => this.libs,
+            setLibs: (value: Cell | undefined) => (this.libs = value),
+            getAutoDeployLibs: () => this.autoDeployLibs,
+            registerTxsForCoverage: (txs) => this.registerTxsForCoverage(txs),
+        });
     }
 
     /**
@@ -382,8 +422,8 @@ export class Blockchain {
      * }));
      */
     async sendMessage(message: Message | Cell, params?: MessageParams): Promise<SendMessageResult> {
-        await this.pushMessage(message);
-        return await this.runQueue(params);
+        await this.defaultQueueManager.pushMessage(message);
+        return await this.defaultQueueManager.runQueue(params);
     }
 
     /**
@@ -391,6 +431,8 @@ export class Blockchain {
      *
      * @param message Message to send
      * @param params Optional params
+     * @param params.allowParallel - When `true`, allows many consequential executions of this method. Useful for emulating interactions based on transaction order (MITM).
+     *                        When `false` (default), only one execution of transactions is allowed.
      * @returns Async iterable of {@link BlockchainTransaction}
      *
      * @example
@@ -399,18 +441,19 @@ export class Blockchain {
      *     to: address,
      *     value: toNano('1'),
      *     body: beginCell().storeUint(0, 32).endCell(),
-     * }, { randomSeed: crypto.randomBytes(32) });
-     * for await (const tx of await blockchain.sendMessageIter(message)) {
+     * });
+     * for await (const tx of await blockchain.sendMessageIter(message, { randomSeed: crypto.randomBytes(32) })) {
      *     // process transaction
      * }
      */
     async sendMessageIter(
         message: Message | Cell,
-        params?: MessageParams,
+        params?: SendMessageIterParams,
     ): Promise<AsyncIterator<BlockchainTransaction> & AsyncIterable<BlockchainTransaction>> {
-        await this.pushMessage(message);
+        const queue = params?.allowParallel ? this.createQueueManager() : this.defaultQueueManager;
+        await queue.pushMessage(message);
         // Iterable will lock on per tx basis
-        return await this.txIter(true, params);
+        return queue.runQueueIter(true, params);
     }
 
     /**
@@ -426,9 +469,9 @@ export class Blockchain {
      */
     async runTickTock(on: Address | Address[], which: TickOrTock, params?: MessageParams): Promise<SendMessageResult> {
         for (const addr of Array.isArray(on) ? on : [on]) {
-            await this.pushTickTock(addr, which);
+            await this.defaultQueueManager.pushTickTock(addr, which);
         }
-        return await this.runQueue(params);
+        return await this.defaultQueueManager.runQueue(params);
     }
 
     /**
@@ -447,143 +490,13 @@ export class Blockchain {
      * const now = res.stackReader.readNumber();
      */
     async runGetMethod(address: Address, method: number | string, stack: TupleItem[] = [], params?: GetMethodParams) {
-        return await (await this.getContract(address)).get(method, stack, params);
+        const result = await (await this.getContract(address)).get(method, stack, params);
+        this.registerGetMethodForCoverage(result);
+        return result;
     }
 
-    protected async pushMessage(message: Message | Cell) {
-        const msg = message instanceof Cell ? loadMessage(message.beginParse()) : message;
-        if (msg.info.type === 'external-out') {
-            throw new Error('Cannot send external out message');
-        }
-        await this.lock.with(async () => {
-            this.messageQueue.push({
-                type: 'message',
-                ...msg,
-            });
-        });
-    }
-
-    protected async pushTickTock(on: Address, which: TickOrTock) {
-        await this.lock.with(async () => {
-            this.messageQueue.push({
-                type: 'ticktock',
-                on,
-                which,
-            });
-        });
-    }
-
-    protected async runQueue(params?: MessageParams): Promise<SendMessageResult> {
-        const txes = await this.processQueue(params);
-        return {
-            transactions: txes,
-            events: txes.map((tx) => tx.events).flat(),
-            externals: txes.map((tx) => tx.externals).flat(),
-        };
-    }
-
-    protected txIter(
-        needsLocking: boolean,
-        params?: MessageParams,
-    ): AsyncIterator<BlockchainTransaction> & AsyncIterable<BlockchainTransaction> {
-        const it = {
-            next: () => this.processTx(needsLocking, params),
-            [Symbol.asyncIterator]() {
-                return it;
-            },
-        };
-        return it;
-    }
-
-    protected async processInternal(params?: MessageParams): Promise<IteratorResult<BlockchainTransaction>> {
-        let result: BlockchainTransaction | undefined = undefined;
-        let done = this.messageQueue.length == 0;
-        while (!done) {
-            const message = this.messageQueue.shift()!;
-
-            let tx: SmartContractTransaction;
-            if (message.type === 'message') {
-                if (message.info.type === 'external-out') {
-                    done = this.messageQueue.length == 0;
-                    continue;
-                }
-
-                this.currentLt += LT_ALIGN;
-                tx = await (await this.getContract(message.info.dest)).receiveMessage(message, params);
-            } else {
-                this.currentLt += LT_ALIGN;
-                tx = await (await this.getContract(message.on)).runTickTock(message.which, params);
-            }
-
-            const transaction: BlockchainTransaction = {
-                ...tx,
-                events: extractEvents(tx),
-                parent: message.parentTransaction,
-                children: [],
-                externals: [],
-                mode: message.type === 'message' ? message.mode : undefined,
-            };
-            transaction.parent?.children.push(transaction);
-
-            result = transaction;
-            done = true;
-
-            const sendMsgActions = (transaction.outActions?.filter((action) => action.type === 'sendMsg') ??
-                []) as OutActionSendMsg[];
-
-            for (const [index, message] of transaction.outMessages) {
-                if (message.info.type === 'external-out') {
-                    transaction.externals.push({
-                        info: {
-                            type: 'external-out',
-                            src: message.info.src,
-                            dest: message.info.dest ?? undefined,
-                            createdAt: message.info.createdAt,
-                            createdLt: message.info.createdLt,
-                        },
-                        init: message.init ?? undefined,
-                        body: message.body,
-                    });
-                    continue;
-                }
-
-                this.messageQueue.push({
-                    type: 'message',
-                    parentTransaction: transaction,
-                    mode: sendMsgActions[index]?.mode,
-                    ...message,
-                });
-
-                if (message.info.type === 'internal') {
-                    this.startFetchingContract(message.info.dest);
-                }
-            }
-        }
-        return result === undefined ? { value: result, done: true } : { value: result, done: false };
-    }
-
-    protected async processTx(
-        needsLocking: boolean,
-        params?: MessageParams,
-    ): Promise<IteratorResult<BlockchainTransaction>> {
-        // Lock only if not locked already
-        return needsLocking
-            ? await this.lock.with(async () => this.processInternal(params))
-            : await this.processInternal(params);
-    }
-
-    protected async processQueue(params?: MessageParams) {
-        return await this.lock.with(async () => {
-            // Locked already
-            const txs = this.txIter(false, params);
-            const result: BlockchainTransaction[] = [];
-
-            for await (const tx of txs) {
-                result.push(tx);
-            }
-
-            return result;
-        });
+    protected increaseLt() {
+        this.currentLt += LT_ALIGN;
     }
 
     /**
@@ -599,9 +512,9 @@ export class Blockchain {
         return new BlockchainContractProvider(
             {
                 getContract: (addr) => this.getContract(addr),
-                pushMessage: (msg) => this.pushMessage(msg),
+                pushMessage: (msg) => this.defaultQueueManager.pushMessage(msg),
                 runGetMethod: (addr, method, args) => this.runGetMethod(addr, method, args),
-                pushTickTock: (on, which) => this.pushTickTock(on, which),
+                pushTickTock: (on, which) => this.defaultQueueManager.pushTickTock(on, which),
                 openContract: <T extends Contract>(contract: T) => this.openContract(contract) as OpenedContract<T>,
             },
             address,
@@ -624,7 +537,7 @@ export class Blockchain {
     sender(address: Address): Sender {
         return new BlockchainSender(
             {
-                pushMessage: (msg) => this.pushMessage(msg),
+                pushMessage: (msg) => this.defaultQueueManager.pushMessage(msg),
             },
             address,
         );
@@ -745,7 +658,7 @@ export class Blockchain {
                                 ret = await ret;
                             }
                             const out = {
-                                ...(await this.runQueue()),
+                                ...(await this.defaultQueueManager.runQueue()),
                                 result: ret,
                             };
                             await collectMetric(this, ctx, out);
@@ -844,12 +757,100 @@ export class Blockchain {
     }
 
     /**
+     * Enable coverage collection.
+     *
+     * @param enable if false, disable coverage collection
+     */
+    public enableCoverage(enable: boolean = true) {
+        this.collectCoverage = enable;
+        this.verbosity.vmLogs = 'vm_logs_verbose';
+    }
+
+    /**
+     * Returns coverage analysis for the specified contract.
+     * Coverage is collected at the TVM assembly instruction level from all executed transactions and get method calls.
+     *
+     * @param contract Contract to analyze coverage for
+     * @returns Coverage object with detailed coverage data
+     * @throws Error if the contract has no code
+     * @throws Error if verbose VM logs are not enabled (blockchain.verbosity.vmLogs !== "vm_logs_verbose")
+     *
+     * @example
+     * // Enable coverage collection
+     * blockchain.enableCoverage();
+     *
+     * // Execute contract methods
+     * await contract.send(sender, { value: toNano('1') }, 'increment');
+     *
+     * // Get coverage analysis
+     * const coverage = blockchain.coverage(contract);
+     * const summary = coverage?.summary();
+     * console.log(`Coverage: ${summary?.coveragePercentage?.toFixed(2)}%`);
+     *
+     * // Generate HTML report
+     * const htmlReport = coverage?.report("html");
+     * await fs.writeFile("coverage.html", htmlReport);
+     */
+    public coverage(contract: Contract): Coverage | undefined {
+        const code = contract.init?.code;
+        if (!code) {
+            throw new Error('No code is available for contract');
+        }
+
+        const address = contract.address;
+        return this.coverageForCell(code, address);
+    }
+
+    protected registerTxsForCoverage(txs: BlockchainTransaction[]) {
+        if (!this.collectCoverage) return;
+        this.txs.push(txs);
+    }
+
+    protected registerGetMethodForCoverage(get: GetMethodResult) {
+        if (!this.collectCoverage) return;
+        this.getMethodResults.push(get);
+    }
+
+    /**
+     * Returns coverage analysis for the specified code cell.
+     * This method allows analyzing coverage for code cells directly, with optional address filtering.
+     *
+     * @param code Cell containing contract code to analyze
+     * @param address Optional contract address to filter transactions by.
+     *                If provided, only transactions from this address will be analyzed
+     * @returns Coverage object with detailed coverage data
+     * @throws Error if verbose VM logs are not enabled (blockchain.verbosity.vmLogs !== "vm_logs_verbose")
+     *
+     * @example
+     * blockchain.enableCoverage();
+     * // Analyze coverage for a specific code cell
+     * const coverage = blockchain.coverageForCell(codeCell, contractAddress);
+     *
+     * // Analyze coverage for code without address filtering
+     * const allCoverage = blockchain.coverageForCell(codeCell);
+     *
+     * console.log(coverage?.summary());
+     */
+    public coverageForCell(code: Cell, address?: Address): Coverage | undefined {
+        if (!this.collectCoverage || this.verbosity.vmLogs !== 'vm_logs_verbose') {
+            return undefined;
+        }
+
+        const txs = this.txs.flatMap((tx) => collectTxsCoverage(code, address, tx));
+        const gets = this.getMethodResults.flatMap((get) => collectAsmCoverage(code, get.vmLogs));
+
+        const coverages = [...txs, ...gets];
+        return new Coverage(mergeCoverages(...coverages));
+    }
+
+    /**
      * Creates instance of sandbox blockchain.
      *
      * @param [opts.executor] Custom contract executor. If omitted {@link Executor} is used.
      * @param [opts.config] Config used in blockchain. If omitted {@link defaultConfig} is used.
      * @param [opts.storage] Contracts storage used for blockchain. If omitted {@link LocalBlockchainStorage} is used.
      * @param [opts.meta] Optional contracts metadata provider. If not provided, {@link @ton/test-utils.contractsMeta} will be used to accumulate contracts metadata.
+     * @param [opts.autoDeployLibs] Optional flag. If set to true, libraries will be collected automatically
      * @example
      * const blockchain = await Blockchain.create({ config: 'slim' });
      *
@@ -867,6 +868,7 @@ export class Blockchain {
         config?: BlockchainConfig;
         storage?: BlockchainStorage;
         meta?: ContractsMeta;
+        autoDeployLibs?: boolean;
     }) {
         return new Blockchain({
             executor: opts?.executor ?? (await Executor.create()),
