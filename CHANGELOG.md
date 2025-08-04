@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `Blockchain.getTransactions` method to fetch transactions
 - Added coverage
 - Added `allowParallel` flag to `Blockchain.sendMessageIter` method, allowing for testing MITM attack
 - Added `autoDeployLibs` flag, that allow to detect libraries, deployed by contract in masterchain automatically
