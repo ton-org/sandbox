@@ -1092,7 +1092,7 @@ describe('Blockchain', () => {
             }),
         );
 
-        const transactionsAfter = await blockchain.getTransactions(sender);
+        const transactionsAfter = await blockchain.getTransactions(target);
         expect(transactionsAfter).toHaveTransaction({ from: sender, to: target });
     });
 
@@ -1100,19 +1100,21 @@ describe('Blockchain', () => {
         const blockchain = await Blockchain.create();
 
         const sender = randomAddress();
+        const receiver = randomAddress();
         for (let i = 1; i <= 10; i++) {
-            await blockchain.sendMessage(
-                internal({ from: sender, to: randomAddress(), value: toNano(i), bounce: false }),
-            );
+            await blockchain.sendMessage(internal({ from: sender, to: receiver, value: toNano(i), bounce: false }));
         }
 
-        const transactions = await blockchain.getTransactions(sender);
+        const transactions = await blockchain.getTransactions(receiver);
 
         expect(transactions.length).toEqual(10);
 
+        const senderTransactions = await blockchain.getTransactions(sender);
+        expect(senderTransactions.length).toEqual(0);
+
         const lastTx = transactions[0];
 
-        const allTransactionsFiltered = await blockchain.getTransactions(sender, {
+        const allTransactionsFiltered = await blockchain.getTransactions(receiver, {
             lt: lastTx.lt,
             hash: lastTx.hash(),
         });
@@ -1120,11 +1122,11 @@ describe('Blockchain', () => {
         // all transactions included
         expect(allTransactionsFiltered.length).toEqual(10);
 
-        const limited = await blockchain.getTransactions(sender, { limit: 5 });
+        const limited = await blockchain.getTransactions(receiver, { limit: 5 });
         expect(limited.length).toEqual(5);
 
         const txInTheMiddle = transactions[7];
-        const filteredNotAll = await blockchain.getTransactions(sender, {
+        const filteredNotAll = await blockchain.getTransactions(receiver, {
             lt: txInTheMiddle.lt,
             hash: txInTheMiddle.hash(),
         });

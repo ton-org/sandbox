@@ -505,7 +505,7 @@ export class Blockchain {
      *
      * If both `lt` and `hash` are provided, the result will include transactions up to and including the one matching them.
      *
-     * @param {Address} address - The address (sender or receiver) whose transactions are to be retrieved.
+     * @param {Address} address - The address to retrieve transactions for.
      * @param opts - Options to fetch transactions
      * @param [opts.lt] - Logical time of the transaction to start from. Must be used together with `hash`.
      * @param [opts.hash] - Hash of the transaction to start from. Must be used together with `lt`.
@@ -532,8 +532,7 @@ export class Blockchain {
     ): Promise<BlockchainTransaction[]> {
         const transactionByAddress = this.transactions.reverse().filter((transaction) => {
             const dst = transaction.inMessage?.info?.dest;
-            const src = transaction.inMessage?.info?.src;
-            return (Address.isAddress(dst) && dst.equals(address)) || (Address.isAddress(src) && src.equals(address));
+            return Address.isAddress(dst) && dst.equals(address);
         });
 
         const { lt, hash, limit } = opts ?? {};
