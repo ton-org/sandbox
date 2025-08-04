@@ -136,8 +136,8 @@ export class MessageQueueManager {
                 mode: message.type === 'message' ? message.mode : undefined,
             };
             transaction.parent?.children.push(transaction);
-            this.blockchain.addTransaction(transaction);
 
+            this.blockchain.addTransaction(transaction);
             result = transaction;
             done = true;
 

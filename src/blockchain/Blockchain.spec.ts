@@ -1083,7 +1083,7 @@ describe('Blockchain', () => {
 
         expect(transactionsBefore).toEqual([]);
 
-        const result = await blockchain.sendMessage(
+        await blockchain.sendMessage(
             internal({
                 bounce: true,
                 from: sender,
@@ -1094,6 +1094,41 @@ describe('Blockchain', () => {
 
         const transactionsAfter = await blockchain.getTransactions(sender);
         expect(transactionsAfter).toHaveTransaction({ from: sender, to: target });
+    });
+
+    it('should filter transactions properly', async () => {
+        const blockchain = await Blockchain.create();
+
+        const sender = randomAddress();
+        for (let i = 1; i <= 10; i++) {
+            await blockchain.sendMessage(
+                internal({ from: sender, to: randomAddress(), value: toNano(i), bounce: false }),
+            );
+        }
+
+        const transactions = await blockchain.getTransactions(sender);
+
+        expect(transactions.length).toEqual(10);
+
+        const lastTx = transactions[0];
+
+        const allTransactionsFiltered = await blockchain.getTransactions(sender, {
+            lt: lastTx.lt,
+            hash: lastTx.hash(),
+        });
+
+        // all transactions included
+        expect(allTransactionsFiltered.length).toEqual(10);
+
+        const limited = await blockchain.getTransactions(sender, { limit: 5 });
+        expect(limited.length).toEqual(5);
+
+        const txInTheMiddle = transactions[7];
+        const filteredNotAll = await blockchain.getTransactions(sender, {
+            lt: txInTheMiddle.lt,
+            hash: txInTheMiddle.hash(),
+        });
+        expect(filteredNotAll.length).toEqual(10 - 7);
     });
 
     describe('snapshots', () => {

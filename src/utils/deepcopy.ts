@@ -1,5 +1,7 @@
 import { Address, Cell, Dictionary, DictionaryKeyTypes } from '@ton/core';
 
+import type { BlockchainTransaction } from '../blockchain/Blockchain';
+
 function deepcopyBuffer(buffer: Buffer | undefined): Buffer | undefined {
     if (!buffer) return;
 
@@ -29,6 +31,23 @@ function deepcopyDict(dict: Dictionary<DictionaryKeyTypes, unknown>) {
     // TODO: make pr to @ton/core with key, value and map fields
     // @ts-expect-error Accessing private constructor for cloning purposes
     return new Dictionary(deepcopy(rawDict._map), rawDict._key, rawDict._value);
+}
+
+export function deepcopyTransactions(transactions: BlockchainTransaction[]): BlockchainTransaction[] {
+    return deepcopy(
+        transactions.map((transaction) => ({
+            ...transaction,
+            children: [],
+        })),
+    );
+}
+
+export function restoreTransactions(transactions: BlockchainTransaction[]) {
+    const copy = deepcopy(transactions);
+    for (const transaction of copy) {
+        transaction.parent?.children?.push(transaction);
+    }
+    return copy;
 }
 
 // TypeScript by design does not treat interfaces as structurally assignable to plain record types

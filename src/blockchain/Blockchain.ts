@@ -11,7 +11,6 @@ import {
     ExternalAddress,
     StateInit,
     OpenedContract,
-    Transaction,
 } from '@ton/core';
 import { getSecureRandomBytes } from '@ton/crypto';
 
@@ -37,7 +36,7 @@ import { slimConfig } from '../config/slimConfig';
 import { testSubwalletId } from '../utils/testTreasurySubwalletId';
 import { collectMetric } from '../metric/collectMetric';
 import { ContractsMeta } from '../meta/ContractsMeta';
-import { deepcopy } from '../utils/deepcopy';
+import { deepcopy, deepcopyTransactions, restoreTransactions } from '../utils/deepcopy';
 import { collectAsmCoverage, collectTxsCoverage, mergeCoverages, Coverage } from '../coverage';
 import { MessageQueueManager } from './MessageQueueManager';
 import { AsyncLock } from '../utils/AsyncLock';
@@ -215,8 +214,8 @@ export class Blockchain {
     protected defaultQueueManager: MessageQueueManager;
 
     protected collectCoverage: boolean = false;
-    protected readonly txs: BlockchainTransaction[][] = [];
-    protected readonly getMethodResults: GetMethodResult[] = [];
+    protected readonly coverageTransactions: BlockchainTransaction[][] = [];
+    protected readonly coverageGetMethodResults: GetMethodResult[] = [];
 
     readonly executor: IExecutor;
 
@@ -248,7 +247,7 @@ export class Blockchain {
             prevBlocksInfo: deepcopy(this.prevBlocksInfo),
             randomSeed: deepcopy(this.randomSeed),
             autoDeployLibs: this.autoDeployLibs,
-            transactions: deepcopy(this.transactions),
+            transactions: this.transactions.map((tx) => tx),
         };
     }
 
@@ -275,7 +274,7 @@ export class Blockchain {
         this.prevBlocksInfo = deepcopy(snapshot.prevBlocksInfo);
         this.randomSeed = deepcopy(snapshot.randomSeed);
         this.autoDeployLibs = snapshot.autoDeployLibs;
-        this.transactions = deepcopy(snapshot.transactions);
+        this.transactions = snapshot.transactions.map((tx) => tx);
     }
 
     get recordStorage() {
@@ -501,6 +500,28 @@ export class Blockchain {
         return result;
     }
 
+    /**
+     * Retrieves transactions for the specified address. Transactions are ordered from newest to oldest.
+     *
+     * If both `lt` and `hash` are provided, the result will include transactions up to and including the one matching them.
+     *
+     * @param {Address} address - The address (sender or receiver) whose transactions are to be retrieved.
+     * @param opts - Options to fetch transactions
+     * @param [opts.lt] - Logical time of the transaction to start from. Must be used together with `hash`.
+     * @param [opts.hash] - Hash of the transaction to start from. Must be used together with `lt`.
+     * @param [opts.limit] - Maximum number of transactions to return.
+     *
+     * @returns {Promise<BlockchainTransaction[]>} Promise resolving to an array of transactions involving the given address.
+     *
+     * @throws {Error} If both `lt` and `hash` are provided but no matching transaction is found.
+     *
+     * @example
+     * const transactions = await blockchain.getTransactions(Address.parse(...), {
+     *   lt: '1234567890',
+     *   hash: 'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+     *   limit: 10
+     * });
+     */
     async getTransactions(
         address: Address,
         opts?: {
@@ -520,7 +541,7 @@ export class Blockchain {
         let resultTransactions = transactionByAddress;
 
         if (lt !== undefined && hash !== undefined) {
-            const hashBuffer = hash instanceof Buffer ? hash : Buffer.from(hash, 'hex');
+            const hashBuffer = typeof hash === 'string' ? Buffer.from(hash, 'hex') : hash;
             const transaction = transactionByAddress.find((tx) => tx.lt === BigInt(lt) && tx.hash() === hashBuffer);
             if (!transaction) {
                 throw new Error('Transaction with provided lt and hash not found.');
@@ -841,12 +862,12 @@ export class Blockchain {
 
     protected registerTxsForCoverage(txs: BlockchainTransaction[]) {
         if (!this.collectCoverage) return;
-        this.txs.push(txs);
+        this.coverageTransactions.push(txs);
     }
 
     protected registerGetMethodForCoverage(get: GetMethodResult) {
         if (!this.collectCoverage) return;
-        this.getMethodResults.push(get);
+        this.coverageGetMethodResults.push(get);
     }
 
     /**
@@ -874,8 +895,8 @@ export class Blockchain {
             return undefined;
         }
 
-        const txs = this.txs.flatMap((tx) => collectTxsCoverage(code, address, tx));
-        const gets = this.getMethodResults.flatMap((get) => collectAsmCoverage(code, get.vmLogs));
+        const txs = this.coverageTransactions.flatMap((tx) => collectTxsCoverage(code, address, tx));
+        const gets = this.coverageGetMethodResults.flatMap((get) => collectAsmCoverage(code, get.vmLogs));
 
         const coverages = [...txs, ...gets];
         return new Coverage(mergeCoverages(...coverages));
