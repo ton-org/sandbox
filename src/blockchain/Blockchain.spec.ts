@@ -1028,6 +1028,29 @@ describe('Blockchain', () => {
         expect(senderLastTransactions).toHaveTransaction({ from: target, to: sender });
     });
 
+    it('should store transactions', async () => {
+        const blockchain = await Blockchain.create();
+
+        const sender = randomAddress();
+        const target = randomAddress();
+
+        const transactionsBefore = await blockchain.getTransactions(sender);
+
+        expect(transactionsBefore).toEqual([]);
+
+        const result = await blockchain.sendMessage(
+            internal({
+                bounce: true,
+                from: sender,
+                to: target,
+                value: toNano('0.5'),
+            }),
+        );
+
+        const transactionsAfter = await blockchain.getTransactions(sender);
+        expect(transactionsAfter).toHaveTransaction({ from: sender, to: target });
+    });
+
     describe('snapshots', () => {
         it('should not affect blockchain while modifying snapshot.prevBlocksInfo', async () => {
             const blockchain = await Blockchain.create();

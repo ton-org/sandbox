@@ -11,6 +11,7 @@ import {
     ExternalAddress,
     StateInit,
     OpenedContract,
+    Transaction,
 } from '@ton/core';
 import { getSecureRandomBytes } from '@ton/crypto';
 
@@ -177,6 +178,7 @@ export type BlockchainSnapshot = {
     nextCreateWalletIndex: number;
     prevBlocksInfo?: PrevBlocksInfo;
     randomSeed?: Buffer;
+    transactions: BlockchainTransaction[];
 };
 
 export type SendMessageIterParams = MessageParams & {
@@ -204,6 +206,7 @@ export class Blockchain {
     protected prevBlocksInfo?: PrevBlocksInfo;
     protected randomSeed?: Buffer;
     protected shouldDebug = false;
+    protected transactions: BlockchainTransaction[] = [];
 
     protected defaultQueueManager: MessageQueueManager;
 
@@ -235,6 +238,7 @@ export class Blockchain {
             nextCreateWalletIndex: this.nextCreateWalletIndex,
             prevBlocksInfo: deepcopy(this.prevBlocksInfo),
             randomSeed: deepcopy(this.randomSeed),
+            transactions: deepcopy(this.transactions),
         };
     }
 
@@ -260,6 +264,7 @@ export class Blockchain {
         this.nextCreateWalletIndex = snapshot.nextCreateWalletIndex;
         this.prevBlocksInfo = deepcopy(snapshot.prevBlocksInfo);
         this.randomSeed = deepcopy(snapshot.randomSeed);
+        this.transactions = deepcopy(snapshot.transactions);
     }
 
     get recordStorage() {
@@ -326,6 +331,7 @@ export class Blockchain {
             getContract: (address) => this.getContract(address),
             startFetchingContract: (address) => this.startFetchingContract(address),
             increaseLt: () => this.increaseLt(),
+            addTransaction: (transaction: BlockchainTransaction) => this.transactions.push(transaction),
         });
     }
 
@@ -468,6 +474,37 @@ export class Blockchain {
         return await (await this.getContract(address)).get(method, stack, params);
     }
 
+    async getTransactions(
+        address: Address,
+        opts?: {
+            limit?: number;
+            lt?: string | bigint;
+            hash?: string | Buffer;
+        },
+    ): Promise<BlockchainTransaction[]> {
+        const transactionByAddress = this.transactions.reverse().filter((transaction) => {
+            const dst = transaction.inMessage?.info?.dest;
+            const src = transaction.inMessage?.info?.src;
+            return (Address.isAddress(dst) && dst.equals(address)) || (Address.isAddress(src) && src.equals(address));
+        });
+
+        const { lt, hash, limit } = opts ?? {};
+
+        let resultTransactions = transactionByAddress;
+
+        if (lt !== undefined && hash !== undefined) {
+            const hashBuffer = hash instanceof Buffer ? hash : Buffer.from(hash, 'hex');
+            const transaction = transactionByAddress.find((tx) => tx.lt === BigInt(lt) && tx.hash() === hashBuffer);
+            if (!transaction) {
+                throw new Error('Transaction with provided lt and hash not found.');
+            }
+
+            resultTransactions = resultTransactions.filter((tx) => tx.lt <= transaction.lt);
+        }
+
+        return resultTransactions.slice(0, limit);
+    }
+
     protected increaseLt() {
         this.currentLt += LT_ALIGN;
     }
@@ -484,6 +521,7 @@ export class Blockchain {
     provider(address: Address, init?: StateInit | null): ContractProvider {
         return new BlockchainContractProvider(
             {
+                getTransactions: (address: Address, opts) => this.getTransactions(address, opts),
                 getContract: (addr) => this.getContract(addr),
                 pushMessage: (msg) => this.defaultQueueManager.pushMessage(msg),
                 runGetMethod: (addr, method, args) => this.runGetMethod(addr, method, args),

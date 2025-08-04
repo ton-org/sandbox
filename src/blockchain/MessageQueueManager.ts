@@ -15,6 +15,7 @@ export class MessageQueueManager {
             startFetchingContract(address: Address): Promise<SmartContract>;
             getContract(address: Address): Promise<SmartContract>;
             increaseLt(): void;
+            addTransaction(transaction: BlockchainTransaction): void;
         },
     ) {}
 
@@ -116,6 +117,7 @@ export class MessageQueueManager {
                 mode: message.type === 'message' ? message.mode : undefined,
             };
             transaction.parent?.children.push(transaction);
+            this.blockchain.addTransaction(transaction);
 
             result = transaction;
             done = true;

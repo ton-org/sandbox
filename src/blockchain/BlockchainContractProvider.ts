@@ -20,6 +20,8 @@ import {
 
 import { TickOrTock } from '../executor/Executor';
 import { GetMethodResult, SmartContract } from './SmartContract';
+import { BlockchainTransaction } from './Blockchain';
+import { extractTransaction } from '../utils/transaction';
 
 function bigintToBuffer(x: bigint, n = 32): Buffer {
     const b = Buffer.alloc(n);
@@ -64,6 +66,14 @@ export interface SandboxContractProvider extends ContractProvider {
 export class BlockchainContractProvider implements SandboxContractProvider {
     constructor(
         private readonly blockchain: {
+            getTransactions(
+                address: Address,
+                opts?: {
+                    limit?: number;
+                    lt?: string | bigint;
+                    hash?: string | Buffer;
+                },
+            ): Promise<BlockchainTransaction[]>;
             getContract(address: Address): Promise<SmartContract>;
             pushMessage(message: Message): Promise<void>;
             runGetMethod(address: Address, method: string, args: TupleItem[]): Promise<GetMethodResult>;
@@ -113,20 +123,23 @@ export class BlockchainContractProvider implements SandboxContractProvider {
     }
 
     /**
-     * Dummy implementation of getTransactions. Sandbox does not store transactions, so its ContractProvider cannot fetch any.
-     * Throws error in every call.
+     * Retrieves transactions for the specified address using the provided logical time (lt), hash, and optional limit.
+     * This implementation fetches transactions directly from the underlying blockchain instance.
      *
-     * @throws {Error}
+     * @param address - The address to retrieve transactions for.
+     * @param lt - Logical time of transaction to start with, must be used with hash.
+     * @param hash - Hash of transaction to start with, in buffer or hex encoding, must be sent with lt.
+     * @param limit - Optional maximum number of transactions to fetch.
+     * @returns An array of transactions.
      */
-    getTransactions(
-        _address: Address,
-        _lt: bigint,
-        _hash: Buffer,
-        _limit?: number | undefined,
+    async getTransactions(
+        address: Address,
+        lt: bigint,
+        hash: Buffer,
+        limit?: number | undefined,
     ): Promise<Transaction[]> {
-        throw new Error(
-            '`getTransactions` is not implemented in `BlockchainContractProvider`, do not use it in the tests',
-        );
+        const blockchainTransactions = await this.blockchain.getTransactions(address, { lt, hash, limit });
+        return blockchainTransactions.map((blockchainTx) => extractTransaction(blockchainTx));
     }
 
     /**
