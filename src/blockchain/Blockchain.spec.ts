@@ -1128,5 +1128,34 @@ describe('Blockchain', () => {
             const currentBalance = (await blockchain.getContract(wallet.address)).balance;
             expect(currentBalance).toBe(originalBalance);
         });
+
+        it('should load single account snapshot state', async () => {
+            const blockchain = await Blockchain.create();
+            const wallet = await blockchain.treasury('snapshot');
+            const originalBalance = await wallet.getBalance();
+
+            const walletContract = await blockchain.getContract(wallet.address);
+            const snap = walletContract.snapshot();
+
+            const receiver = randomAddress(0);
+            const value = toNano(100);
+
+            const result = await wallet.send({
+                to: receiver,
+                value: value,
+                bounce: false,
+            });
+
+            expect(result.transactions).toHaveTransaction({
+                from: wallet.address,
+                to: receiver,
+                value,
+            });
+
+            walletContract.loadFrom(snap);
+
+            const currentBalance = (await blockchain.getContract(wallet.address)).balance;
+            expect(currentBalance).toBe(originalBalance);
+        });
     });
 });

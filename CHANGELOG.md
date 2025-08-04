@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added `@ton-community/func-js` to `peerDependencies` to fix missing module error in downstream TypeScript projects
 
+### Fixed
+
+- Fixed `SmartContract.loadFrom()` comparing addresses by reference
+
 ## [0.35.1] - 2025-07-08
 
 ### Fixed
