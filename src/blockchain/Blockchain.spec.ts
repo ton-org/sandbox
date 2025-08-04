@@ -1028,6 +1028,51 @@ describe('Blockchain', () => {
         expect(senderLastTransactions).toHaveTransaction({ from: target, to: sender });
     });
 
+    it('should deploy library and use library', async () => {
+        const code = await compileLocal('library_deployer.tolk');
+        const data = new Cell();
+
+        const blockchain = await Blockchain.create({ autoDeployLibs: true });
+        const libraryDeployer = randomAddress(-1); // library deployer should be in masterchain
+
+        await blockchain.setShardAccount(
+            libraryDeployer,
+            createShardAccount({
+                address: libraryDeployer,
+                code,
+                data,
+                balance: toNano('1'),
+            }),
+        );
+
+        const libCell = beginCell().storeStringTail('Hello from library!').endCell();
+
+        const sender = randomAddress();
+        const res = await blockchain.sendMessage(
+            internal({
+                from: sender,
+                to: libraryDeployer,
+                value: toNano('0.5'),
+                body: beginCell().storeUint(0x1, 32).storeUint(2, 8).storeRef(libCell).endCell(),
+            }),
+        );
+
+        expect(res.transactions).toHaveTransaction({ from: sender, to: libraryDeployer, success: true });
+
+        let libExotic = beginCell().storeUint(2, 8).storeBuffer(libCell.hash()).endCell({ exotic: true });
+
+        const res2 = await blockchain.sendMessage(
+            internal({
+                from: sender,
+                to: libraryDeployer,
+                value: toNano('0.5'),
+                body: beginCell().storeUint(0x2, 32).storeRef(libExotic).endCell(),
+            }),
+        );
+
+        expect(res2.transactions).toHaveTransaction({ from: libraryDeployer, to: sender, body: libCell });
+    });
+
     describe('snapshots', () => {
         it('should not affect blockchain while modifying snapshot.prevBlocksInfo', async () => {
             const blockchain = await Blockchain.create();

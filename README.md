@@ -14,8 +14,9 @@ The key difference of this package from [ton-contract-executor](https://github.c
   * [Testing transaction fees](#testing-transaction-fees)
   * [Cross contract tests](#cross-contract-tests)
   * [Testing key points](#testing-key-points)
-  * [Test examples](#test-examples)
   * [Using assets in tests](#using-assets-in-tests)
+  * [Using libraries](#using-libraries)
+  * [Test examples](#test-examples)
 * [Benchmark contracts](#benchmark-contracts)
 * [Sandbox pitfalls](#sandbox-pitfalls)
 * [Viewing logs](#viewing-logs)
@@ -388,6 +389,49 @@ describe('Jetton', () => {
 });
 ```
 
+### Using Libraries
+
+When testing smart contracts locally, there are **two ways to register libraries** in your blockchain environment.
+
+#### Option 1: **Automatic Library Deployment**
+
+Enable automatic library detection by passing the `autoDeployLibs` flag when creating the blockchain:
+
+```ts
+const blockchain = await Blockchain.create({ autoDeployLibs: true });
+```
+
+In your contract, deployed in **Masterchain**, deploy the library using the `SETLIBCODE` opcode:
+
+```tolk
+fun setlibcode(lib: cell, mode: int): void
+    asm "SETLIBCODE";
+
+...
+
+setlibcode(anyCell, 2); // Mode 2 = deploy public library
+```
+
+This allows the contract to dynamically install and register the library at runtime, with the environment automatically tracking and using it as needed.
+
+#### Option 2: **Manual Library Deployment**
+
+If `autoDeployLibs` is **not enabled**, you'll need to register libraries manually:
+
+```ts
+const blockchain = await Blockchain.create();
+const code = await compile('Contract');
+
+// Create a dictionary of library hash → library cell
+const libsDict = Dictionary.empty(Dictionary.Keys.Buffer(32), Dictionary.Values.Cell());
+libsDict.set(code.hash(), code);
+
+// Manually assign the libraries
+blockchain.libs = beginCell().storeDictDirect(libsDict).endCell();
+```
+
+This gives you full control but requires explicitly managing which libraries are available during testing.
+
 ### Test Examples
 You can typically find various tests for Sandbox-based project contracts in the `./tests` directory. 
 Learn more from examples:
@@ -503,19 +547,6 @@ By default, the reporter generates:
 
 There are several pitfalls in the sandbox due to the limitations of emulation. Be aware of it while testing your smart contracts.
 
-* Libs cells not updating in contract by `SETLIBCODE`, `CHANGELIB`. They need to be updated manually.
-```typescript
-const blockchain = await Blockchain.create();
-const code = await compile('Contract');
-
-// consist of a hash of a lib cell and its representation
-const libsDict = Dictionary.empty(Dictionary.Keys.Buffer(32), Dictionary.Values.Cell());
-libsDict.set(code.hash(), code);
-
-// manualy set libs
-blockchain.libs = beginCell().storeDictDirect(libsDict).endCell();
-```
-* There is no blocks in emulation, so opcodes like `PREVBLOCKSINFO`, `PREVMCBLOCKS`, `PREVKEYBLOCK`  will return empty tuple.
 * The randomness in the TON is always deterministic and the same randomSeed always gives the same random number sequence. If necessary, you can change the randomSeed to make `RAND` provide result based on provided seed.
 ```typescript
 const res = await blockchain.runGetMethod(example.address,

@@ -177,6 +177,7 @@ export type BlockchainSnapshot = {
     nextCreateWalletIndex: number;
     prevBlocksInfo?: PrevBlocksInfo;
     randomSeed?: Buffer;
+    autoDeployLibs: boolean;
 };
 
 export type SendMessageIterParams = MessageParams & {
@@ -204,12 +205,14 @@ export class Blockchain {
     protected prevBlocksInfo?: PrevBlocksInfo;
     protected randomSeed?: Buffer;
     protected shouldDebug = false;
+    protected autoDeployLibs: boolean;
 
     protected defaultQueueManager: MessageQueueManager;
 
     readonly executor: IExecutor;
 
     protected debuggerExecutor?: Executor;
+
     async getDebuggerExecutor() {
         if (!this.debuggerExecutor) {
             this.debuggerExecutor = await Executor.create({ debug: true });
@@ -235,6 +238,7 @@ export class Blockchain {
             nextCreateWalletIndex: this.nextCreateWalletIndex,
             prevBlocksInfo: deepcopy(this.prevBlocksInfo),
             randomSeed: deepcopy(this.randomSeed),
+            autoDeployLibs: this.autoDeployLibs,
         };
     }
 
@@ -260,6 +264,7 @@ export class Blockchain {
         this.nextCreateWalletIndex = snapshot.nextCreateWalletIndex;
         this.prevBlocksInfo = deepcopy(snapshot.prevBlocksInfo);
         this.randomSeed = deepcopy(snapshot.randomSeed);
+        this.autoDeployLibs = snapshot.autoDeployLibs;
     }
 
     get recordStorage() {
@@ -275,6 +280,14 @@ export class Blockchain {
      */
     set recordStorage(v: boolean) {
         this.shouldRecordStorage = v;
+    }
+
+    get autoDeployLibraries(): boolean {
+        return this.autoDeployLibs;
+    }
+
+    set autoDeployLibraries(value: boolean) {
+        this.autoDeployLibs = value;
     }
 
     get debug() {
@@ -312,11 +325,13 @@ export class Blockchain {
         config?: BlockchainConfig;
         storage: BlockchainStorage;
         meta?: ContractsMeta;
+        autoDeployLibs?: boolean;
     }) {
         this.networkConfig = blockchainConfigToBase64(opts.config);
         this.executor = opts.executor;
         this.storage = opts.storage;
         this.meta = opts.meta;
+        this.autoDeployLibs = opts.autoDeployLibs ?? false;
 
         this.defaultQueueManager = this.createQueueManager();
     }
@@ -326,6 +341,9 @@ export class Blockchain {
             getContract: (address) => this.getContract(address),
             startFetchingContract: (address) => this.startFetchingContract(address),
             increaseLt: () => this.increaseLt(),
+            getLibs: () => this.libs,
+            setLibs: (value: Cell | undefined) => (this.libs = value),
+            getAutoDeployLibs: () => this.autoDeployLibs,
         });
     }
 
@@ -736,6 +754,7 @@ export class Blockchain {
      * @param [opts.config] Config used in blockchain. If omitted {@link defaultConfig} is used.
      * @param [opts.storage] Contracts storage used for blockchain. If omitted {@link LocalBlockchainStorage} is used.
      * @param [opts.meta] Optional contracts metadata provider. If not provided, {@link @ton/test-utils.contractsMeta} will be used to accumulate contracts metadata.
+     * @param [opts.autoDeployLibs] Optional flag. If set to true, libraries will be collected automatically
      * @example
      * const blockchain = await Blockchain.create({ config: 'slim' });
      *
@@ -753,6 +772,7 @@ export class Blockchain {
         config?: BlockchainConfig;
         storage?: BlockchainStorage;
         meta?: ContractsMeta;
+        autoDeployLibs?: boolean;
     }) {
         return new Blockchain({
             executor: opts?.executor ?? (await Executor.create()),
