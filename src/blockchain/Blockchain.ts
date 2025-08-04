@@ -23,6 +23,7 @@ import { BlockchainSender } from './BlockchainSender';
 import { TreasuryContract } from '../treasury/Treasury';
 import {
     GetMethodParams,
+    GetMethodResult,
     LogsVerbosity,
     MessageParams,
     SmartContract,
@@ -36,6 +37,7 @@ import { testSubwalletId } from '../utils/testTreasurySubwalletId';
 import { collectMetric } from '../metric/collectMetric';
 import { ContractsMeta } from '../meta/ContractsMeta';
 import { deepcopy } from '../utils/deepcopy';
+import { collectAsmCoverage, collectTxsCoverage, mergeCoverages, Coverage } from '../coverage';
 import { MessageQueueManager } from './MessageQueueManager';
 import { AsyncLock } from '../utils/AsyncLock';
 
@@ -209,6 +211,10 @@ export class Blockchain {
 
     protected defaultQueueManager: MessageQueueManager;
 
+    protected collectCoverage: boolean = false;
+    protected readonly txs: BlockchainTransaction[][] = [];
+    protected readonly getMethodResults: GetMethodResult[] = [];
+
     readonly executor: IExecutor;
 
     protected debuggerExecutor?: Executor;
@@ -344,6 +350,7 @@ export class Blockchain {
             getLibs: () => this.libs,
             setLibs: (value: Cell | undefined) => (this.libs = value),
             getAutoDeployLibs: () => this.autoDeployLibs,
+            registerTxsForCoverage: (txs) => this.registerTxsForCoverage(txs),
         });
     }
 
@@ -483,7 +490,9 @@ export class Blockchain {
      * const now = res.stackReader.readNumber();
      */
     async runGetMethod(address: Address, method: number | string, stack: TupleItem[] = [], params?: GetMethodParams) {
-        return await (await this.getContract(address)).get(method, stack, params);
+        const result = await (await this.getContract(address)).get(method, stack, params);
+        this.registerGetMethodForCoverage(result);
+        return result;
     }
 
     protected increaseLt() {
@@ -745,6 +754,93 @@ export class Blockchain {
      */
     set libs(value: Cell | undefined) {
         this.globalLibs = value;
+    }
+
+    /**
+     * Enable coverage collection.
+     *
+     * @param enable if false, disable coverage collection
+     */
+    public enableCoverage(enable: boolean = true) {
+        this.collectCoverage = enable;
+        this.verbosity.vmLogs = 'vm_logs_verbose';
+    }
+
+    /**
+     * Returns coverage analysis for the specified contract.
+     * Coverage is collected at the TVM assembly instruction level from all executed transactions and get method calls.
+     *
+     * @param contract Contract to analyze coverage for
+     * @returns Coverage object with detailed coverage data
+     * @throws Error if the contract has no code
+     * @throws Error if verbose VM logs are not enabled (blockchain.verbosity.vmLogs !== "vm_logs_verbose")
+     *
+     * @example
+     * // Enable coverage collection
+     * blockchain.enableCoverage();
+     *
+     * // Execute contract methods
+     * await contract.send(sender, { value: toNano('1') }, 'increment');
+     *
+     * // Get coverage analysis
+     * const coverage = blockchain.coverage(contract);
+     * const summary = coverage?.summary();
+     * console.log(`Coverage: ${summary?.coveragePercentage?.toFixed(2)}%`);
+     *
+     * // Generate HTML report
+     * const htmlReport = coverage?.report("html");
+     * await fs.writeFile("coverage.html", htmlReport);
+     */
+    public coverage(contract: Contract): Coverage | undefined {
+        const code = contract.init?.code;
+        if (!code) {
+            throw new Error('No code is available for contract');
+        }
+
+        const address = contract.address;
+        return this.coverageForCell(code, address);
+    }
+
+    protected registerTxsForCoverage(txs: BlockchainTransaction[]) {
+        if (!this.collectCoverage) return;
+        this.txs.push(txs);
+    }
+
+    protected registerGetMethodForCoverage(get: GetMethodResult) {
+        if (!this.collectCoverage) return;
+        this.getMethodResults.push(get);
+    }
+
+    /**
+     * Returns coverage analysis for the specified code cell.
+     * This method allows analyzing coverage for code cells directly, with optional address filtering.
+     *
+     * @param code Cell containing contract code to analyze
+     * @param address Optional contract address to filter transactions by.
+     *                If provided, only transactions from this address will be analyzed
+     * @returns Coverage object with detailed coverage data
+     * @throws Error if verbose VM logs are not enabled (blockchain.verbosity.vmLogs !== "vm_logs_verbose")
+     *
+     * @example
+     * blockchain.enableCoverage();
+     * // Analyze coverage for a specific code cell
+     * const coverage = blockchain.coverageForCell(codeCell, contractAddress);
+     *
+     * // Analyze coverage for code without address filtering
+     * const allCoverage = blockchain.coverageForCell(codeCell);
+     *
+     * console.log(coverage?.summary());
+     */
+    public coverageForCell(code: Cell, address?: Address): Coverage | undefined {
+        if (!this.collectCoverage || this.verbosity.vmLogs !== 'vm_logs_verbose') {
+            return undefined;
+        }
+
+        const txs = this.txs.flatMap((tx) => collectTxsCoverage(code, address, tx));
+        const gets = this.getMethodResults.flatMap((get) => collectAsmCoverage(code, get.vmLogs));
+
+        const coverages = [...txs, ...gets];
+        return new Coverage(mergeCoverages(...coverages));
     }
 
     /**

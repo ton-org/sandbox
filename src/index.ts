@@ -75,3 +75,20 @@ export { ExtraCurrency } from './utils/ec';
 export * from './metric';
 
 export { registerCompiledContract } from './debugger/DebugInfoCache';
+
+export {
+    generateCoverageSummary,
+    mergeCoverages,
+    collectAsmCoverage,
+    generateHtmlReport,
+    generateTextReport,
+    coverageFromJson,
+    coverageToJson,
+    CoverageSummary,
+    CoverageData,
+    Line,
+    Covered,
+    Skipped,
+    Uncovered,
+    Coverage,
+} from './coverage';

@@ -28,6 +28,7 @@ export class MessageQueueManager {
             getLibs(): Cell | undefined;
             setLibs(libs: Cell | undefined): void;
             getAutoDeployLibs(): boolean;
+            registerTxsForCoverage(txs: BlockchainTransaction[]): void;
         },
     ) {}
 
@@ -87,7 +88,7 @@ export class MessageQueueManager {
     }
 
     protected async processQueue(params?: MessageParams) {
-        return await this.lock.with(async () => {
+        const results = await this.lock.with(async () => {
             // Locked already
             const txs = this.runQueueIter(false, params);
             const result: BlockchainTransaction[] = [];
@@ -98,6 +99,8 @@ export class MessageQueueManager {
 
             return result;
         });
+        this.blockchain.registerTxsForCoverage(results);
+        return results;
     }
 
     protected async processMessage(params?: MessageParams): Promise<IteratorResult<BlockchainTransaction>> {
