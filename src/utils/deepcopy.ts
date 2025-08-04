@@ -44,6 +44,7 @@ export function deepcopy<T extends IsCopiable<T> extends true ? unknown : DeepCo
         return deepcopyBuffer(obj) as T;
     }
 
+    // @ts-expect-error TS doesn't allow generic instantiation in instanceof anymore
     if (obj instanceof Dictionary<DictionaryKeyTypes, DeepCopiable>) {
         return deepcopyDict(obj);
     }

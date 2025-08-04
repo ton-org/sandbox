@@ -9,7 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added coverage
 - Added `allowParallel` flag to `Blockchain.sendMessageIter` method, allowing for testing MITM attack
+- Added `autoDeployLibs` flag, that allow to detect libraries, deployed by contract in masterchain automatically
+
+### Changed
+
+- Added `@ton-community/func-js` to `peerDependencies` to fix missing module error in downstream TypeScript projects
+
+### Fixed
+
+- Fixed `SmartContract.loadFrom()` comparing addresses by reference
 
 ## [0.35.1] - 2025-07-08
 
