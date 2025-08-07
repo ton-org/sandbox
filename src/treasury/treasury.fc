@@ -1,0 +1,42 @@
+#pragma version 0.4.6;
+
+cell get_data() asm "c4 PUSH";
+slice begin_parse(cell c) asm "CTOS";
+(slice, cell) load_dict(slice s) asm(-> 1 0) "LDDICT";
+() end_parse(slice s) impure asm "ENDS";
+() accept_message() impure asm "ACCEPT";
+(int, slice, int) idict_get_next?(cell dict, int key_len, int pivot) asm(pivot dict key_len -> 1 0 2) "DICTIGETNEXT" "NULLSWAPIFNOT2";
+(slice, cell) load_ref(slice s) asm(-> 1 0) "LDREF";
+() send_raw_message(cell msg, int mode) impure asm "SENDRAWMSG";
+
+const size::subwallet_id = 256;
+const size::message_dict_key = 16;
+const size::message_mode = 8;
+
+const error::subwallet_id_not_equal = 34;
+
+() recv_internal(int msg_value) impure {
+}
+
+() recv_external(slice in_msg_slice) impure inline {
+    int msg_subwallet_id = in_msg_slice~load_uint(size::subwallet_id);
+    slice data_slice = get_data().begin_parse();
+    int stored_subwallet_id = data_slice~load_uint(size::subwallet_id);
+    data_slice.end_parse();
+    throw_unless(error::subwallet_id_not_equal, msg_subwallet_id == stored_subwallet_id);
+    cell messages_dict = in_msg_slice~load_dict();
+    in_msg_slice.end_parse();
+
+    accept_message();
+
+    int pivot_item = -1;
+    do {
+        (int next_pivot_item, slice message_slice, int found?) = messages_dict.idict_get_next?(size::message_dict_key, pivot_item);
+        pivot_item = next_pivot_item;
+        if (found?) {
+            int mode = message_slice~load_uint(size::message_mode);
+            cell message = message_slice~load_ref();
+            send_raw_message(message, mode);
+        }
+    } until (~ found?);
+}
