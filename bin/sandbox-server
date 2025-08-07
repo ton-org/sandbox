@@ -1,0 +1,8 @@
+#!/usr/bin/env node
+
+const {main} = require("../dist/server/server")
+
+main().catch(error => {
+    console.error("Fatal error:", error.message)
+    process.exit(1)
+})
