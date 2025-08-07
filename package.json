@@ -1,6 +1,6 @@
 {
-  "name": "@ton/sandbox",
-  "version": "0.35.1",
+  "name": "ton-sandbox-dev",
+  "version": "0.35.35",
   "description": "TON transaction emulator",
   "main": "dist/index.js",
   "license": "MIT",
@@ -25,6 +25,7 @@
     "@ton/toolchain": "the-ton-tech/toolchain#v1.4.0",
     "@types/jest": "^29.5.0",
     "@types/node": "^18.15.11",
+    "@types/ws": "^8.5.10",
     "eslint": "^9.28.0",
     "jest": "^29.5.0",
     "jest-config": "^29.7.0",
@@ -55,13 +56,15 @@
     "bt": "yarn build && yarn test",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --max-warnings 0 --fix",
-    "config:pack": "ts-node ./scripts/pack-config.ts"
+    "config:pack": "ts-node ./scripts/pack-config.ts",
+    "websocket-server": "ts-node websocket-server.ts"
   },
   "packageManager": "yarn@4.9.2",
   "dependencies": {
     "@vscode/debugadapter": "^1.68.0",
     "chalk": "^4.1.2",
     "fflate": "^0.8.2",
-    "table": "^6.9.0"
+    "table": "^6.9.0",
+    "ws": "^8.18.2"
   }
 }

@@ -1040,43 +1040,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ton/sandbox@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "@ton/sandbox@workspace:."
-  dependencies:
-    "@ton-community/func-js": "npm:^0.10.0"
-    "@ton/core": "npm:^0.61.0"
-    "@ton/crypto": "npm:3.3.0"
-    "@ton/test-utils": "npm:^0.7.0"
-    "@ton/tolk-js": "npm:^0.13.0"
-    "@ton/ton": "npm:^15.2.1"
-    "@ton/toolchain": "the-ton-tech/toolchain#v1.4.0"
-    "@types/jest": "npm:^29.5.0"
-    "@types/node": "npm:^18.15.11"
-    "@vscode/debugadapter": "npm:^1.68.0"
-    chalk: "npm:^4.1.2"
-    eslint: "npm:^9.28.0"
-    fflate: "npm:^0.8.2"
-    jest: "npm:^29.5.0"
-    jest-config: "npm:^29.7.0"
-    jest-environment-node: "npm:^29.7.0"
-    table: "npm:^6.9.0"
-    ts-jest: "npm:^29.0.5"
-    ts-node: "npm:^10.9.1"
-    typescript: "npm:^4.9.5"
-  peerDependencies:
-    "@ton/core": ">=0.61.0"
-    "@ton/crypto": ">=3.3.0"
-    "@ton/test-utils": ">=0.7.0"
-    jest: ^29.5.0
-  peerDependenciesMeta:
-    "@ton/test-utils":
-      optional: true
-    jest:
-      optional: true
-  languageName: unknown
-  linkType: soft
-
 "@ton/test-utils@npm:^0.7.0":
   version: 0.7.0
   resolution: "@ton/test-utils@npm:0.7.0"
@@ -1286,6 +1249,15 @@ __metadata:
   version: 2.0.3
   resolution: "@types/stack-utils@npm:2.0.3"
   checksum: 10/72576cc1522090fe497337c2b99d9838e320659ac57fa5560fcbdcbafcf5d0216c6b3a0a8a4ee4fdb3b1f5e3420aa4f6223ab57b82fef3578bec3206425c6cf5
+  languageName: node
+  linkType: hard
+
+"@types/ws@npm:^8.5.10":
+  version: 8.18.1
+  resolution: "@types/ws@npm:8.18.1"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10/1ce05e3174dcacf28dae0e9b854ef1c9a12da44c7ed73617ab6897c5cbe4fccbb155a20be5508ae9a7dde2f83bd80f5cf3baa386b934fc4b40889ec963e94f3a
   languageName: node
   linkType: hard
 
@@ -5848,6 +5820,45 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ton-sandbox-dev@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "ton-sandbox-dev@workspace:."
+  dependencies:
+    "@ton-community/func-js": "npm:^0.10.0"
+    "@ton/core": "npm:^0.61.0"
+    "@ton/crypto": "npm:3.3.0"
+    "@ton/test-utils": "npm:^0.7.0"
+    "@ton/tolk-js": "npm:^0.13.0"
+    "@ton/ton": "npm:^15.2.1"
+    "@ton/toolchain": "the-ton-tech/toolchain#v1.4.0"
+    "@types/jest": "npm:^29.5.0"
+    "@types/node": "npm:^18.15.11"
+    "@types/ws": "npm:^8.5.10"
+    "@vscode/debugadapter": "npm:^1.68.0"
+    chalk: "npm:^4.1.2"
+    eslint: "npm:^9.28.0"
+    fflate: "npm:^0.8.2"
+    jest: "npm:^29.5.0"
+    jest-config: "npm:^29.7.0"
+    jest-environment-node: "npm:^29.7.0"
+    table: "npm:^6.9.0"
+    ts-jest: "npm:^29.0.5"
+    ts-node: "npm:^10.9.1"
+    typescript: "npm:^4.9.5"
+    ws: "npm:^8.18.2"
+  peerDependencies:
+    "@ton/core": ">=0.61.0"
+    "@ton/crypto": ">=3.3.0"
+    "@ton/test-utils": ">=0.7.0"
+    jest: ^29.5.0
+  peerDependenciesMeta:
+    "@ton/test-utils":
+      optional: true
+    jest:
+      optional: true
+  languageName: unknown
+  linkType: soft
+
 "ts-api-utils@npm:^2.1.0":
   version: 2.1.0
   resolution: "ts-api-utils@npm:2.1.0"
@@ -6260,6 +6271,21 @@ __metadata:
     imurmurhash: "npm:^0.1.4"
     signal-exit: "npm:^3.0.7"
   checksum: 10/3be1f5508a46c190619d5386b1ac8f3af3dbe951ed0f7b0b4a0961eed6fc626bd84b50cf4be768dabc0a05b672f5d0c5ee7f42daa557b14415d18c3a13c7d246
+  languageName: node
+  linkType: hard
+
+"ws@npm:^8.18.2":
+  version: 8.18.2
+  resolution: "ws@npm:8.18.2"
+  peerDependencies:
+    bufferutil: ^4.0.1
+    utf-8-validate: ">=5.0.2"
+  peerDependenciesMeta:
+    bufferutil:
+      optional: true
+    utf-8-validate:
+      optional: true
+  checksum: 10/018e04ec95561d88248d53a2eaf094b4ae131e9b062f2679e6e8a62f04649bc543448f1e038125225ac6bbb25f54c1e65d7a2cc9dbc1e28b43e5e6b7162ad88e
   languageName: node
   linkType: hard
 
