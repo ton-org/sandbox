@@ -185,6 +185,11 @@ export type BlockchainSnapshot = {
     randomSeed?: Buffer;
 };
 
+export type ConnectionOptions = {
+    readonly port?: number,
+    readonly host?: string
+};
+
 export class Blockchain {
     protected storage: BlockchainStorage;
     protected networkConfig: string;
@@ -204,6 +209,7 @@ export class Blockchain {
     protected shouldRecordStorage = false;
     protected meta?: ContractsMeta;
     protected webUI: boolean;
+    protected connectionOptions: ConnectionOptions;
     protected ws: WebSocket | undefined = undefined;
     protected prevBlocksInfo?: PrevBlocksInfo;
     protected randomSeed?: Buffer;
@@ -315,12 +321,14 @@ export class Blockchain {
         storage: BlockchainStorage;
         meta?: ContractsMeta;
         webUI?: boolean;
+        connectionOptions?: ConnectionOptions;
     }) {
         this.networkConfig = blockchainConfigToBase64(opts.config);
         this.executor = opts.executor;
         this.storage = opts.storage;
         this.meta = opts.meta;
         this.webUI = opts.webUI ?? false;
+        this.connectionOptions = opts.connectionOptions ?? {port: 7743, host: 'localhost'};
     }
 
     /**
@@ -626,7 +634,7 @@ export class Blockchain {
         const transactions = this.serializeTransactions(txs);
         const contracts = await this.contractsData();
 
-        await this.websocketConnect();
+        await this.websocketConnectSafe();
         sendToWebsocket(this.ws, {$: "test-data", testName, transactions, contracts, changes});
         this.websocketDisconnect();
         return txs;
@@ -697,10 +705,17 @@ export class Blockchain {
         return JSON.stringify(dump, null, 2);
     }
 
+    protected async websocketConnectSafe(): Promise<void> {
+        await this.websocketConnect().catch(e => {
+            console.warn("Unable to connect to sandbox server in Web UI mode. Make sure the port and host match the sandbox server. You can set the WebSocket address globally with `SANDBOX_WEBSOCKET_ADDR=ws://localhost:7743` or via `Blockchain.create({ connectionOptions: { host: \"localhost\", port: 7743 } })`.");
+        });
+    }
+
     protected async websocketConnect(): Promise<void> {
         if (this.ws !== undefined) return;
         return new Promise((resolve, reject) => {
-            this.ws = new WebSocket("ws://localhost:8081");
+            const addr = process.env.SANDBOX_WEBSOCKET_ADDR ?? `ws://${this.connectionOptions.host ?? "localhost"}:${this.connectionOptions.port ?? "7743"}`;
+            this.ws = new WebSocket(addr);
 
             this.ws.on("open", () => {
                 resolve();
@@ -1001,6 +1016,7 @@ export class Blockchain {
         storage?: BlockchainStorage;
         meta?: ContractsMeta;
         webUI?: boolean;
+        connectionOptions?: ConnectionOptions;
     }) {
         const blockchain = new Blockchain({
             executor: opts?.executor ?? (await Executor.create()),
@@ -1012,7 +1028,7 @@ export class Blockchain {
         if (opts?.webUI) {
             blockchain.verbosity.print = false
             blockchain.verbosity.vmLogs = "vm_logs_verbose"
-            await blockchain.websocketConnect()
+            await blockchain.websocketConnectSafe()
         }
         return blockchain;
     }

@@ -1,7 +1,7 @@
 import {cac} from "cac";
 import {startServer, type StartServerOptions} from "./server";
 
-const version = "0.35.38";
+const version = "0.35.46";
 
 interface CliOptions {
     readonly port: number | undefined;
@@ -11,7 +11,7 @@ interface CliOptions {
 
 async function runServer(options: CliOptions): Promise<void> {
     const serverOptions: StartServerOptions = {
-        port: options.port ?? 8081,
+        port: options.port ?? 7743,
         host: options.host,
     };
 
@@ -30,7 +30,7 @@ export async function main(): Promise<void> {
 
     cli.version(version)
         .usage("[options]")
-        .option("-p, --port <port>", "Port to listen on", {default: 8081})
+        .option("-p, --port <port>", "Port to listen on", {default: 7743})
         .option("-h, --host <host>", "Host to bind to (default: 0.0.0.0)")
         .help();
 

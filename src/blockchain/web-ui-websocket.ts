@@ -25,10 +25,10 @@ export function sendToWebsocket(ws: WebSocket | undefined, data: Message): void 
     }
 
     if (ws === undefined) {
-        console.error('Cannot send, Websocket is undefined!');
+        console.warn('Cannot send, Websocket is undefined!');
     }
     if (ws && ws.readyState !== WebSocket.OPEN) {
-        console.error('Cannot send, Websocket is not opem!');
+        console.warn('Cannot send, Websocket is not open!');
     }
 }
 
