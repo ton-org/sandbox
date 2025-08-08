@@ -80,7 +80,7 @@ describe('Blockchain', () => {
     });
 
     it('should have non-empty bounce bodies', async () => {
-        const blockchain = await Blockchain.create({webUI: true});
+        const blockchain = await Blockchain.create();
 
         const address = randomAddress();
 

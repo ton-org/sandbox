@@ -15,9 +15,12 @@ import {
     beginCell,
     storeStateInit,
     storeShardAccount,
-    storeTransaction, Transaction, OutActionSendMsg
+    storeTransaction,
+    Transaction,
+    OutActionSendMsg,
 } from '@ton/core';
 import { getSecureRandomBytes } from '@ton/crypto';
+import WebSocket from 'ws';
 
 import { defaultConfig } from '../config/defaultConfig';
 import { IExecutor, Executor, TickOrTock, PrevBlocksInfo } from '../executor/Executor';
@@ -42,8 +45,7 @@ import { collectMetric } from '../metric/collectMetric';
 import { ContractsMeta } from '../meta/ContractsMeta';
 import { deepcopy } from '../utils/deepcopy';
 import { AsyncLock } from '../utils/AsyncLock';
-import {bigintToAddress, ContractRawData, ContractStateChange, sendToWebsocket} from "./web-ui-websocket";
-import WebSocket from 'ws';
+import { bigintToAddress, ContractRawData, ContractStateChange, sendToWebsocket } from './web-ui-websocket';
 
 const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS';
 
@@ -186,8 +188,8 @@ export type BlockchainSnapshot = {
 };
 
 export type ConnectionOptions = {
-    readonly port?: number,
-    readonly host?: string
+    readonly port?: number;
+    readonly host?: string;
 };
 
 export class Blockchain {
@@ -328,7 +330,7 @@ export class Blockchain {
         this.storage = opts.storage;
         this.meta = opts.meta;
         this.webUI = opts.webUI ?? false;
-        this.connectionOptions = opts.connectionOptions ?? {port: 7743, host: 'localhost'};
+        this.connectionOptions = opts.connectionOptions ?? { port: 7743, host: 'localhost' };
     }
 
     /**
@@ -590,7 +592,7 @@ export class Blockchain {
     }
 
     protected async processQueue(params?: MessageParams) {
-        const contractStateBeforeAfter: ContractStateChange[] = []
+        const contractStateBeforeAfter: ContractStateChange[] = [];
 
         const txs = await this.lock.with(async () => {
             const contractsBefore = await this.contractStates();
@@ -603,8 +605,8 @@ export class Blockchain {
                 const contractsAfter = await this.contractStates();
 
                 const txAddress = bigintToAddress(tx.address);
-                const contractBefore = contractsBefore.find(it => it?.address === txAddress?.toString())
-                const contractAfter = contractsAfter.find(it => it?.address === txAddress?.toString())
+                const contractBefore = contractsBefore.find((it) => it?.address === txAddress?.toString());
+                const contractAfter = contractsAfter.find((it) => it?.address === txAddress?.toString());
 
                 if (contractBefore && contractAfter) {
                     contractStateBeforeAfter.push({
@@ -612,7 +614,7 @@ export class Blockchain {
                         lt: tx.lt.toString(),
                         before: contractBefore.data,
                         after: contractAfter.data,
-                    })
+                    });
                 }
 
                 result.push(tx);
@@ -635,17 +637,17 @@ export class Blockchain {
         const contracts = await this.contractsData();
 
         await this.websocketConnectSafe();
-        sendToWebsocket(this.ws, {$: "test-data", testName, transactions, contracts, changes});
+        sendToWebsocket(this.ws, { $: 'test-data', testName, transactions, contracts, changes });
         this.websocketDisconnect();
         return txs;
     }
 
     private async contractsData(): Promise<ContractRawData[]> {
         return Promise.all(
-            this.storage.knownContracts().map(async contract => {
+            this.storage.knownContracts().map(async (contract) => {
                 const state = contract.accountState;
                 const stateInit = beginCell();
-                if (state?.type === "active") {
+                if (state?.type === 'active') {
                     stateInit.store(storeStateInit(state.state));
                 }
 
@@ -656,23 +658,22 @@ export class Blockchain {
                 return {
                     address: contract.address.toString(),
                     meta: this.meta?.get(contract.address),
-                    stateInit:
-                        stateInitCell.bits.length === 0 ? undefined : stateInitCell.toBoc().toString("hex"),
-                    account: accountCell.toBoc().toString("hex"),
+                    stateInit: stateInitCell.bits.length === 0 ? undefined : stateInitCell.toBoc().toString('hex'),
+                    account: accountCell.toBoc().toString('hex'),
                 };
             }),
         );
     }
 
-    private async contractStates(): Promise<({ address: string, data: string } | undefined)[]> {
+    private async contractStates(): Promise<({ address: string; data: string } | undefined)[]> {
         return Promise.all(
-            this.storage.knownContracts().map(async contract => {
+            this.storage.knownContracts().map(async (contract) => {
                 const state = contract.accountState;
-                if (state?.type === "active" && state.state.data) {
+                if (state?.type === 'active' && state.state.data) {
                     return {
                         address: contract.address.toString(),
-                        data: state.state.data.toBoc().toString("hex"),
-                    }
+                        data: state.state.data.toBoc().toString('hex'),
+                    };
                 }
 
                 return undefined;
@@ -698,7 +699,7 @@ export class Blockchain {
                         return acc;
                     }, {}),
                     parentId: t.parent?.lt.toString(),
-                    childrenIds: t.children?.map(c => c?.lt?.toString()),
+                    childrenIds: t.children?.map((c) => c?.lt?.toString()),
                 };
             }),
         };
@@ -706,25 +707,29 @@ export class Blockchain {
     }
 
     protected async websocketConnectSafe(): Promise<void> {
-        await this.websocketConnect().catch(e => {
-            console.warn("Unable to connect to sandbox server in Web UI mode. Make sure the port and host match the sandbox server. You can set the WebSocket address globally with `SANDBOX_WEBSOCKET_ADDR=ws://localhost:7743` or via `Blockchain.create({ connectionOptions: { host: \"localhost\", port: 7743 } })`.");
+        await this.websocketConnect().catch(() => {
+            console.warn(
+                'Unable to connect to sandbox server in Web UI mode. Make sure the port and host match the sandbox server. You can set the WebSocket address globally with `SANDBOX_WEBSOCKET_ADDR=ws://localhost:7743` or via `Blockchain.create({ connectionOptions: { host: "localhost", port: 7743 } })`.',
+            );
         });
     }
 
     protected async websocketConnect(): Promise<void> {
         if (this.ws !== undefined) return;
         return new Promise((resolve, reject) => {
-            const addr = process.env.SANDBOX_WEBSOCKET_ADDR ?? `ws://${this.connectionOptions.host ?? "localhost"}:${this.connectionOptions.port ?? "7743"}`;
+            const addr =
+                process.env.SANDBOX_WEBSOCKET_ADDR ??
+                `ws://${this.connectionOptions.host ?? 'localhost'}:${this.connectionOptions.port ?? '7743'}`;
             this.ws = new WebSocket(addr);
 
-            this.ws.on("open", () => {
+            this.ws.on('open', () => {
                 resolve();
             });
 
-            this.ws.on("error", error => {
+            this.ws.on('error', (error) => {
                 reject(error);
             });
-        })
+        });
     }
 
     protected websocketDisconnect(): void {
@@ -1026,9 +1031,9 @@ export class Blockchain {
             ...opts,
         });
         if (opts?.webUI) {
-            blockchain.verbosity.print = false
-            blockchain.verbosity.vmLogs = "vm_logs_verbose"
-            await blockchain.websocketConnectSafe()
+            blockchain.verbosity.print = false;
+            blockchain.verbosity.vmLogs = 'vm_logs_verbose';
+            await blockchain.websocketConnectSafe();
         }
         return blockchain;
     }
