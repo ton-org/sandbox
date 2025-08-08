@@ -1,6 +1,6 @@
 {
-  "name": "ton-sandbox-dev",
-  "version": "0.35.46",
+  "name": "@ton/sandbox",
+  "version": "0.35.1",
   "description": "TON transaction emulator",
   "main": "dist/index.js",
   "license": "MIT",
@@ -59,8 +59,7 @@
     "bt": "yarn build && yarn test",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --max-warnings 0 --fix",
-    "config:pack": "ts-node ./scripts/pack-config.ts",
-    "websocket-server": "ts-node websocket-server.ts"
+    "config:pack": "ts-node ./scripts/pack-config.ts"
   },
   "packageManager": "yarn@4.9.2",
   "dependencies": {
