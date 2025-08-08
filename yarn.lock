@@ -1040,6 +1040,48 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ton/sandbox@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "@ton/sandbox@workspace:."
+  dependencies:
+    "@ton-community/func-js": "npm:^0.10.0"
+    "@ton/core": "npm:^0.61.0"
+    "@ton/crypto": "npm:3.3.0"
+    "@ton/test-utils": "npm:^0.7.0"
+    "@ton/tolk-js": "npm:^0.13.0"
+    "@ton/ton": "npm:^15.2.1"
+    "@ton/toolchain": "the-ton-tech/toolchain#v1.4.0"
+    "@types/jest": "npm:^29.5.0"
+    "@types/node": "npm:^18.15.11"
+    "@types/ws": "npm:^8.5.10"
+    "@vscode/debugadapter": "npm:^1.68.0"
+    cac: "npm:^6.7.14"
+    chalk: "npm:^4.1.2"
+    eslint: "npm:^9.28.0"
+    fflate: "npm:^0.8.2"
+    jest: "npm:^29.5.0"
+    jest-config: "npm:^29.7.0"
+    jest-environment-node: "npm:^29.7.0"
+    table: "npm:^6.9.0"
+    ts-jest: "npm:^29.0.5"
+    ts-node: "npm:^10.9.1"
+    typescript: "npm:^4.9.5"
+    ws: "npm:^8.18.2"
+  peerDependencies:
+    "@ton/core": ">=0.61.0"
+    "@ton/crypto": ">=3.3.0"
+    "@ton/test-utils": ">=0.7.0"
+    jest: ^29.5.0
+  peerDependenciesMeta:
+    "@ton/test-utils":
+      optional: true
+    jest:
+      optional: true
+  bin:
+    sandbox-server: ./bin/sandbox-server
+  languageName: unknown
+  linkType: soft
+
 "@ton/test-utils@npm:^0.7.0":
   version: 0.7.0
   resolution: "@ton/test-utils@npm:0.7.0"
@@ -5826,48 +5868,6 @@ __metadata:
   checksum: 10/10dda13571e1f5ad37546827e9b6d4252d2e0bc176c24a101252153ef435d83696e2557fe128c4678e4e78f5f01e83711c703eef9814eb12dab028580d45980a
   languageName: node
   linkType: hard
-
-"ton-sandbox-dev@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "ton-sandbox-dev@workspace:."
-  dependencies:
-    "@ton-community/func-js": "npm:^0.10.0"
-    "@ton/core": "npm:^0.61.0"
-    "@ton/crypto": "npm:3.3.0"
-    "@ton/test-utils": "npm:^0.7.0"
-    "@ton/tolk-js": "npm:^0.13.0"
-    "@ton/ton": "npm:^15.2.1"
-    "@ton/toolchain": "the-ton-tech/toolchain#v1.4.0"
-    "@types/jest": "npm:^29.5.0"
-    "@types/node": "npm:^18.15.11"
-    "@types/ws": "npm:^8.5.10"
-    "@vscode/debugadapter": "npm:^1.68.0"
-    cac: "npm:^6.7.14"
-    chalk: "npm:^4.1.2"
-    eslint: "npm:^9.28.0"
-    fflate: "npm:^0.8.2"
-    jest: "npm:^29.5.0"
-    jest-config: "npm:^29.7.0"
-    jest-environment-node: "npm:^29.7.0"
-    table: "npm:^6.9.0"
-    ts-jest: "npm:^29.0.5"
-    ts-node: "npm:^10.9.1"
-    typescript: "npm:^4.9.5"
-    ws: "npm:^8.18.2"
-  peerDependencies:
-    "@ton/core": ">=0.61.0"
-    "@ton/crypto": ">=3.3.0"
-    "@ton/test-utils": ">=0.7.0"
-    jest: ^29.5.0
-  peerDependenciesMeta:
-    "@ton/test-utils":
-      optional: true
-    jest:
-      optional: true
-  bin:
-    sandbox-server: ./bin/sandbox-server
-  languageName: unknown
-  linkType: soft
 
 "ts-api-utils@npm:^2.1.0":
   version: 2.1.0
