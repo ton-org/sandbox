@@ -1,6 +1,6 @@
 {
   "name": "ton-sandbox-dev",
-  "version": "0.35.37",
+  "version": "0.35.38",
   "description": "TON transaction emulator",
   "main": "dist/index.js",
   "license": "MIT",
@@ -65,6 +65,7 @@
   "packageManager": "yarn@4.9.2",
   "dependencies": {
     "@vscode/debugadapter": "^1.68.0",
+    "cac": "^6.7.14",
     "chalk": "^4.1.2",
     "fflate": "^0.8.2",
     "table": "^6.9.0",

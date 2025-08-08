@@ -1876,6 +1876,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"cac@npm:^6.7.14":
+  version: 6.7.14
+  resolution: "cac@npm:6.7.14"
+  checksum: 10/002769a0fbfc51c062acd2a59df465a2a947916b02ac50b56c69ec6c018ee99ac3e7f4dd7366334ea847f1ecacf4defaa61bcd2ac283db50156ce1f1d8c8ad42
+  languageName: node
+  linkType: hard
+
 "cacache@npm:^19.0.1":
   version: 19.0.1
   resolution: "cacache@npm:19.0.1"
@@ -5835,6 +5842,7 @@ __metadata:
     "@types/node": "npm:^18.15.11"
     "@types/ws": "npm:^8.5.10"
     "@vscode/debugadapter": "npm:^1.68.0"
+    cac: "npm:^6.7.14"
     chalk: "npm:^4.1.2"
     eslint: "npm:^9.28.0"
     fflate: "npm:^0.8.2"
@@ -5856,6 +5864,8 @@ __metadata:
       optional: true
     jest:
       optional: true
+  bin:
+    sandbox-server: ./bin/sandbox-server
   languageName: unknown
   linkType: soft
 

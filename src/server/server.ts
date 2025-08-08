@@ -1,7 +1,13 @@
 import {WebSocketServer, WebSocket} from "ws";
 
-export async function main(): Promise<void> {
-    const wss = new WebSocketServer({port: 8081});
+export type StartServerOptions = {
+    readonly port: number;
+    readonly host?: string;
+};
+
+export function startServer(options: StartServerOptions): WebSocketServer {
+    const {port, host} = options;
+    const wss = new WebSocketServer({port, host});
     const clients = new Set<WebSocket>();
 
     wss.on("connection", ws => {
@@ -23,5 +29,7 @@ export async function main(): Promise<void> {
         });
     });
 
-    console.log("WebSocket running on port 8081");
+    const boundHost = host ?? "0.0.0.0";
+    console.log(`Sandbox WebSocket running on ${boundHost}:${port}`);
+    return wss;
 }

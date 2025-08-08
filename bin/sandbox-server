@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-const {main} = require("../dist/server/server")
+const {main} = require("../dist/server/cli");
 
-main().catch(error => {
-    console.error("Fatal error:", error.message)
-    process.exit(1)
-})
+main().catch((error) => {
+    console.error("Fatal error:", error.message);
+    process.exit(1);
+});
