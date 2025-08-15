@@ -11,10 +11,8 @@ import {
     ExternalAddress,
     StateInit,
     OpenedContract,
-    storeMessageRelaxed,
 } from '@ton/core';
 import { getSecureRandomBytes } from '@ton/crypto';
-import { Maybe } from '@ton/core/src/utils/maybe';
 
 import { defaultConfig } from '../config/defaultConfig';
 import { IExecutor, Executor, TickOrTock, PrevBlocksInfo } from '../executor/Executor';
