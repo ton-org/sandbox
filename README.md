@@ -23,6 +23,7 @@ The key difference of this package from [ton-contract-executor](https://github.c
 * [Viewing logs](#viewing-logs)
 * [Setting smart contract state directly](#setting-smart-contract-state-directly)
 * [Using snapshots](#using-snapshots)
+  * [Serializing snapshots](#serializing-snapshots)
 * [Performing testing on contracts from a real network](#performing-testing-on-contracts-from-a-real-network)
 * [Step-by-step execution](#step-by-step-execution)
 * [Network/Block configuration](#networkblock-configuration)
@@ -666,11 +667,13 @@ Note that this is a low-level function and does not check any invariants, such a
 It is possible to store the whole `Blockchain` state in an object and restore this state later. This can be useful to compare the outcomes of different actions after a certain point, or to store the state of the contract system after a long series of configuration actions in order to quickly restore it for all required tests instead of setting it up each time.
 
 To store the state, do the following:
+
 ```typescript
 const snapshot = blockchain.snapshot()
 ```
 
 To restore the state, do the following:
+
 ```typescript
 await blockchain.loadFrom(snapshot)
 ```
@@ -685,6 +688,32 @@ Note: snapshots store **the entire state** of a `Blockchain` instance, that incl
 - other internal parameters
 
 Basically, the state of a `Blockchain` instance after it is restored using a snapshot is the same as if the same actions were performed on that instance as on the instance from which the snapshot originates.
+
+### Serializing snapshots
+
+Snapshots contain `Cell`s and `Buffer`s, which are **not JSON-safe**. Use the provided helpers to convert snapshots to/from plain JSON objects:
+
+```ts
+import { snapshotToSerializable, snapshotFromSerializable } from './BlockchainSnapshot';
+
+const serializable = snapshotToSerializable(blockchain.snapshot());
+const restored = snapshotFromSerializable(serializable);
+await blockchain.loadFrom(restored);
+```
+
+This is useful for saving snapshots to disk or sending them over the network.
+
+```ts
+import fs from 'fs';
+
+fs.writeFileSync(
+    'snapshot.json',
+    JSON.stringify(snapshotToSerializable(blockchain.snapshot()))
+);
+
+const snapshotJson = JSON.parse(fs.readFileSync('snapshot.json', 'utf8'));
+await blockchain.loadFrom(snapshotFromSerializable(snapshotJson));
+```
 
 ## Performing testing on contracts from a real network
 

@@ -10,7 +10,6 @@ export {
     ExternalOut,
     ExternalOutInfo,
     BlockchainConfig,
-    BlockchainSnapshot,
     SendMessageIterParams,
 } from './blockchain/Blockchain';
 
@@ -41,6 +40,8 @@ export {
     SmartContractSnapshot,
     EmulationError,
 } from './blockchain/SmartContract';
+
+export { BlockchainSnapshot, snapshotToSerializable, snapshotFromSerializable } from './blockchain/BlockchainSnapshot';
 
 export {
     TickOrTock,
