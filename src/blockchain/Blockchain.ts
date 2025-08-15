@@ -11,8 +11,10 @@ import {
     ExternalAddress,
     StateInit,
     OpenedContract,
+    storeMessageRelaxed,
 } from '@ton/core';
 import { getSecureRandomBytes } from '@ton/crypto';
+import { Maybe } from '@ton/core/src/utils/maybe';
 
 import { defaultConfig } from '../config/defaultConfig';
 import { IExecutor, Executor, TickOrTock, PrevBlocksInfo } from '../executor/Executor';
@@ -27,7 +29,6 @@ import {
     LogsVerbosity,
     MessageParams,
     SmartContract,
-    SmartContractSnapshot,
     SmartContractTransaction,
     Verbosity,
 } from './SmartContract';
@@ -40,6 +41,7 @@ import { deepcopy } from '../utils/deepcopy';
 import { collectAsmCoverage, collectTxsCoverage, mergeCoverages, Coverage } from '../coverage';
 import { MessageQueueManager } from './MessageQueueManager';
 import { AsyncLock } from '../utils/AsyncLock';
+import { BlockchainSnapshot } from './BlockchainSnapshot';
 
 const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS';
 
@@ -168,20 +170,6 @@ function blockchainConfigToBase64(config: BlockchainConfig | undefined): string 
             return config?.toBoc({ idx: false }).toString('base64') ?? defaultConfig;
     }
 }
-
-export type BlockchainSnapshot = {
-    contracts: SmartContractSnapshot[];
-    networkConfig: string;
-    lt: bigint;
-    time?: number;
-    verbosity: LogsVerbosity;
-    libs?: Cell;
-    nextCreateWalletIndex: number;
-    prevBlocksInfo?: PrevBlocksInfo;
-    randomSeed?: Buffer;
-    autoDeployLibs: boolean;
-    transactions: BlockchainTransaction[];
-};
 
 export type SendMessageIterParams = MessageParams & {
     allowParallel?: boolean;
