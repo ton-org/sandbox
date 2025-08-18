@@ -34,8 +34,6 @@ describe('readJsonl', () => {
 
     it('should throw on broken JSONL', async () => {
         mock.createReadStream.mockReturnValueOnce(mockReadStream(data.slice(1)));
-        await expect(readJsonl<{ foo: string }>('foo.jsonl')).rejects.toThrowError(
-            'Could not parse line: "foo":"bar"}',
-        );
+        await expect(readJsonl<{ foo: string }>('foo.jsonl')).rejects.toThrow('Could not parse line: "foo":"bar"}');
     });
 });
