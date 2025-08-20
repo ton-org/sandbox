@@ -1,38 +1,40 @@
-import {runtime, text} from "ton-assembly";
-import {generateTextReport, generateHtmlReport} from "../";
-import {mkdirSync, writeFileSync, existsSync} from "node:fs";
-import {executeInstructions} from "./execute";
-import {collectAsmCoverage} from "../collect";
+import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
 
-describe("asm coverage", () => {
+import { runtime, text } from 'ton-assembly';
+
+import { generateTextReport, generateHtmlReport } from '../';
+import { executeInstructions } from './execute';
+import { collectAsmCoverage } from '../collect';
+
+describe('asm coverage', () => {
     const test =
         (code: string, id: number = 0) =>
-            async () => {
-                const name = expect.getState().currentTestName;
+        async () => {
+            const name = expect.getState().currentTestName;
 
-                const res = text.parse("test.asm", code);
-                if (res.$ === "ParseFailure") {
-                    throw new Error(res.error.msg);
-                }
+            const res = text.parse('test.asm', code);
+            if (res.$ === 'ParseFailure') {
+                throw new Error(res.error.msg);
+            }
 
-                const cell = runtime.compileCell(res.instructions);
-                const [_, logs] = await executeInstructions(res.instructions, id);
-                const coverage = collectAsmCoverage(cell, logs);
+            const cell = runtime.compileCell(res.instructions);
+            const [_, logs] = await executeInstructions(res.instructions, id);
+            const coverage = collectAsmCoverage(cell, logs);
 
-                const report = generateTextReport(coverage);
-                expect(report).toMatchSnapshot();
+            const report = generateTextReport(coverage);
+            expect(report).toMatchSnapshot();
 
-                const outDirname = `${__dirname}/output`;
-                if (!existsSync(outDirname)) {
-                    mkdirSync(outDirname);
-                }
+            const outDirname = `${__dirname}/output`;
+            if (!existsSync(outDirname)) {
+                mkdirSync(outDirname);
+            }
 
-                const htmlReport = generateHtmlReport(coverage);
-                writeFileSync(`${__dirname}/output/${name}.html`, htmlReport);
-            };
+            const htmlReport = generateHtmlReport(coverage);
+            writeFileSync(`${__dirname}/output/${name}.html`, htmlReport);
+        };
 
     it(
-        "simple if",
+        'simple if',
         test(
             `
                 PUSHINT_4 0
@@ -48,7 +50,7 @@ describe("asm coverage", () => {
     );
 
     it(
-        "if ret",
+        'if ret',
         test(
             `
                 DROP
@@ -64,7 +66,7 @@ describe("asm coverage", () => {
     );
 
     it(
-        "simple if-else",
+        'simple if-else',
         test(
             `
                 PUSHINT_4 0
@@ -81,7 +83,7 @@ describe("asm coverage", () => {
     );
 
     it(
-        "while loop with break",
+        'while loop with break',
         test(
             `
                 PUSHINT_4 10 // a = 10
@@ -102,7 +104,7 @@ describe("asm coverage", () => {
     );
 
     it(
-        "dictionary",
+        'dictionary',
         test(
             `
                 DICTPUSHCONST 19 [
@@ -122,7 +124,7 @@ describe("asm coverage", () => {
     );
 
     it(
-        "dictionary 2",
+        'dictionary 2',
         test(
             `
                 DICTPUSHCONST 19 [
@@ -146,7 +148,7 @@ describe("asm coverage", () => {
     // Because of this, it is impossible to distinguish from the logs which method was called, so in the
     // next test both methods are considered covered.
     it(
-        "dictionary with same code methods",
+        'dictionary with same code methods',
         test(
             `
                 DICTPUSHCONST 19 [
@@ -167,7 +169,7 @@ describe("asm coverage", () => {
     );
 
     it(
-        "try without throw",
+        'try without throw',
         test(
             `
                 PUSHINT_4 10
@@ -183,7 +185,7 @@ describe("asm coverage", () => {
     );
 
     it(
-        "try with throw",
+        'try with throw',
         test(
             `
                 PUSHINT_4 10
@@ -199,7 +201,7 @@ describe("asm coverage", () => {
     );
 
     it(
-        "nested try with rethrow",
+        'nested try with rethrow',
         test(
             `
                 PUSHCONT {
@@ -219,4 +221,3 @@ describe("asm coverage", () => {
         ),
     );
 });
-

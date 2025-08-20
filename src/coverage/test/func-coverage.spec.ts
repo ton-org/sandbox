@@ -1,39 +1,45 @@
-import {runtime} from "ton-assembly";
-import {generateTextReport, generateHtmlReport} from "../";
-import {mkdirSync, writeFileSync, existsSync} from "node:fs";
-import {executeInstructions} from "./execute";
-import {collectAsmCoverage} from "../collect";
-import {compileFunc} from "@ton-community/func-js";
-import {Cell} from "@ton/core";
-import {decompileCell} from "ton-assembly/dist/runtime";
+import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
 
-describe("func asm coverage", () => {
+import { runtime } from 'ton-assembly';
+import { compileFunc } from '@ton-community/func-js';
+import { Cell } from '@ton/core';
+import { decompileCell } from 'ton-assembly/dist/runtime';
+
+import { generateTextReport, generateHtmlReport } from '../';
+import { executeInstructions } from './execute';
+import { collectAsmCoverage } from '../collect';
+import { generateLcovReport } from '../view/lcov';
+
+describe('func asm coverage', () => {
     const test =
         (code: string, id: number = 0) =>
-            async () => {
-                const name = expect.getState().currentTestName;
+        async () => {
+            const name = expect.getState().currentTestName;
 
-                const funcCompiled = await compile(code);
-                const funcInstructions = decompileCell(funcCompiled);
+            const funcCompiled = await compile(code);
+            const funcInstructions = decompileCell(funcCompiled);
 
-                const cell = runtime.compileCell(funcInstructions);
-                const [_, logs] = await executeInstructions(funcInstructions, id);
-                const coverage = collectAsmCoverage(cell, logs);
+            const cell = runtime.compileCell(funcInstructions);
+            const [_, logs] = await executeInstructions(funcInstructions, id);
+            const coverage = collectAsmCoverage(cell, logs);
 
-                const report = generateTextReport(coverage);
-                expect(report).toMatchSnapshot();
+            const report = generateTextReport(coverage);
+            expect(report).toMatchSnapshot();
 
-                const outDirname = `${__dirname}/output`;
-                if (!existsSync(outDirname)) {
-                    mkdirSync(outDirname);
-                }
+            const outDirname = `${__dirname}/output`;
+            if (!existsSync(outDirname)) {
+                mkdirSync(outDirname);
+            }
 
-                const htmlReport = generateHtmlReport(coverage);
-                writeFileSync(`${__dirname}/output/${name}.html`, htmlReport);
-            };
+            const htmlReport = generateHtmlReport(coverage);
+            writeFileSync(`${__dirname}/output/${name}.html`, htmlReport);
+
+            const lcovReport = generateLcovReport('TODO', coverage);
+            writeFileSync(`${__dirname}/output/${name}.info`, lcovReport);
+        };
 
     it(
-        "simple if",
+        'simple if',
         test(
             `
                 global int foo;
@@ -53,7 +59,7 @@ describe("func asm coverage", () => {
     );
 
     it(
-        "simple if 2",
+        'simple if 2',
         test(
             `
                 global int foo;
@@ -78,11 +84,11 @@ const compile = async (code: string): Promise<Cell> => {
         sources: [
             {
                 content: code,
-                filename: "source",
+                filename: 'source',
             },
         ],
     });
-    if (res.status === "error") {
+    if (res.status === 'error') {
         throw new Error(`cannot compile FunC: ${res.message}`);
     }
 

@@ -1,5 +1,5 @@
-import type {trace} from "ton-assembly";
-import {Cell} from "@ton/core";
+import type { trace } from 'ton-assembly';
+import { Cell } from '@ton/core';
 
 export type CoverageData = {
     readonly code: Cell;
@@ -7,43 +7,43 @@ export type CoverageData = {
 };
 
 export type Line = {
-    readonly line: string
-    readonly info: Covered | Uncovered | Skipped
-}
+    readonly line: string;
+    readonly info: Covered | Uncovered | Skipped;
+};
 
 export type Covered = {
-    readonly $: "Covered"
-    readonly hits: number
-    readonly gasCosts: readonly number[]
-}
+    readonly $: 'Covered';
+    readonly hits: number;
+    readonly gasCosts: readonly number[];
+};
 
 export type Uncovered = {
-    readonly $: "Uncovered"
-}
+    readonly $: 'Uncovered';
+};
 
 export type Skipped = {
-    readonly $: "Skipped"
-}
+    readonly $: 'Skipped';
+};
 
 export type InstructionStat = {
-    readonly name: string
-    readonly totalGas: number
-    readonly totalHits: number
-    readonly avgGas: number
-}
+    readonly name: string;
+    readonly totalGas: number;
+    readonly totalHits: number;
+    readonly avgGas: number;
+};
 
 export type CoverageSummary = {
-    readonly totalLines: number
-    readonly coveredLines: number
-    readonly uncoveredLines: number
-    readonly coveragePercentage: number
-    readonly totalGas: number
-    readonly totalHits: number
-    readonly instructionStats: readonly InstructionStat[]
-}
+    readonly totalLines: number;
+    readonly coveredLines: number;
+    readonly uncoveredLines: number;
+    readonly coveragePercentage: number;
+    readonly totalGas: number;
+    readonly totalHits: number;
+    readonly instructionStats: readonly InstructionStat[];
+};
 
 export function buildLineInfo(trace: trace.TraceInfo, asm: string): readonly Line[] {
-    const lines = asm.split("\n");
+    const lines = asm.split('\n');
 
     const perLineSteps: Map<number, trace.Step[]> = new Map();
 
@@ -63,12 +63,12 @@ export function buildLineInfo(trace: trace.TraceInfo, asm: string): readonly Lin
     return lines.map((line, idx): Line => {
         const info = perLineSteps.get(idx + 1);
         if (info) {
-            const gasInfo = info.map(step => normalizeGas(step.gasCost));
+            const gasInfo = info.map((step) => normalizeGas(step.gasCost));
 
             return {
                 line,
                 info: {
-                    $: "Covered",
+                    $: 'Covered',
                     hits: gasInfo.length,
                     gasCosts: gasInfo,
                 },
@@ -79,7 +79,7 @@ export function buildLineInfo(trace: trace.TraceInfo, asm: string): readonly Lin
             return {
                 line,
                 info: {
-                    $: "Skipped",
+                    $: 'Skipped',
                 },
             };
         }
@@ -87,7 +87,7 @@ export function buildLineInfo(trace: trace.TraceInfo, asm: string): readonly Lin
         return {
             line,
             info: {
-                $: "Uncovered",
+                $: 'Uncovered',
             },
         };
     });
@@ -104,31 +104,28 @@ function normalizeGas(gas: number): number {
 export function isExecutableLine(line: string): boolean {
     const trimmed = line.trim();
     return (
-        !trimmed.includes("=>") && // dictionary
-        trimmed !== "}" && // close braces
-        trimmed !== "]" && // close bracket
+        !trimmed.includes('=>') && // dictionary
+        trimmed !== '}' && // close braces
+        trimmed !== ']' && // close bracket
         trimmed.length > 0
     );
 }
 
 export function generateCoverageSummary(coverage: CoverageData): CoverageSummary {
     const lines = coverage.lines;
-    const totalExecutableLines = lines.filter(line => isExecutableLine(line.line)).length;
+    const totalExecutableLines = lines.filter((line) => isExecutableLine(line.line)).length;
 
-    const coveredLines = lines.filter(
-        line => isExecutableLine(line.line) && line.info.$ === "Covered",
-    ).length;
+    const coveredLines = lines.filter((line) => isExecutableLine(line.line) && line.info.$ === 'Covered').length;
     const uncoveredLines = totalExecutableLines - coveredLines;
     const coveragePercentage = totalExecutableLines === 0 ? 0 : (coveredLines / totalExecutableLines) * 100;
 
     let totalGas = 0;
     let totalHits = 0;
 
-    const instructionMap: Map<string, { readonly totalGas: number; readonly hits: number }> =
-        new Map();
+    const instructionMap: Map<string, { readonly totalGas: number; readonly hits: number }> = new Map();
 
     for (const line of lines) {
-        if (line.info.$ !== "Covered") continue;
+        if (line.info.$ !== 'Covered') continue;
 
         const lineGas = line.info.gasCosts.reduce((sum, gas) => sum + gas, 0);
         totalGas += lineGas;
@@ -136,7 +133,7 @@ export function generateCoverageSummary(coverage: CoverageData): CoverageSummary
         const trimmedLine = line.line.trim();
         const instructionName = trimmedLine.split(/\s+/)[0];
         if (instructionName !== undefined) {
-            const current = instructionMap.get(instructionName) ?? {totalGas: 0, hits: 0};
+            const current = instructionMap.get(instructionName) ?? { totalGas: 0, hits: 0 };
             instructionMap.set(instructionName, {
                 totalGas: current.totalGas + lineGas,
                 hits: current.hits + line.info.hits,
@@ -180,12 +177,9 @@ export function mergeCoverages(...coverages: readonly CoverageData[]): CoverageD
         code: coverages[0]?.code ?? new Cell(),
         lines: allLines,
     };
-};
+}
 
-export function mergeTwoLines(
-    first: readonly Line[],
-    second: readonly Line[],
-): readonly Line[] {
+export function mergeTwoLines(first: readonly Line[], second: readonly Line[]): readonly Line[] {
     if (first.length !== second.length) return first;
 
     const result: Line[] = [...first];
@@ -194,27 +188,27 @@ export function mergeTwoLines(
         const prev = result[index];
         if (!prev) continue;
 
-        if (prev.info.$ === "Uncovered" && line.info.$ === "Uncovered") {
+        if (prev.info.$ === 'Uncovered' && line.info.$ === 'Uncovered') {
             // nothing changes
             continue;
         }
 
-        if (prev.info.$ === "Skipped" && line.info.$ === "Skipped") {
+        if (prev.info.$ === 'Skipped' && line.info.$ === 'Skipped') {
             // nothing changes
             continue;
         }
 
-        if (prev.info.$ === "Uncovered" && line.info.$ === "Covered") {
+        if (prev.info.$ === 'Uncovered' && line.info.$ === 'Covered') {
             // replace it with new data
             result[index] = line;
         }
 
-        if (prev.info.$ === "Covered" && line.info.$ === "Uncovered") {
+        if (prev.info.$ === 'Covered' && line.info.$ === 'Uncovered') {
             // nothing changes
             continue;
         }
 
-        if (prev.info.$ === "Covered" && line.info.$ === "Covered") {
+        if (prev.info.$ === 'Covered' && line.info.$ === 'Covered') {
             result[index] = {
                 ...prev,
                 info: {
@@ -227,5 +221,4 @@ export function mergeTwoLines(
     }
 
     return result;
-};
-
+}

@@ -1,8 +1,9 @@
-import {runtime} from "ton-assembly/";
-import type {Address, Contract, ContractProvider, Sender, StateInit, TupleReader} from "@ton/core";
-import {Cell, contractAddress, toNano, TupleBuilder} from "@ton/core";
-import {SandboxContract, TreasuryContract, Blockchain} from "../../";
-import type {ContractGetMethodResult} from "@ton/core/dist/contract/ContractProvider";
+import { runtime } from 'ton-assembly/';
+import type { Address, Contract, ContractProvider, Sender, StateInit, TupleReader } from '@ton/core';
+import { Cell, contractAddress, toNano, TupleBuilder } from '@ton/core';
+import type { ContractGetMethodResult } from '@ton/core/dist/contract/ContractProvider';
+
+import { SandboxContract, TreasuryContract, Blockchain } from '../../';
 
 export type ExtendedGetResult = ContractGetMethodResult & { vmLogs: string };
 
@@ -22,13 +23,10 @@ export async function executeInstructions(code: runtime.Instr[], id: number = 0)
             args: { value: bigint; bounce?: boolean | null | undefined },
             body: Cell,
         ) {
-            await provider.internal(via, {...args, body: body});
+            await provider.internal(via, { ...args, body: body });
         }
 
-        public async getAny(
-            provider: ContractProvider,
-            id: number,
-        ): Promise<[TupleReader, string]> {
+        public async getAny(provider: ContractProvider, id: number): Promise<[TupleReader, string]> {
             const builder = new TupleBuilder();
             const res = (await provider.get(id, builder.build())) as ExtendedGetResult;
             return [res.stack, res.vmLogs];
@@ -37,8 +35,8 @@ export async function executeInstructions(code: runtime.Instr[], id: number = 0)
 
     const blockchain: Blockchain = await Blockchain.create();
     blockchain.verbosity.print = false;
-    blockchain.verbosity.vmLogs = "vm_logs_verbose";
-    const treasure: SandboxContract<TreasuryContract> = await blockchain.treasury("treasure");
+    blockchain.verbosity.vmLogs = 'vm_logs_verbose';
+    const treasure: SandboxContract<TreasuryContract> = await blockchain.treasury('treasure');
 
     const init: StateInit = {
         code: runtime.compileCell(code),
@@ -53,7 +51,7 @@ export async function executeInstructions(code: runtime.Instr[], id: number = 0)
     await openContract.send(
         treasure.getSender(),
         {
-            value: toNano("10"),
+            value: toNano('10'),
         },
         new Cell(),
     );

@@ -1,7 +1,8 @@
-import {CoverageData, CoverageSummary, generateCoverageSummary, mergeCoverages} from "./data";
-import {coverageFromJson, coverageToJson} from "./json";
-import {generateHtmlReport} from "./view/html";
-import {generateTextReport} from "./view/text";
+import { CoverageData, CoverageSummary, generateCoverageSummary, mergeCoverages } from './data';
+import { coverageFromJson, coverageToJson } from './json';
+import { generateHtmlReport } from './view/html';
+import { generateTextReport } from './view/text';
+import { generateLcovReport } from './view/lcov';
 
 /**
  * Coverage data container with methods for analysis and reporting.
@@ -20,8 +21,7 @@ export class Coverage {
      * Likely you don't need to create this object manually.
      * Use {@link Blockchain.coverage} instead.
      */
-    public constructor(public readonly data: CoverageData) {
-    }
+    public constructor(public readonly data: CoverageData) {}
 
     /**
      * Creates a coverage object from a JSON string.
@@ -66,12 +66,15 @@ export class Coverage {
      * const textReport = coverage.report("text");
      * console.log(textReport);
      */
-    public report(format: "text" | "html"): string {
-        if (format === "html") {
+    public report(format: 'text' | 'html' | 'lcov'): string {
+        if (format === 'html') {
             return generateHtmlReport(this.data);
         }
-        if (format === "text") {
+        if (format === 'text') {
             return generateTextReport(this.data);
+        }
+        if (format === 'lcov') {
+            return generateLcovReport('TODO', this.data);
         }
 
         throw new Error(`unexpected format: ${format}`);
@@ -107,6 +110,6 @@ export class Coverage {
      * console.log(`Total coverage: ${totalCoverage.summary().coveragePercentage}%`);
      */
     public mergeWith(...other: Coverage[]): Coverage {
-        return new Coverage(mergeCoverages(this.data, ...other.map(it => it.data)));
+        return new Coverage(mergeCoverages(this.data, ...other.map((it) => it.data)));
     }
 }

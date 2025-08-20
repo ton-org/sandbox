@@ -1,6 +1,6 @@
-import type {CoverageData, CoverageSummary, Line} from "../data";
-import {generateCoverageSummary} from "../data";
-import {MAIN_TEMPLATE, SUMMARY_TEMPLATE} from "./templates/templates";
+import type { CoverageData, CoverageSummary, Line } from '../data';
+import { generateCoverageSummary } from '../data';
+import { MAIN_TEMPLATE, SUMMARY_TEMPLATE } from './templates/templates';
 
 const templates = {
     main: MAIN_TEMPLATE,
@@ -9,14 +9,13 @@ const templates = {
 
 function renderTemplate(template: string, data: Record<string, unknown>): string {
     return template.replaceAll(/{{(\w+)}}/g, (_, key) => {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        return data[key]?.toString() ?? "";
+        return data[key]?.toString() ?? '';
     });
 }
 
 function formatGasCosts(gasCosts: readonly number[]): string {
-    if (gasCosts.length === 0) return "";
-    if (gasCosts.length === 1) return gasCosts[0]?.toString() ?? "0";
+    if (gasCosts.length === 0) return '';
+    if (gasCosts.length === 1) return gasCosts[0]?.toString() ?? '0';
 
     const gasCount: Map<number, number> = new Map();
     for (const gas of gasCosts) {
@@ -25,29 +24,24 @@ function formatGasCosts(gasCosts: readonly number[]): string {
 
     if (gasCount.size === 1) {
         const firstEntry = [...gasCount.entries()][0];
-        return firstEntry?.[0]?.toString() ?? "";
+        return firstEntry?.[0]?.toString() ?? '';
     }
 
     return [...gasCount.entries()]
         .sort(([gas1], [gas2]) => gas1 - gas2)
         .map(([gas, count]) => `${gas} x${count}`)
-        .join(", ");
+        .join(', ');
 }
 
-function generateLineHtml(
-    line: Line,
-    index: number,
-    maxGasPerLine: number,
-    totalGas: number,
-): string {
+function generateLineHtml(line: Line, index: number, maxGasPerLine: number, totalGas: number): string {
     const lineNumber = index + 1;
     const className = line.info.$;
 
     let gasHtml = `<div class="gas"></div>`;
     let hitsHtml = `<div class="hits"></div>`;
-    let gasPercentStyle = "";
+    let gasPercentStyle = '';
 
-    if (line.info.$ === "Covered") {
+    if (line.info.$ === 'Covered') {
         const gasInfo = line.info.gasCosts;
         const detailedGasCost = formatGasCosts(gasInfo);
         const totalGasCost = calculateTotalGas(gasInfo);
@@ -68,7 +62,7 @@ function generateLineHtml(
     <div class="line-number">${lineNumber}</div>
     ${gasHtml}
     ${hitsHtml}
-    <pre>${line.line.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\"", "&quot;").replaceAll("'", "&#039;")}</pre>
+    <pre>${line.line.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;')}</pre>
 </div>`;
 }
 
@@ -78,7 +72,7 @@ function calculateTotalGas(gasCosts: readonly number[]): number {
 
 function generateInstructionRowsHtml(summary: CoverageSummary): string {
     return summary.instructionStats
-        .map(stat => {
+        .map((stat) => {
             const percentValue = (stat.totalGas / summary.totalGas) * 100;
             return `<tr>
                 <td data-value="${stat.name}"><code>${stat.name}</code></td>
@@ -95,7 +89,7 @@ function generateInstructionRowsHtml(summary: CoverageSummary): string {
                 </td>
             </tr>`;
         })
-        .join("\n");
+        .join('\n');
 }
 
 export function generateHtmlReport(coverage: CoverageData): string {
@@ -103,14 +97,10 @@ export function generateHtmlReport(coverage: CoverageData): string {
 
     const lines = coverage.lines;
     const maxGas = Math.max(
-        ...lines.map(line =>
-            line.info.$ === "Covered" ? line.info.gasCosts.reduce((sum, gas) => sum + gas, 0) : 0,
-        ),
+        ...lines.map((line) => (line.info.$ === 'Covered' ? line.info.gasCosts.reduce((sum, gas) => sum + gas, 0) : 0)),
     );
 
-    const htmlLines = lines
-        .map((line, index) => generateLineHtml(line, index, maxGas, summary.totalGas))
-        .join("\n");
+    const htmlLines = lines.map((line, index) => generateLineHtml(line, index, maxGas, summary.totalGas)).join('\n');
 
     const templateData = {
         coverage_percentage: summary.coveragePercentage.toFixed(2),
