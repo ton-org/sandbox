@@ -34,9 +34,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: the-ton-tech/toolchain/lint@v1.4.0
+        with:
+          node-version: '18.x'
   build:
-    name: Test & Build
+    name: Test & Build (Node ${{ matrix.node-version }})
     needs: lint
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version:
+          - '18.x'
+          - '22.x'
     steps:
       - uses: the-ton-tech/toolchain/build@v1.4.0
+        with:
+          node-version: ${{ matrix.node-version }}
