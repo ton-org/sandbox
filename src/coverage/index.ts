@@ -1,5 +1,6 @@
 export { generateHtmlReport } from './view/html';
 export { generateTextReport } from './view/text';
+export { generateLcovReport } from './view/lcov';
 export * from './collect';
 export * from './data';
 export * from './json';

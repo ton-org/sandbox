@@ -74,7 +74,7 @@ export class Coverage {
             return generateTextReport(this.data);
         }
         if (format === 'lcov') {
-            return generateLcovReport('TODO', this.data);
+            return generateLcovReport('', this.data);
         }
 
         throw new Error(`unexpected format: ${format}`);

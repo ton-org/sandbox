@@ -83,6 +83,7 @@ export {
     collectAsmCoverage,
     generateHtmlReport,
     generateTextReport,
+    generateLcovReport,
     coverageFromJson,
     coverageToJson,
     CoverageSummary,
