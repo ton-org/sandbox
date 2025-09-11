@@ -1078,7 +1078,7 @@ describe('Blockchain', () => {
                 storeMessageRelaxed({
                     info: {
                         type: 'internal',
-                        dest: null as any, // This action will trigger action phase failure
+                        dest: null as unknown as Address, // This action will trigger action phase failure
                         ihrDisabled: true,
                         ihrFee: 0n,
                         value: { coins: toNano('0.5') },
