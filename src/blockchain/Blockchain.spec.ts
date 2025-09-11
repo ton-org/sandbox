@@ -13,6 +13,7 @@ import {
     toNano,
     internal as msgInternal,
     SendMode,
+    Builder,
 } from '@ton/core';
 import { compareTransaction, executeFrom, executeTill, flattenTransaction, randomAddress } from '@ton/test-utils';
 import { getSecureRandomBytes } from '@ton/crypto';
@@ -987,6 +988,71 @@ describe('Blockchain', () => {
         expect(res2.transactions[2]!.inMessage!.info.src).toEqualAddress(addr);
         expect(res2.transactions[2]!.inMessage!.info.dest).toEqualAddress(addr2);
         expect(res2.transactions[2].mode).toEqual(SendMode.CARRY_ALL_REMAINING_INCOMING_VALUE);
+    });
+
+    it.skip('should handle skipped messages mode', async () => {
+        const code = await compileLocal('send_message.tolk');
+        const data = new Cell();
+
+        const blockchain = await Blockchain.create();
+        const sender = randomAddress();
+        const addr = randomAddress();
+
+        await blockchain.setShardAccount(
+            addr,
+            createShardAccount({
+                address: addr,
+                code,
+                data,
+                balance: toNano('1'),
+            }),
+        );
+
+        const storeTestMsg = (dst: Address, value: bigint, mode: number) => {
+            const msg = msgInternal({
+                bounce: false,
+                to: dst,
+                value,
+            });
+            return (builder: Builder) => {
+                builder.storeUint(mode, 8).storeRef(beginCell().store(storeMessageRelaxed(msg)).endCell());
+            };
+        };
+
+        const testAddr = randomAddress();
+
+        const testPayload = beginCell()
+            // This one demands more balance than there is, so will be skipped
+            .store(storeTestMsg(testAddr, toNano('100'), SendMode.IGNORE_ERRORS))
+            // This is the only one to be executed
+            .store(storeTestMsg(testAddr, 0n, SendMode.CARRY_ALL_REMAINING_INCOMING_VALUE))
+            .endCell();
+
+        const res = await blockchain.sendMessage(
+            internal({
+                from: sender,
+                to: addr,
+                value: toNano('0.5'),
+                body: testPayload,
+            }),
+        );
+
+        /*
+        console.log("Tx now:", res.transactions[0].now);
+        console.log("Tx lt:", res.transactions[0].lt);
+        console.log("Description:", res.transactions[0].description);
+        console.log("Out messages:", res.transactions[0].outMessages.values());
+        console.log("From actions:");
+        res.transactions[0].outActions!.forEach(a => {
+            if(a.type == 'sendMsg') {
+                console.log(a.outMsg);
+            }
+        });
+        console.log(res.transactions[0].blockchainLogs);
+        */
+
+        // Resulting mode should match the actual one
+        expect(res.transactions[1].mode).toEqual(SendMode.CARRY_ALL_REMAINING_INCOMING_VALUE);
     });
 
     it('should handle malformed actions properly', async () => {
