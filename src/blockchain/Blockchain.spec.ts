@@ -1098,10 +1098,7 @@ describe('Blockchain', () => {
                 from: sender,
                 to: addr,
                 value: toNano('0.5'),
-                body: beginCell()
-                    .storeUint(SendMode.NONE, 8)
-                    .storeRef(innerMsg1)
-                    .endCell(),
+                body: beginCell().storeUint(SendMode.NONE, 8).storeRef(innerMsg1).endCell(),
             }),
         );
 
