@@ -1100,7 +1100,6 @@ describe('Blockchain', () => {
                 value: toNano('0.5'),
                 body: beginCell()
                     .storeUint(SendMode.NONE, 8)
-                    .storeUint(SendMode.CARRY_ALL_REMAINING_INCOMING_VALUE, 8)
                     .storeRef(innerMsg1)
                     .endCell(),
             }),
