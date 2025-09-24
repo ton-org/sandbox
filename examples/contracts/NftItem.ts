@@ -1,4 +1,5 @@
-import { Address, beginCell, Cell, Contract, ContractProvider, Sender, toNano, Builder, StateInit } from '@ton/core';
+import { Address, beginCell, Cell, Contract, ContractProvider, Sender, toNano, Builder } from '@ton/core';
+import { Maybe } from '@ton/ton/dist/utils/maybe';
 
 export type NftItemData = {
     inited: boolean;
@@ -15,7 +16,7 @@ export class NftItem implements Contract {
 
     constructor(
         readonly address: Address,
-        readonly init?: StateInit,
+        readonly init?: Maybe<{ code: Cell; data: Cell }>,
     ) {}
 
     static createFromAddress(address: Address) {

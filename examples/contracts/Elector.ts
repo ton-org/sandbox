@@ -1,9 +1,10 @@
-import { Address, Contract, ContractProvider, StateInit } from '@ton/core';
+import { Address, Cell, Contract, ContractProvider } from '@ton/core';
+import { Maybe } from '@ton/ton/dist/utils/maybe';
 
 export class Elector implements Contract {
     constructor(
         readonly address: Address,
-        readonly init?: StateInit,
+        readonly init?: Maybe<{ code: Cell; data: Cell }>,
     ) {}
 
     static createFromAddress(address: Address) {
