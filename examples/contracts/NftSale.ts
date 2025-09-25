@@ -1,5 +1,4 @@
-import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider } from '@ton/core';
-import { Maybe } from '@ton/ton/dist/utils/maybe';
+import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, StateInit } from '@ton/core';
 
 export type NftSaleConfig = {
     marketplace: Address;
@@ -33,7 +32,7 @@ export class NftSale implements Contract {
 
     constructor(
         readonly address: Address,
-        readonly init?: Maybe<{ code: Cell; data: Cell }>,
+        readonly init?: StateInit,
     ) {}
 
     static createFromAddress(address: Address) {

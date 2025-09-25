@@ -10,7 +10,6 @@ import {
     storeStateInit,
     toNano,
 } from '@ton/core';
-import { Maybe } from '@ton/ton/dist/utils/maybe';
 
 export type NftMarketplaceConfig = {
     owner: Address;
@@ -27,7 +26,7 @@ export class NftMarketplace implements Contract {
 
     constructor(
         readonly address: Address,
-        readonly init?: Maybe<{ code: Cell; data: Cell }>,
+        readonly init?: StateInit,
     ) {}
 
     static createFromAddress(address: Address) {
