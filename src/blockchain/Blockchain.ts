@@ -994,7 +994,7 @@ export class Blockchain {
         await this.websocketConnectOrThrow().catch(() => {
             // eslint-disable-next-line no-console
             console.warn(
-                'Unable to connect to sandbox server in Web UI mode. Make sure the port and host match the sandbox server. You can set the WebSocket address globally with `SANDBOX_WEBSOCKET_ADDR=ws://localhost:7743` or via `Blockchain.create({ connectionOptions: { host: "localhost", port: 7743 } })`.',
+                'Unable to connect to websocket server. Make sure the port and host match the sandbox server or VS Code settings. You can set the WebSocket address globally with `SANDBOX_WEBSOCKET_ADDR=ws://localhost:7743` or via `Blockchain.create({ connectionOptions: { host: "localhost", port: 7743 } })`.',
             );
         });
     }
