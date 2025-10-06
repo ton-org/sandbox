@@ -29,6 +29,7 @@ export class MessageQueueManager {
             setLibs(libs: Cell | undefined): void;
             getAutoDeployLibs(): boolean;
             registerTxsForCoverage(txs: BlockchainTransaction[]): void;
+            publishTransactions(txs: BlockchainTransaction[]): Promise<void>;
             addTransaction(transaction: BlockchainTransaction): void;
         },
     ) {}
@@ -100,6 +101,8 @@ export class MessageQueueManager {
 
             return result;
         });
+
+        await this.blockchain.publishTransactions(results);
         this.blockchain.registerTxsForCoverage(results);
         return results;
     }
@@ -110,9 +113,11 @@ export class MessageQueueManager {
         while (!done) {
             const message = this.messageQueue.shift()!;
 
+            let callStack: string | undefined;
             let tx: SmartContractTransaction;
             let smartContract: SmartContract;
             if (message.type === 'message') {
+                callStack = message.callStack;
                 if (message.info.type === 'external-out') {
                     done = this.messageQueue.length == 0;
                     continue;
@@ -120,7 +125,7 @@ export class MessageQueueManager {
 
                 this.blockchain.increaseLt();
                 smartContract = await this.blockchain.getContract(message.info.dest);
-                tx = await smartContract.receiveMessage(message, params);
+                tx = await smartContract.receiveMessage(message, params, callStack);
             } else {
                 this.blockchain.increaseLt();
                 smartContract = await this.blockchain.getContract(message.on);
@@ -164,6 +169,7 @@ export class MessageQueueManager {
                     type: 'message',
                     parentTransaction: transaction,
                     mode: sendMsgActions[index]?.mode,
+                    callStack,
                     ...message,
                 });
 

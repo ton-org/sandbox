@@ -11,8 +11,14 @@ import {
     ExternalAddress,
     StateInit,
     OpenedContract,
+    beginCell,
+    storeTransaction,
+    Transaction,
+    storeShardAccount,
+    storeStateInit,
 } from '@ton/core';
 import { getSecureRandomBytes } from '@ton/crypto';
+import WebSocket from 'ws';
 
 import { defaultConfig } from '../config/defaultConfig';
 import { IExecutor, Executor, TickOrTock, PrevBlocksInfo } from '../executor/Executor';
@@ -41,6 +47,13 @@ import { MessageQueueManager } from './MessageQueueManager';
 import { AsyncLock } from '../utils/AsyncLock';
 import { BlockchainSnapshot } from './BlockchainSnapshot';
 import { requireOptional } from '../utils/require';
+import {
+    HexString,
+    RawContractData,
+    RawTransactionInfo,
+    RawTransactionsInfo,
+    websocketSend,
+} from './transport-websocket';
 
 const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS';
 
@@ -49,6 +62,9 @@ function createWalletsSeed(idx: number) {
 }
 
 const LT_ALIGN = 1000000n;
+
+// eslint-disable-next-line no-undef
+declare const expect: jest.Expect;
 
 export type ExternalOutInfo = {
     type: 'external-out';
@@ -130,6 +146,7 @@ export function toSandboxContract<T>(contract: OpenedContract<T>): SandboxContra
 export type PendingMessage = (
     | ({
           type: 'message';
+          callStack?: string;
           mode?: number;
       } & Message)
     | {
@@ -170,6 +187,11 @@ function blockchainConfigToBase64(config: BlockchainConfig | undefined): string 
     }
 }
 
+export type ConnectionOptions = {
+    readonly port?: number;
+    readonly host?: string;
+};
+
 export type SendMessageIterParams = MessageParams & {
     allowParallel?: boolean;
 };
@@ -192,6 +214,9 @@ export class Blockchain {
     protected nextCreateWalletIndex = 0;
     protected shouldRecordStorage = false;
     protected meta?: ContractsMeta;
+    protected useWebsocket: boolean;
+    protected connectionOptions: ConnectionOptions;
+    protected ws: WebSocket | undefined = undefined;
     protected prevBlocksInfo?: PrevBlocksInfo;
     protected randomSeed?: Buffer;
     protected shouldDebug = false;
@@ -323,12 +348,16 @@ export class Blockchain {
         storage: BlockchainStorage;
         meta?: ContractsMeta;
         autoDeployLibs?: boolean;
+        useWebsocket?: boolean;
+        connectionOptions?: ConnectionOptions;
     }) {
         this.networkConfig = blockchainConfigToBase64(opts.config);
         this.executor = opts.executor;
         this.storage = opts.storage;
         this.meta = opts.meta;
         this.autoDeployLibs = opts.autoDeployLibs ?? false;
+        this.useWebsocket = opts.useWebsocket ?? false;
+        this.connectionOptions = opts.connectionOptions ?? { port: 7743, host: 'localhost' };
 
         this.defaultQueueManager = this.createQueueManager();
     }
@@ -343,6 +372,7 @@ export class Blockchain {
             getAutoDeployLibs: () => this.autoDeployLibs,
             registerTxsForCoverage: (txs) => this.registerTxsForCoverage(txs),
             addTransaction: (transaction: BlockchainTransaction) => this.transactions.push(transaction),
+            publishTransactions: (txs) => this.publishTransactions(txs),
         });
     }
 
@@ -655,11 +685,12 @@ export class Blockchain {
      * Opens contract. Returns proxy that substitutes the blockchain Provider in methods starting with get and set.
      *
      * @param contract Contract to open.
+     * @param name     Name of the contract.
      *
      * @example
      * const contract = blockchain.openContract(new Contract(address));
      */
-    openContract<T extends Contract>(contract: T) {
+    openContract<T extends Contract>(contract: T, name?: string) {
         let address: Address;
         let init: StateInit | undefined = undefined;
 
@@ -677,7 +708,7 @@ export class Blockchain {
             init = contract.init;
         }
 
-        this.meta?.upsert(address, { wrapperName: contract?.constructor?.name, abi: contract.abi });
+        this.meta?.upsert(address, { wrapperName: name ?? contract?.constructor?.name, abi: contract.abi });
 
         const provider = this.provider(address, init);
 
@@ -888,6 +919,111 @@ export class Blockchain {
         return new Coverage(mergeCoverages(...coverages));
     }
 
+    protected async publishTransactions(txs: BlockchainTransaction[]) {
+        if (!this.useWebsocket) {
+            return;
+        }
+
+        const testName = expect === undefined ? '' : expect.getState().currentTestName;
+        const transactions = this.serializeTransactions(txs);
+        const contracts = await this.contractsData();
+
+        await this.websocketConnect();
+        websocketSend(this.ws, { type: 'test-data', testName, transactions, contracts });
+        this.websocketDisconnect();
+    }
+
+    private async contractsData(): Promise<RawContractData[]> {
+        return Promise.all(
+            this.storage.knownContracts().map(async (contract): Promise<RawContractData> => {
+                const state = contract.accountState;
+                const stateInit = beginCell();
+                if (state?.type === 'active') {
+                    stateInit.store(storeStateInit(state.state));
+                }
+
+                const account = contract.account;
+                const accountCell = beginCell().store(storeShardAccount(account)).endCell();
+
+                const stateInitCell = stateInit.asCell();
+                return {
+                    address: contract.address.toString(),
+                    meta: this.meta?.get(contract.address),
+                    stateInit:
+                        stateInitCell.bits.length === 0
+                            ? undefined
+                            : (stateInitCell.toBoc().toString('hex') as HexString),
+                    account: accountCell.toBoc().toString('hex') as HexString,
+                };
+            }),
+        );
+    }
+
+    /**
+     * Convert the ` BlockchainTransaction ` array to `RawTransactionsInfo` that can be safely sent over network.
+     * @param transactions Input transactions to serialize
+     */
+    protected serializeTransactions(transactions: BlockchainTransaction[]): RawTransactionsInfo {
+        return {
+            transactions: transactions.map((t): RawTransactionInfo => {
+                const tx = beginCell()
+                    .store(storeTransaction(t as Transaction))
+                    .endCell()
+                    .toBoc()
+                    .toString('hex');
+
+                return {
+                    transaction: tx,
+                    blockchainLogs: t.blockchainLogs,
+                    vmLogs: t.vmLogs,
+                    debugLogs: t.debugLogs,
+                    code: undefined,
+                    sourceMap: undefined,
+                    contractName: undefined,
+                    parentId: t.parent?.lt.toString(),
+                    childrenIds: t.children?.map((c) => c?.lt?.toString()),
+                    oldStorage: t.oldStorage?.toBoc().toString('hex') as HexString | undefined,
+                    newStorage: t.newStorage?.toBoc().toString('hex') as HexString | undefined,
+                    callStack: t.callStack,
+                };
+            }),
+        };
+    }
+
+    protected async websocketConnect(): Promise<void> {
+        await this.websocketConnectOrThrow().catch(() => {
+            // eslint-disable-next-line no-console
+            console.warn(
+                'Unable to connect to sandbox server in Web UI mode. Make sure the port and host match the sandbox server. You can set the WebSocket address globally with `SANDBOX_WEBSOCKET_ADDR=ws://localhost:7743` or via `Blockchain.create({ connectionOptions: { host: "localhost", port: 7743 } })`.',
+            );
+        });
+    }
+
+    protected async websocketConnectOrThrow(): Promise<void> {
+        if (this.ws !== undefined) return;
+        return new Promise((resolve, reject) => {
+            const addr =
+                process.env.SANDBOX_WEBSOCKET_ADDR ??
+                `ws://${this.connectionOptions.host ?? 'localhost'}:${this.connectionOptions.port ?? '7743'}`;
+            this.ws = new WebSocket(addr);
+
+            this.ws.on('open', () => {
+                resolve();
+            });
+
+            this.ws.on('error', (error) => {
+                reject(error);
+            });
+        });
+    }
+
+    protected websocketDisconnect(): void {
+        if (this.ws) {
+            this.ws.close();
+            this.ws = undefined;
+        }
+    }
+
     /**
      * Creates instance of sandbox blockchain.
      *
@@ -896,6 +1032,7 @@ export class Blockchain {
      * @param [opts.storage] Contracts storage used for blockchain. If omitted {@link LocalBlockchainStorage} is used.
      * @param [opts.meta] Optional contracts metadata provider. If not provided, {@link @ton/test-utils.contractsMeta} will be used to accumulate contracts metadata.
      * @param [opts.autoDeployLibs] Optional flag. If set to true, libraries will be collected automatically
+     * @param [opts.useWebsocket] Send data to websocket using `opts.connectionOptions` options.
      * @example
      * const blockchain = await Blockchain.create({ config: 'slim' });
      *
@@ -914,12 +1051,36 @@ export class Blockchain {
         storage?: BlockchainStorage;
         meta?: ContractsMeta;
         autoDeployLibs?: boolean;
+        useWebsocket?: boolean;
+        connectionOptions?: ConnectionOptions;
     }) {
-        return new Blockchain({
+        const useWebsocket = opts?.useWebsocket ?? process.env['SANDBOX_USE_WEBSOCKET'] === 'true';
+
+        if (
+            opts?.connectionOptions === undefined &&
+            process.env['SANDBOX_WEBSOCKET_HOST'] !== undefined &&
+            process.env['SANDBOX_WEBSOCKET_PORT'] !== undefined
+        ) {
+            opts = {
+                ...opts,
+                connectionOptions: {
+                    host: process.env['SANDBOX_WEBSOCKET_HOST'],
+                    port: Number.parseInt(process.env['SANDBOX_WEBSOCKET_PORT']),
+                },
+            };
+        }
+
+        const blockchain = new Blockchain({
             executor: opts?.executor ?? (await Executor.create()),
             storage: opts?.storage ?? new LocalBlockchainStorage(),
             meta: opts?.meta ?? requireOptional('@ton/test-utils')?.contractsMeta,
             ...opts,
         });
+        if (useWebsocket) {
+            blockchain.verbosity.print = false;
+            blockchain.verbosity.vmLogs = 'vm_logs_verbose';
+            await blockchain.websocketConnect();
+        }
+        return blockchain;
     }
 }

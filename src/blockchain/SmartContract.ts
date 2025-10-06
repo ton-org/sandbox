@@ -120,6 +120,7 @@ export type SmartContractTransaction = Transaction & {
     blockchainLogs: string;
     vmLogs: string;
     debugLogs: string;
+    callStack?: string;
     oldStorage?: Cell;
     newStorage?: Cell;
     outActions?: OutAction[];
@@ -322,7 +323,7 @@ export class SmartContract {
         };
     }
 
-    async receiveMessage(message: Message, params?: MessageParams) {
+    async receiveMessage(message: Message, params?: MessageParams, callStack?: string) {
         const args: RunTransactionArgs = {
             ...this.createCommonArgs(params),
             message: beginCell().store(storeMessage(message)).endCell(),
@@ -333,14 +334,14 @@ export class SmartContract {
             const { uninitialized, debugInfo } = debugContext.getDebugInfo(this.account);
             if (debugInfo !== undefined) {
                 const executor = await this.blockchain.getDebuggerExecutor();
-                return await this.runCommon(() => debugContext.debugTransaction(executor, args, debugInfo));
+                return await this.runCommon(() => debugContext.debugTransaction(executor, args, debugInfo), callStack);
             } else if (uninitialized) {
                 // eslint-disable-next-line no-console
                 console.log('Debugging uninitialized accounts is unsupported in debugger beta');
             }
         }
 
-        return await this.runCommon(() => this.blockchain.executor.runTransaction(args));
+        return await this.runCommon(() => this.blockchain.executor.runTransaction(args), callStack);
     }
 
     async runTickTock(which: TickOrTock, params?: MessageParams) {
@@ -352,7 +353,10 @@ export class SmartContract {
         );
     }
 
-    protected async runCommon(run: () => Promise<EmulationResult>): Promise<SmartContractTransaction> {
+    protected async runCommon(
+        run: () => Promise<EmulationResult>,
+        callStack?: string,
+    ): Promise<SmartContractTransaction> {
         let oldStorage: Cell | undefined = undefined;
         if (this.blockchain.recordStorage && this.account.account?.storage.state.type === 'active') {
             oldStorage = this.account.account?.storage.state.state.data ?? undefined;
@@ -406,6 +410,7 @@ export class SmartContract {
             blockchainLogs: res.logs,
             vmLogs: res.result.vmLog,
             debugLogs: res.debugLogs,
+            callStack,
             oldStorage,
             newStorage,
             outActions,
