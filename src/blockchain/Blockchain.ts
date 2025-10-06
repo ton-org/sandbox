@@ -931,7 +931,11 @@ export class Blockchain {
         // This solution, requiring a reconnection for each sending, may seem inefficient.
         // An alternative would be to establish a single connection when creating the Blockchain,
         // but in that case, it's unclear when this connection should be closed.
+        // Until the connection is closed, the Node process will not terminate, and Jest will issue
+        // a warning, but the test will continue to wait for the connection to be closed.
+        //
         // This solution does not have this problem since the connection is closed immediately after sending.
+        // The reconnection time, meanwhile, is short enough to not be noticeable during tests.
         await this.websocketConnect();
         websocketSend(this.ws, { type: 'test-data', testName, transactions, contracts });
         this.websocketDisconnect();
