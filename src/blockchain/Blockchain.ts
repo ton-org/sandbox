@@ -960,7 +960,7 @@ export class Blockchain {
     }
 
     /**
-     * Convert the ` BlockchainTransaction ` array to `RawTransactionsInfo` that can be safely sent over network.
+     * Convert the `BlockchainTransaction` array to `RawTransactionsInfo` that can be safely sent over network.
      * @param transactions Input transactions to serialize
      */
     protected serializeTransactions(transactions: BlockchainTransaction[]): RawTransactionsInfo {
