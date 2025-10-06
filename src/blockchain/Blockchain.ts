@@ -928,6 +928,10 @@ export class Blockchain {
         const transactions = this.serializeTransactions(txs);
         const contracts = await this.contractsData();
 
+        // This solution, requiring a reconnection for each sending, may seem inefficient.
+        // An alternative would be to establish a single connection when creating the Blockchain,
+        // but in that case, it's unclear when this connection should be closed.
+        // This solution does not have this problem since the connection is closed immediately after sending.
         await this.websocketConnect();
         websocketSend(this.ws, { type: 'test-data', testName, transactions, contracts });
         this.websocketDisconnect();
@@ -1055,20 +1059,6 @@ export class Blockchain {
         connectionOptions?: ConnectionOptions;
     }) {
         const useWebsocket = opts?.useWebsocket ?? process.env['SANDBOX_USE_WEBSOCKET'] === 'true';
-
-        if (
-            opts?.connectionOptions === undefined &&
-            process.env['SANDBOX_WEBSOCKET_HOST'] !== undefined &&
-            process.env['SANDBOX_WEBSOCKET_PORT'] !== undefined
-        ) {
-            opts = {
-                ...opts,
-                connectionOptions: {
-                    host: process.env['SANDBOX_WEBSOCKET_HOST'],
-                    port: Number.parseInt(process.env['SANDBOX_WEBSOCKET_PORT']),
-                },
-            };
-        }
 
         const blockchain = new Blockchain({
             executor: opts?.executor ?? (await Executor.create()),
