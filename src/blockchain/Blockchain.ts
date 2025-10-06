@@ -945,11 +945,11 @@ export class Blockchain {
                 if (state?.type === 'active') {
                     stateInit.store(storeStateInit(state.state));
                 }
+                const stateInitCell = stateInit.asCell();
 
                 const account = contract.account;
                 const accountCell = beginCell().store(storeShardAccount(account)).endCell();
 
-                const stateInitCell = stateInit.asCell();
                 return {
                     address: contract.address.toString(),
                     meta: this.meta?.get(contract.address),
