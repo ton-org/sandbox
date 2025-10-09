@@ -1133,6 +1133,23 @@ describe('Blockchain', () => {
         expect(filteredNotAll.length).toEqual(10 - 7);
     });
 
+    it('should support TVM v12', async () => {
+        const code = Cell.fromBase64('te6ccgEBBAEAIAABFP8A9KQT9LzyyAsBAgFiAgMAAtAAEaDInuGRlj/yLQ==');
+        const data = new Cell();
+
+        const blockchain = await Blockchain.create();
+        const addr = randomAddress();
+
+        await blockchain.setShardAccount(addr, createShardAccount({ address: addr, code, data, balance: toNano('1') }));
+
+        const smc = await blockchain.getContract(addr);
+
+        const res = await smc.get('myhash');
+        expect(res.stackReader.readBigNumber()).toBe(
+            BigInt('0x' + beginCell().storeUint(0, 32).endCell().hash().toString('hex')),
+        );
+    });
+
     describe('snapshots', () => {
         it('should not affect blockchain while modifying snapshot.prevBlocksInfo', async () => {
             const blockchain = await Blockchain.create();
