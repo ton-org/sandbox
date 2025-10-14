@@ -9,18 +9,18 @@ function createWaiter(): Waiter {
 }
 
 export class AsyncLock {
-    #waiters: Waiter[] = [];
+    private waiters: Waiter[] = [];
 
     async acquire() {
-        const waiters = this.#waiters.map((w) => w.promise);
-        this.#waiters.push(createWaiter());
+        const waiters = this.waiters.map((w) => w.promise);
+        this.waiters.push(createWaiter());
         if (waiters.length > 0) {
             await Promise.all(waiters);
         }
     }
 
     async release() {
-        const waiter = this.#waiters.shift();
+        const waiter = this.waiters.shift();
         if (waiter !== undefined) {
             waiter.resolve();
         } else {
