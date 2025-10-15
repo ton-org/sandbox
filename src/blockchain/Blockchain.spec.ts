@@ -1037,20 +1037,6 @@ describe('Blockchain', () => {
             }),
         );
 
-        /*
-        console.log("Tx now:", res.transactions[0].now);
-        console.log("Tx lt:", res.transactions[0].lt);
-        console.log("Description:", res.transactions[0].description);
-        console.log("Out messages:", res.transactions[0].outMessages.values());
-        console.log("From actions:");
-        res.transactions[0].outActions!.forEach(a => {
-            if(a.type == 'sendMsg') {
-                console.log(a.outMsg);
-            }
-        });
-        console.log(res.transactions[0].blockchainLogs);
-        */
-
         // Resulting mode should match the actual one
         expect(res.transactions[1].mode).toEqual(SendMode.CARRY_ALL_REMAINING_INCOMING_VALUE);
     });
@@ -1114,7 +1100,7 @@ describe('Blockchain', () => {
 
         expect(testAction.type).toEqual('malformed');
         expect(testAction.subtype).toEqual('sendMsg');
-        expect(testAction.data.preloadRef()).toEqualCell(innerMsg1);
+        expect(testAction.data.beginParse().preloadRef()).toEqualCell(innerMsg1);
     });
 
     it('should emulate message in the middle', async () => {

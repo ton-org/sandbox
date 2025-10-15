@@ -106,7 +106,7 @@ type ExtendedActionType = OutAction['type'] | 'unknown';
 export type OutActionMalformed = {
     type: 'malformed';
     subtype: ExtendedActionType;
-    data: Slice;
+    data: Cell;
 };
 
 export type OutActionExtended = OutAction | OutActionMalformed;
@@ -144,16 +144,18 @@ function preloadActionType(data: Slice): ExtendedActionType {
             return 'unknown';
     }
 }
-export function storeOutListExt(actions: OutActionExtended[]) {
-    const storeActionExt = (action: OutActionExtended) => {
-        if (action.type === 'malformed') {
-            return (builder: Builder) => {
-                builder.storeSlice(action.data);
-            };
-        }
-        return storeOutAction(action);
-    };
 
+function storeActionExt(action: OutActionExtended) {
+    if (action.type === 'malformed') {
+        return (builder: Builder) => {
+            builder.storeSlice(action.data.beginParse());
+        };
+    }
+
+    return storeOutAction(action);
+}
+
+export function storeOutListExt(actions: OutActionExtended[]) {
     const cell = actions.reduce(
         (cell, action) => beginCell().storeRef(cell).store(storeActionExt(action)).endCell(),
         beginCell().endCell(),
@@ -163,12 +165,14 @@ export function storeOutListExt(actions: OutActionExtended[]) {
         builder.storeSlice(cell.beginParse());
     };
 }
+
 // loadOutList from @ton/core, but with exception handling
 export function loadOutListExt(data: Slice): OutActionExtended[] {
     const actions: OutActionExtended[] = [];
     while (data.remainingRefs) {
         const nextCell = data.loadRef();
         const dataOrig = data.clone();
+        const dataCell = data.asCell();
 
         try {
             actions.push(loadOutAction(data));
@@ -177,7 +181,7 @@ export function loadOutListExt(data: Slice): OutActionExtended[] {
             actions.push({
                 type: 'malformed',
                 subtype: actionType,
-                data: dataOrig,
+                data: dataCell,
             });
         }
         data = nextCell.beginParse();
