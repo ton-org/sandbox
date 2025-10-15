@@ -2,17 +2,20 @@ import {
     Account,
     Address,
     beginCell,
+    Builder,
     Cell,
     contractAddress,
     Dictionary,
-    loadOutList,
+    loadOutAction,
     loadShardAccount,
     loadTransaction,
     Message,
     OutAction,
     parseTuple,
     ShardAccount,
+    Slice,
     storeMessage,
+    storeOutAction,
     storeShardAccount,
     Transaction,
     TupleItem,
@@ -98,6 +101,95 @@ export function createEmptyShardAccount(address: Address): ShardAccount {
     };
 }
 
+type ExtendedActionType = OutAction['type'] | 'unknown';
+
+export type OutActionMalformed = {
+    type: 'malformed';
+    subtype: ExtendedActionType;
+    data: Cell;
+};
+
+export type OutActionExtended = OutAction | OutActionMalformed;
+
+function preloadActionType(data: Slice): ExtendedActionType {
+    if (data.remainingBits < 32) {
+        return 'unknown';
+    }
+
+    const tag = data.preloadUint(32);
+
+    /*
+     * action_send_msg#0ec3c86d mode:(## 8)
+     *   out_msg:^(MessageRelaxed Any) = OutAction;
+     *
+     * action_set_code#ad4de08e new_code:^Cell = OutAction;
+     *
+     * action_reserve_currency#36e6b809 mode:(## 8)
+     *   currency:CurrencyCollection = OutAction;
+     *
+     * action_change_library#26fa1dd4 mode:(## 7)
+     *   libref:LibRef = OutAction;
+     *
+     */
+    switch (tag) {
+        case 0x0ec3c86d:
+            return 'sendMsg';
+        case 0xad4de08e:
+            return 'setCode';
+        case 0x36e6b809:
+            return 'reserve';
+        case 0x26fa1dd4:
+            return 'changeLibrary';
+        default:
+            return 'unknown';
+    }
+}
+
+function storeActionExt(action: OutActionExtended) {
+    if (action.type === 'malformed') {
+        return (builder: Builder) => {
+            builder.storeSlice(action.data.beginParse());
+        };
+    }
+
+    return storeOutAction(action);
+}
+
+export function storeOutListExt(actions: OutActionExtended[]) {
+    const cell = actions.reduce(
+        (cell, action) => beginCell().storeRef(cell).store(storeActionExt(action)).endCell(),
+        beginCell().endCell(),
+    );
+
+    return (builder: Builder) => {
+        builder.storeSlice(cell.beginParse());
+    };
+}
+
+// loadOutList from @ton/core, but with exception handling
+export function loadOutListExt(data: Slice): OutActionExtended[] {
+    const actions: OutActionExtended[] = [];
+    while (data.remainingRefs) {
+        const nextCell = data.loadRef();
+        const dataOrig = data.clone();
+        const dataCell = data.asCell();
+
+        try {
+            actions.push(loadOutAction(data));
+        } catch {
+            const actionType = preloadActionType(dataOrig);
+            actions.push({
+                type: 'malformed',
+                subtype: actionType,
+                data: dataCell,
+            });
+        }
+        data = nextCell.beginParse();
+    }
+
+    return actions.reverse();
+}
+
 export type Verbosity = 'none' | 'vm_logs' | 'vm_logs_location' | 'vm_logs_gas' | 'vm_logs_full' | 'vm_logs_verbose';
 
 const verbosityToExecutorVerbosity: Record<Verbosity, ExecutorVerbosity> = {
@@ -122,7 +214,7 @@ export type SmartContractTransaction = Transaction & {
     debugLogs: string;
     oldStorage?: Cell;
     newStorage?: Cell;
-    outActions?: OutAction[];
+    outActions?: OutActionExtended[];
 };
 
 export type MessageParams = Partial<{
@@ -396,9 +488,9 @@ export class SmartContract {
             newStorage = this.account.account?.storage.state.state.data ?? undefined;
         }
 
-        let outActions: OutAction[] | undefined = undefined;
+        let outActions: OutActionExtended[] | undefined = undefined;
         if (res.result.actions) {
-            outActions = loadOutList(Cell.fromBase64(res.result.actions).beginParse());
+            outActions = loadOutListExt(Cell.fromBase64(res.result.actions).beginParse());
         }
 
         return {

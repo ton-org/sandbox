@@ -13,12 +13,13 @@ import {
     toNano,
     internal as msgInternal,
     SendMode,
+    Builder,
 } from '@ton/core';
 import { compareTransaction, executeFrom, executeTill, flattenTransaction, randomAddress } from '@ton/test-utils';
 import { getSecureRandomBytes } from '@ton/crypto';
 
 import { Blockchain, BlockchainTransaction } from './Blockchain';
-import { createShardAccount, GetMethodError, TimeError } from './SmartContract';
+import { createShardAccount, GetMethodError, OutActionMalformed, TimeError } from './SmartContract';
 import { internal } from '../utils/message';
 import { SandboxContractProvider } from './BlockchainContractProvider';
 import { TickOrTock } from '../executor/Executor';
@@ -987,6 +988,119 @@ describe('Blockchain', () => {
         expect(res2.transactions[2]!.inMessage!.info.src).toEqualAddress(addr);
         expect(res2.transactions[2]!.inMessage!.info.dest).toEqualAddress(addr2);
         expect(res2.transactions[2].mode).toEqual(SendMode.CARRY_ALL_REMAINING_INCOMING_VALUE);
+    });
+
+    it.skip('should handle skipped messages mode', async () => {
+        const code = await compileLocal('send_message.tolk');
+        const data = new Cell();
+
+        const blockchain = await Blockchain.create();
+        const sender = randomAddress();
+        const addr = randomAddress();
+
+        await blockchain.setShardAccount(
+            addr,
+            createShardAccount({
+                address: addr,
+                code,
+                data,
+                balance: toNano('1'),
+            }),
+        );
+
+        const storeTestMsg = (dst: Address, value: bigint, mode: number) => {
+            const msg = msgInternal({
+                bounce: false,
+                to: dst,
+                value,
+            });
+            return (builder: Builder) => {
+                builder.storeUint(mode, 8).storeRef(beginCell().store(storeMessageRelaxed(msg)).endCell());
+            };
+        };
+
+        const testAddr = randomAddress();
+
+        const testPayload = beginCell()
+            // This one demands more balance than there is, so will be skipped
+            .store(storeTestMsg(testAddr, toNano('100'), SendMode.IGNORE_ERRORS))
+            // This is the only one to be executed
+            .store(storeTestMsg(testAddr, 0n, SendMode.CARRY_ALL_REMAINING_INCOMING_VALUE))
+            .endCell();
+
+        const res = await blockchain.sendMessage(
+            internal({
+                from: sender,
+                to: addr,
+                value: toNano('0.5'),
+                body: testPayload,
+            }),
+        );
+
+        // Resulting mode should match the actual one
+        expect(res.transactions[1].mode).toEqual(SendMode.CARRY_ALL_REMAINING_INCOMING_VALUE);
+    });
+
+    it('should handle malformed actions properly', async () => {
+        const code = await compileLocal('send_message.tolk');
+        const data = new Cell();
+
+        const blockchain = await Blockchain.create();
+        const sender = randomAddress();
+        const addr = randomAddress();
+
+        await blockchain.setShardAccount(
+            addr,
+            createShardAccount({
+                address: addr,
+                code,
+                data,
+                balance: toNano('1'),
+            }),
+        );
+
+        const innerMsg1 = beginCell()
+            .store(
+                storeMessageRelaxed({
+                    info: {
+                        type: 'internal',
+                        dest: null as unknown as Address, // This action will trigger action phase failure
+                        ihrDisabled: true,
+                        ihrFee: 0n,
+                        value: { coins: toNano('0.5') },
+                        bounce: true,
+                        bounced: false,
+                        createdAt: 0,
+                        createdLt: 0n,
+                        forwardFee: 0n,
+                    },
+                    body: beginCell().storeStringTail('Test msg').endCell(),
+                }),
+            )
+            .endCell();
+
+        const res = await blockchain.sendMessage(
+            internal({
+                from: sender,
+                to: addr,
+                value: toNano('0.5'),
+                body: beginCell().storeUint(SendMode.NONE, 8).storeRef(innerMsg1).endCell(),
+            }),
+        );
+
+        expect(res.transactions).toHaveTransaction({
+            on: addr,
+            from: sender,
+            aborted: true,
+        });
+
+        expect(res.transactions[0].outActions !== undefined && res.transactions[0].outActions.length == 1).toBe(true);
+
+        const testAction = res.transactions[0].outActions![0] as OutActionMalformed;
+
+        expect(testAction.type).toEqual('malformed');
+        expect(testAction.subtype).toEqual('sendMsg');
+        expect(testAction.data.beginParse().preloadRef()).toEqualCell(innerMsg1);
     });
 
     it('should emulate message in the middle', async () => {

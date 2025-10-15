@@ -5,15 +5,13 @@ import {
     storeShardAccount,
     storeTransaction,
     Builder,
-    storeOutList,
     storeMessageRelaxed,
     loadShardAccount,
     loadTransaction,
-    loadOutList,
     loadMessageRelaxed,
 } from '@ton/core';
 
-import { LogsVerbosity, SmartContractSnapshot } from './SmartContract';
+import { loadOutListExt, LogsVerbosity, SmartContractSnapshot, storeOutListExt } from './SmartContract';
 import { BlockId, PrevBlocksInfo } from '../executor/Executor';
 import { BlockchainTransaction, ExternalOut } from './Blockchain';
 import { extractEvents } from '../event/Event';
@@ -120,7 +118,9 @@ export function snapshotToSerializable(snapshot: BlockchainSnapshot): Serializab
                 debugLogs: transaction.debugLogs,
                 oldStorage: transaction.oldStorage?.toBoc().toString('base64'),
                 newStorage: transaction.newStorage?.toBoc().toString('base64'),
-                outActions: transaction.outActions ? writableToBase64(storeOutList(transaction.outActions)) : undefined,
+                outActions: transaction.outActions
+                    ? writableToBase64(storeOutListExt(transaction.outActions))
+                    : undefined,
                 externals: transaction.externals.map((external) => writableToBase64(storeMessageRelaxed(external))),
                 mode: transaction.mode,
                 parentHash: transaction.parent?.hash().toString('hex'),
@@ -150,7 +150,7 @@ export function snapshotFromSerializable(serialized: SerializableSnapshot): Bloc
             debugLogs: t.debugLogs,
             oldStorage: t.oldStorage ? Cell.fromBase64(t.oldStorage) : undefined,
             newStorage: t.newStorage ? Cell.fromBase64(t.newStorage) : undefined,
-            outActions: t.outActions ? loadOutList(Cell.fromBase64(t.outActions).beginParse()) : undefined,
+            outActions: t.outActions ? loadOutListExt(Cell.fromBase64(t.outActions).beginParse()) : undefined,
             events: extractEvents(transaction),
             mode: t.mode,
             externals: t.externals.map((ext) => loadMessageRelaxed(Cell.fromBase64(ext).beginParse())) as ExternalOut[],

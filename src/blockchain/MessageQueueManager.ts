@@ -5,7 +5,6 @@ import {
     Dictionary,
     loadMessage,
     Message,
-    OutAction,
     OutActionChangeLibrary,
     OutActionSendMsg,
 } from '@ton/core';
@@ -13,7 +12,7 @@ import {
 import { BlockchainTransaction, PendingMessage, SendMessageResult } from './Blockchain';
 import { AsyncLock } from '../utils/AsyncLock';
 import { TickOrTock } from '../executor/Executor';
-import { MessageParams, SmartContract, SmartContractTransaction } from './SmartContract';
+import { MessageParams, OutActionExtended, SmartContract, SmartContractTransaction } from './SmartContract';
 import { extractEvents } from '../event/Event';
 
 export class MessageQueueManager {
@@ -180,7 +179,7 @@ export class MessageQueueManager {
         return result === undefined ? { value: result, done: true } : { value: result, done: false };
     }
 
-    private applyLibraryActions(originalLibraries?: Cell, outActions?: OutAction[]): Cell | undefined {
+    private applyLibraryActions(originalLibraries?: Cell, outActions?: OutActionExtended[]): Cell | undefined {
         if (!outActions) {
             return originalLibraries;
         }
