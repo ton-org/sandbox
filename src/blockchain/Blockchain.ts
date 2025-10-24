@@ -11,14 +11,8 @@ import {
     ExternalAddress,
     StateInit,
     OpenedContract,
-    beginCell,
-    storeTransaction,
-    Transaction,
-    storeShardAccount,
-    storeStateInit,
 } from '@ton/core';
 import { getSecureRandomBytes } from '@ton/crypto';
-import WebSocket from 'ws';
 
 import { defaultConfig } from '../config/defaultConfig';
 import { IExecutor, Executor, TickOrTock, PrevBlocksInfo } from '../executor/Executor';
@@ -40,20 +34,16 @@ import { internal } from '../utils/message';
 import { slimConfig } from '../config/slimConfig';
 import { testSubwalletId } from '../utils/testTreasurySubwalletId';
 import { collectMetric } from '../metric/collectMetric';
-import { ContractsMeta } from '../meta/ContractsMeta';
+import { ContractMeta, ContractsMeta } from '../meta/ContractsMeta';
 import { deepcopy } from '../utils/deepcopy';
 import { collectAsmCoverage, collectTxsCoverage, mergeCoverages, Coverage } from '../coverage';
 import { MessageQueueManager } from './MessageQueueManager';
 import { AsyncLock } from '../utils/AsyncLock';
 import { BlockchainSnapshot } from './BlockchainSnapshot';
 import { requireOptional } from '../utils/require';
-import {
-    HexString,
-    RawContractData,
-    RawTransactionInfo,
-    RawTransactionsInfo,
-    websocketSend,
-} from './transport-websocket';
+import { ConnectionOptions, IWebSocketManager, WebSocketManager } from '../websocket/WebSocketManager';
+import { noop, noopPromise } from '../utils/noop';
+import { getOptionalEnv } from '../utils/environment';
 
 const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS';
 
@@ -62,9 +52,6 @@ function createWalletsSeed(idx: number) {
 }
 
 const LT_ALIGN = 1000000n;
-
-// eslint-disable-next-line no-undef
-declare const expect: jest.Expect;
 
 export type ExternalOutInfo = {
     type: 'external-out';
@@ -187,14 +174,11 @@ function blockchainConfigToBase64(config: BlockchainConfig | undefined): string 
     }
 }
 
-export type ConnectionOptions = {
-    readonly port?: number;
-    readonly host?: string;
-};
-
 export type SendMessageIterParams = MessageParams & {
     allowParallel?: boolean;
 };
+
+export type WebsocketOptions = { enabled?: boolean } & ConnectionOptions;
 
 export class Blockchain {
     protected lock = new AsyncLock();
@@ -214,9 +198,6 @@ export class Blockchain {
     protected nextCreateWalletIndex = 0;
     protected shouldRecordStorage = false;
     protected meta?: ContractsMeta;
-    protected useWebsocket: boolean;
-    protected connectionOptions: ConnectionOptions;
-    protected ws: WebSocket | undefined = undefined;
     protected prevBlocksInfo?: PrevBlocksInfo;
     protected randomSeed?: Buffer;
     protected shouldDebug = false;
@@ -224,6 +205,7 @@ export class Blockchain {
     protected transactions: BlockchainTransaction[] = [];
 
     protected defaultQueueManager: MessageQueueManager;
+    protected webSocketManager: IWebSocketManager;
 
     protected collectCoverage: boolean = false;
     protected readonly coverageTransactions: BlockchainTransaction[][] = [];
@@ -348,18 +330,34 @@ export class Blockchain {
         storage: BlockchainStorage;
         meta?: ContractsMeta;
         autoDeployLibs?: boolean;
-        useWebsocket?: boolean;
-        connectionOptions?: ConnectionOptions;
+        websocketOptions?: {
+            enabled?: boolean;
+        } & ConnectionOptions;
     }) {
         this.networkConfig = blockchainConfigToBase64(opts.config);
         this.executor = opts.executor;
         this.storage = opts.storage;
         this.meta = opts.meta;
         this.autoDeployLibs = opts.autoDeployLibs ?? false;
-        this.useWebsocket = opts.useWebsocket ?? false;
-        this.connectionOptions = opts.connectionOptions ?? { port: 7743, host: 'localhost' };
 
         this.defaultQueueManager = this.createQueueManager();
+        this.webSocketManager = this.createWebSocketManager(opts.websocketOptions);
+    }
+
+    protected createWebSocketManager(
+        opts?: {
+            enabled?: boolean;
+        } & ConnectionOptions,
+    ): IWebSocketManager {
+        if (!opts?.enabled) {
+            // noop implementation
+            return { publishTransactions: noopPromise };
+        }
+
+        return new WebSocketManager(opts, {
+            getMeta: (address) => this.meta?.get(address),
+            knownContracts: () => this.storage.knownContracts(),
+        });
     }
 
     protected createQueueManager(): MessageQueueManager {
@@ -370,9 +368,10 @@ export class Blockchain {
             getLibs: () => this.libs,
             setLibs: (value: Cell | undefined) => (this.libs = value),
             getAutoDeployLibs: () => this.autoDeployLibs,
+            // TODO: add one async hook onTransactions, and blockchain class should subscribe
             registerTxsForCoverage: (txs) => this.registerTxsForCoverage(txs),
             addTransaction: (transaction: BlockchainTransaction) => this.transactions.push(transaction),
-            publishTransactions: (txs) => this.publishTransactions(txs),
+            publishTransactions: (txs) => this.webSocketManager.publishTransactions(txs),
         });
     }
 
@@ -839,6 +838,7 @@ export class Blockchain {
      */
     public enableCoverage(enable: boolean = true) {
         this.collectCoverage = enable;
+        this.verbosity.print = false;
         this.verbosity.vmLogs = 'vm_logs_verbose';
     }
 
@@ -919,119 +919,6 @@ export class Blockchain {
         return new Coverage(mergeCoverages(...coverages));
     }
 
-    protected async publishTransactions(txs: BlockchainTransaction[]) {
-        if (!this.useWebsocket) {
-            return;
-        }
-
-        const testName = expect === undefined ? '' : expect.getState().currentTestName;
-        const transactions = this.serializeTransactions(txs);
-        const contracts = await this.contractsData();
-
-        // This solution, requiring a reconnection for each sending, may seem inefficient.
-        // An alternative would be to establish a single connection when creating the Blockchain,
-        // but in that case, it's unclear when this connection should be closed.
-        // Until the connection is closed, the Node process will not terminate, and Jest will issue
-        // a warning, but the test will continue to wait for the connection to be closed.
-        //
-        // This solution does not have this problem since the connection is closed immediately after sending.
-        // The reconnection time, meanwhile, is short enough to not be noticeable during tests.
-        await this.websocketConnect();
-        websocketSend(this.ws, { type: 'test-data', testName, transactions, contracts });
-        this.websocketDisconnect();
-    }
-
-    private async contractsData(): Promise<RawContractData[]> {
-        return Promise.all(
-            this.storage.knownContracts().map(async (contract): Promise<RawContractData> => {
-                const state = contract.accountState;
-                const stateInit = beginCell();
-                if (state?.type === 'active') {
-                    stateInit.store(storeStateInit(state.state));
-                }
-                const stateInitCell = stateInit.asCell();
-
-                const account = contract.account;
-                const accountCell = beginCell().store(storeShardAccount(account)).endCell();
-
-                return {
-                    address: contract.address.toString(),
-                    meta: this.meta?.get(contract.address),
-                    stateInit:
-                        stateInitCell.bits.length === 0
-                            ? undefined
-                            : (stateInitCell.toBoc().toString('hex') as HexString),
-                    account: accountCell.toBoc().toString('hex') as HexString,
-                };
-            }),
-        );
-    }
-
-    /**
-     * Convert the `BlockchainTransaction` array to `RawTransactionsInfo` that can be safely sent over network.
-     * @param transactions Input transactions to serialize
-     */
-    protected serializeTransactions(transactions: BlockchainTransaction[]): RawTransactionsInfo {
-        return {
-            transactions: transactions.map((t): RawTransactionInfo => {
-                const tx = beginCell()
-                    .store(storeTransaction(t as Transaction))
-                    .endCell()
-                    .toBoc()
-                    .toString('hex');
-
-                return {
-                    transaction: tx,
-                    blockchainLogs: t.blockchainLogs,
-                    vmLogs: t.vmLogs,
-                    debugLogs: t.debugLogs,
-                    code: undefined,
-                    sourceMap: undefined,
-                    contractName: undefined,
-                    parentId: t.parent?.lt.toString(),
-                    childrenIds: t.children?.map((c) => c?.lt?.toString()),
-                    oldStorage: t.oldStorage?.toBoc().toString('hex') as HexString | undefined,
-                    newStorage: t.newStorage?.toBoc().toString('hex') as HexString | undefined,
-                    callStack: t.callStack,
-                };
-            }),
-        };
-    }
-
-    protected async websocketConnect(): Promise<void> {
-        await this.websocketConnectOrThrow().catch(() => {
-            // eslint-disable-next-line no-console
-            console.warn(
-                'Unable to connect to websocket server. Make sure the port and host match the sandbox server or VS Code settings. You can set the WebSocket address globally with `SANDBOX_WEBSOCKET_ADDR=ws://localhost:7743` or via `Blockchain.create({ connectionOptions: { host: "localhost", port: 7743 } })`.',
-            );
-        });
-    }
-
-    protected async websocketConnectOrThrow(): Promise<void> {
-        if (this.ws !== undefined) return;
-        return new Promise((resolve, reject) => {
-            const addr =
-                process.env.SANDBOX_WEBSOCKET_ADDR ??
-                `ws://${this.connectionOptions.host ?? 'localhost'}:${this.connectionOptions.port ?? '7743'}`;
-            this.ws = new WebSocket(addr);
-
-            this.ws.on('open', () => {
-                resolve();
-            });
-
-            this.ws.on('error', (error) => {
-                reject(error);
-            });
-        });
-    }
-
-    protected websocketDisconnect(): void {
-        if (this.ws) {
-            this.ws.close();
-            this.ws = undefined;
-        }
-    }
-
     /**
      * Creates instance of sandbox blockchain.
      *
@@ -1059,22 +946,27 @@ export class Blockchain {
         storage?: BlockchainStorage;
         meta?: ContractsMeta;
         autoDeployLibs?: boolean;
-        useWebsocket?: boolean;
-        connectionOptions?: ConnectionOptions;
+        websocketOptions?: WebsocketOptions;
     }) {
-        const useWebsocket = opts?.useWebsocket ?? process.env['SANDBOX_USE_WEBSOCKET'] === 'true';
+        const websocketEnabled =
+            opts?.websocketOptions?.enabled ?? getOptionalEnv('SANDBOX_WEBSOCKET_ENABLED', 'boolean');
 
         const blockchain = new Blockchain({
             executor: opts?.executor ?? (await Executor.create()),
             storage: opts?.storage ?? new LocalBlockchainStorage(),
             meta: opts?.meta ?? requireOptional('@ton/test-utils')?.contractsMeta,
             ...opts,
+            websocketOptions: {
+                enabled: websocketEnabled,
+                ...opts?.websocketOptions,
+            },
         });
-        if (useWebsocket) {
+
+        if (websocketEnabled) {
             blockchain.verbosity.print = false;
             blockchain.verbosity.vmLogs = 'vm_logs_verbose';
-            await blockchain.websocketConnect();
         }
+
         return blockchain;
     }
 }
