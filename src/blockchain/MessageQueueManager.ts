@@ -28,9 +28,8 @@ export class MessageQueueManager {
             getLibs(): Cell | undefined;
             setLibs(libs: Cell | undefined): void;
             getAutoDeployLibs(): boolean;
-            registerTxsForCoverage(txs: BlockchainTransaction[]): void;
-            publishTransactions(txs: BlockchainTransaction[]): Promise<void>;
-            addTransaction(transaction: BlockchainTransaction): void;
+            onTransactions(txs: BlockchainTransaction[]): void;
+            onTransaction(transaction: BlockchainTransaction): void;
         },
     ) {}
 
@@ -102,8 +101,7 @@ export class MessageQueueManager {
             return result;
         });
 
-        await this.blockchain.publishTransactions(results);
-        this.blockchain.registerTxsForCoverage(results);
+        this.blockchain.onTransactions(results);
         return results;
     }
 
@@ -142,7 +140,7 @@ export class MessageQueueManager {
             };
             transaction.parent?.children.push(transaction);
 
-            this.blockchain.addTransaction(transaction);
+            this.blockchain.onTransaction(transaction);
             result = transaction;
             done = true;
 

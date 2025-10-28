@@ -34,16 +34,19 @@ import { internal } from '../utils/message';
 import { slimConfig } from '../config/slimConfig';
 import { testSubwalletId } from '../utils/testTreasurySubwalletId';
 import { collectMetric } from '../metric/collectMetric';
-import { ContractMeta, ContractsMeta } from '../meta/ContractsMeta';
+import { ContractsMeta } from '../meta/ContractsMeta';
 import { deepcopy } from '../utils/deepcopy';
 import { collectAsmCoverage, collectTxsCoverage, mergeCoverages, Coverage } from '../coverage';
 import { MessageQueueManager } from './MessageQueueManager';
 import { AsyncLock } from '../utils/AsyncLock';
 import { BlockchainSnapshot } from './BlockchainSnapshot';
 import { requireOptional } from '../utils/require';
-import { ConnectionOptions, IWebSocketManager, WebSocketManager } from '../websocket/WebSocketManager';
-import { noop, noopPromise } from '../utils/noop';
+import { noop } from '../utils/noop';
 import { getOptionalEnv } from '../utils/environment';
+import { IUIConnector } from '../ui/connection/UIConnector';
+import { WebSocketConnectionOptions } from '../ui/connection/websocket/types';
+import { OneTimeWebSocketConnector } from '../ui/connection/websocket/OneTimeWebSocketConnector';
+import { IUIManager, UIManager } from '../ui/UIManager';
 
 const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS';
 
@@ -178,7 +181,7 @@ export type SendMessageIterParams = MessageParams & {
     allowParallel?: boolean;
 };
 
-export type WebsocketOptions = { enabled?: boolean } & ConnectionOptions;
+export type UIOptions = { enabled?: boolean; connector?: IUIConnector } & WebSocketConnectionOptions;
 
 export class Blockchain {
     protected lock = new AsyncLock();
@@ -205,7 +208,7 @@ export class Blockchain {
     protected transactions: BlockchainTransaction[] = [];
 
     protected defaultQueueManager: MessageQueueManager;
-    protected webSocketManager: IWebSocketManager;
+    protected uiManager: IUIManager;
 
     protected collectCoverage: boolean = false;
     protected readonly coverageTransactions: BlockchainTransaction[][] = [];
@@ -330,9 +333,7 @@ export class Blockchain {
         storage: BlockchainStorage;
         meta?: ContractsMeta;
         autoDeployLibs?: boolean;
-        websocketOptions?: {
-            enabled?: boolean;
-        } & ConnectionOptions;
+        uiOptions?: UIOptions;
     }) {
         this.networkConfig = blockchainConfigToBase64(opts.config);
         this.executor = opts.executor;
@@ -341,20 +342,18 @@ export class Blockchain {
         this.autoDeployLibs = opts.autoDeployLibs ?? false;
 
         this.defaultQueueManager = this.createQueueManager();
-        this.webSocketManager = this.createWebSocketManager(opts.websocketOptions);
+        this.uiManager = this.createUiManager(opts.uiOptions);
     }
 
-    protected createWebSocketManager(
-        opts?: {
-            enabled?: boolean;
-        } & ConnectionOptions,
-    ): IWebSocketManager {
+    protected createUiManager(opts?: UIOptions): IUIManager {
         if (!opts?.enabled) {
             // noop implementation
-            return { publishTransactions: noopPromise };
+            return { publishTransactions: noop };
         }
 
-        return new WebSocketManager(opts, {
+        const connector = opts.connector ?? new OneTimeWebSocketConnector(opts);
+
+        return new UIManager(connector, {
             getMeta: (address) => this.meta?.get(address),
             knownContracts: () => this.storage.knownContracts(),
         });
@@ -368,10 +367,11 @@ export class Blockchain {
             getLibs: () => this.libs,
             setLibs: (value: Cell | undefined) => (this.libs = value),
             getAutoDeployLibs: () => this.autoDeployLibs,
-            // TODO: add one async hook onTransactions, and blockchain class should subscribe
-            registerTxsForCoverage: (txs) => this.registerTxsForCoverage(txs),
-            addTransaction: (transaction: BlockchainTransaction) => this.transactions.push(transaction),
-            publishTransactions: (txs) => this.webSocketManager.publishTransactions(txs),
+            onTransactions: (txs) => {
+                this.registerTxsForCoverage(txs);
+                this.uiManager.publishTransactions(txs);
+            },
+            onTransaction: (transaction: BlockchainTransaction) => this.transactions.push(transaction),
         });
     }
 
@@ -946,23 +946,22 @@ export class Blockchain {
         storage?: BlockchainStorage;
         meta?: ContractsMeta;
         autoDeployLibs?: boolean;
-        websocketOptions?: WebsocketOptions;
+        uiOptions?: UIOptions;
     }) {
-        const websocketEnabled =
-            opts?.websocketOptions?.enabled ?? getOptionalEnv('SANDBOX_WEBSOCKET_ENABLED', 'boolean');
+        const uiEnabled = opts?.uiOptions?.enabled ?? getOptionalEnv('SANDBOX_UI_ENABLED', 'boolean');
 
         const blockchain = new Blockchain({
             executor: opts?.executor ?? (await Executor.create()),
             storage: opts?.storage ?? new LocalBlockchainStorage(),
             meta: opts?.meta ?? requireOptional('@ton/test-utils')?.contractsMeta,
             ...opts,
-            websocketOptions: {
-                enabled: websocketEnabled,
-                ...opts?.websocketOptions,
+            uiOptions: {
+                enabled: uiEnabled,
+                ...opts?.uiOptions,
             },
         });
 
-        if (websocketEnabled) {
+        if (uiEnabled) {
             blockchain.verbosity.print = false;
             blockchain.verbosity.vmLogs = 'vm_logs_verbose';
         }

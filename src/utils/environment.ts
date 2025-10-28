@@ -14,10 +14,10 @@ const converters = {
 
 type Converters = typeof converters;
 
-export function getOptionalEnv<EnvType extends keyof Converters>(
+export function getOptionalEnv<EnvType extends keyof Converters = 'string'>(
     envName: string,
     envType?: EnvType,
-): ReturnType<Converters[EnvType]> {
+): ReturnType<Converters[EnvType]> | undefined {
     if (!process || !process.env) return undefined as ReturnType<Converters[EnvType]>;
 
     const converter = envType ? converters[envType] : converters.string;

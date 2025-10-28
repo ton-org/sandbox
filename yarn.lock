@@ -1377,11 +1377,11 @@ __metadata:
     "@ton/toolchain": "the-ton-tech/toolchain#v1.4.0"
     "@types/jest": "npm:^30.0.0"
     "@types/node": "npm:^24.1.0"
-    "@types/ws": "npm:^8.5.10"
     "@vscode/debugadapter": "npm:^1.68.0"
     chalk: "npm:^4.1.2"
     eslint: "npm:^9.28.0"
     fflate: "npm:^0.8.2"
+    globals: "npm:^16.4.0"
     jest: "npm:^30.0.5"
     jest-config: "npm:^30.0.5"
     jest-environment-node: "npm:^30.0.5"
@@ -1390,7 +1390,6 @@ __metadata:
     ts-jest: "npm:^29.4.1"
     ts-node: "npm:^10.9.1"
     typescript: "npm:^5.8.3"
-    ws: "npm:^8.18.2"
   peerDependencies:
     "@ton-community/func-js": ">=0.10.0"
     "@ton/core": ">=0.61.0"
@@ -1630,15 +1629,6 @@ __metadata:
   version: 2.0.3
   resolution: "@types/stack-utils@npm:2.0.3"
   checksum: 10/72576cc1522090fe497337c2b99d9838e320659ac57fa5560fcbdcbafcf5d0216c6b3a0a8a4ee4fdb3b1f5e3420aa4f6223ab57b82fef3578bec3206425c6cf5
-  languageName: node
-  linkType: hard
-
-"@types/ws@npm:^8.5.10":
-  version: 8.18.1
-  resolution: "@types/ws@npm:8.18.1"
-  dependencies:
-    "@types/node": "npm:*"
-  checksum: 10/1ce05e3174dcacf28dae0e9b854ef1c9a12da44c7ed73617ab6897c5cbe4fccbb155a20be5508ae9a7dde2f83bd80f5cf3baa386b934fc4b40889ec963e94f3a
   languageName: node
   linkType: hard
 
@@ -3705,6 +3695,13 @@ __metadata:
   version: 16.2.0
   resolution: "globals@npm:16.2.0"
   checksum: 10/37fc33502973ebbee5a44b58939aa8574abc00ca1fc4c1d4ec0571a2c6620843ae647eff8bd082adf6bb5975ad221a887522b9a7961125764f0cb6dfab0b7483
+  languageName: node
+  linkType: hard
+
+"globals@npm:^16.4.0":
+  version: 16.4.0
+  resolution: "globals@npm:16.4.0"
+  checksum: 10/1627a9f42fb4c82d7af6a0c8b6cd616e00110908304d5f1ddcdf325998f3aed45a4b29d8a1e47870f328817805263e31e4f1673f00022b9c2b210552767921cf
   languageName: node
   linkType: hard
 
@@ -6854,21 +6851,6 @@ __metadata:
     imurmurhash: "npm:^0.1.4"
     signal-exit: "npm:^4.0.1"
   checksum: 10/648efddba54d478d0e4330ab6f239976df3b9752b123db5dc9405d9b5af768fa9d70ce60c52fdbe61d1200d24350bc4fbcbaf09288496c2be050de126bd95b7e
-  languageName: node
-  linkType: hard
-
-"ws@npm:^8.18.2":
-  version: 8.18.3
-  resolution: "ws@npm:8.18.3"
-  peerDependencies:
-    bufferutil: ^4.0.1
-    utf-8-validate: ">=5.0.2"
-  peerDependenciesMeta:
-    bufferutil:
-      optional: true
-    utf-8-validate:
-      optional: true
-  checksum: 10/725964438d752f0ab0de582cd48d6eeada58d1511c3f613485b5598a83680bedac6187c765b0fe082e2d8cc4341fc57707c813ae780feee82d0c5efe6a4c61b6
   languageName: node
   linkType: hard
 
