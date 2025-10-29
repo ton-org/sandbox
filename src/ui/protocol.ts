@@ -9,7 +9,7 @@ export type HexString = string & { readonly [hexBrand]: true };
 
 export type MessageTestData = {
     readonly type: 'test-data';
-    readonly testName: string | undefined;
+    readonly testInfo: TestInfo | undefined;
     readonly transactions: RawTransactionsInfo;
     readonly contracts: readonly RawContractData[];
 };
@@ -90,3 +90,9 @@ export function serializeContracts(contracts: { contract: SmartContract; meta?: 
         };
     });
 }
+
+export type TestInfo = {
+    readonly id?: string;
+    readonly name?: string;
+    readonly path?: string;
+};

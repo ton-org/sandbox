@@ -1,7 +1,8 @@
 # UI Protocol
 
-TODO: describe
-SANDBOX_UI_ENABLED
+The **UI Protocol** defines the communication interface between the testing environment and the Sandbox UI.  
+When `SANDBOX_UI_ENABLED` is set, test data and blockchain state updates are sent to the UI for visualization and debugging.  
+This allows developers to inspect transactions, contract states, and logs in real time.
 
 ## Connection
 
@@ -16,13 +17,22 @@ SANDBOX_UI_ENABLED
 ```typescript
 {
   "type": "test-data",
-  "testName": string | undefined,
+  "testInfo": TestInfo | undefined,
   "transactions": RawTransactionsInfo,
   "contracts": RawContractData[]
 }
 ```
 
 ## Data Formats
+
+### TestInfo
+```typescript
+{
+  "id": string | undefined,
+  "name": string | undefined,
+  "path": string | undefined
+}
+```
 
 ### RawTransactionInfo
 ```typescript
