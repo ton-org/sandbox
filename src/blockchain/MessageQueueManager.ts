@@ -27,8 +27,8 @@ export class MessageQueueManager {
             getLibs(): Cell | undefined;
             setLibs(libs: Cell | undefined): void;
             getAutoDeployLibs(): boolean;
-            registerTxsForCoverage(txs: BlockchainTransaction[]): void;
-            addTransaction(transaction: BlockchainTransaction): void;
+            onTransactions(txs: BlockchainTransaction[]): void;
+            onTransaction(transaction: BlockchainTransaction): void;
         },
     ) {}
 
@@ -99,7 +99,8 @@ export class MessageQueueManager {
 
             return result;
         });
-        this.blockchain.registerTxsForCoverage(results);
+
+        this.blockchain.onTransactions(results);
         return results;
     }
 
@@ -109,9 +110,11 @@ export class MessageQueueManager {
         while (!done) {
             const message = this.messageQueue.shift()!;
 
+            let callStack: string | undefined;
             let tx: SmartContractTransaction;
             let smartContract: SmartContract;
             if (message.type === 'message') {
+                callStack = message.callStack;
                 if (message.info.type === 'external-out') {
                     done = this.messageQueue.length == 0;
                     continue;
@@ -119,7 +122,7 @@ export class MessageQueueManager {
 
                 this.blockchain.increaseLt();
                 smartContract = await this.blockchain.getContract(message.info.dest);
-                tx = await smartContract.receiveMessage(message, params);
+                tx = await smartContract.receiveMessage(message, params, callStack);
             } else {
                 this.blockchain.increaseLt();
                 smartContract = await this.blockchain.getContract(message.on);
@@ -136,7 +139,7 @@ export class MessageQueueManager {
             };
             transaction.parent?.children.push(transaction);
 
-            this.blockchain.addTransaction(transaction);
+            this.blockchain.onTransaction(transaction);
             result = transaction;
             done = true;
 
@@ -163,6 +166,7 @@ export class MessageQueueManager {
                     type: 'message',
                     parentTransaction: transaction,
                     mode: sendMsgActions[index]?.mode,
+                    callStack,
                     ...message,
                 });
 
