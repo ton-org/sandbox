@@ -2,17 +2,20 @@ import {
     Account,
     Address,
     beginCell,
+    Builder,
     Cell,
     contractAddress,
     Dictionary,
-    loadOutList,
+    loadOutAction,
     loadShardAccount,
     loadTransaction,
     Message,
     OutAction,
     parseTuple,
     ShardAccount,
+    Slice,
     storeMessage,
+    storeOutAction,
     storeShardAccount,
     Transaction,
     TupleItem,
@@ -98,6 +101,95 @@ export function createEmptyShardAccount(address: Address): ShardAccount {
     };
 }
 
+type ExtendedActionType = OutAction['type'] | 'unknown';
+
+export type OutActionMalformed = {
+    type: 'malformed';
+    subtype: ExtendedActionType;
+    data: Cell;
+};
+
+export type OutActionExtended = OutAction | OutActionMalformed;
+
+function preloadActionType(data: Slice): ExtendedActionType {
+    if (data.remainingBits < 32) {
+        return 'unknown';
+    }
+
+    const tag = data.preloadUint(32);
+
+    /*
+     * action_send_msg#0ec3c86d mode:(## 8)
+     *   out_msg:^(MessageRelaxed Any) = OutAction;
+     *
+     * action_set_code#ad4de08e new_code:^Cell = OutAction;
+     *
+     * action_reserve_currency#36e6b809 mode:(## 8)
+     *   currency:CurrencyCollection = OutAction;
+     *
+     * action_change_library#26fa1dd4 mode:(## 7)
+     *   libref:LibRef = OutAction;
+     *
+     */
+    switch (tag) {
+        case 0x0ec3c86d:
+            return 'sendMsg';
+        case 0xad4de08e:
+            return 'setCode';
+        case 0x36e6b809:
+            return 'reserve';
+        case 0x26fa1dd4:
+            return 'changeLibrary';
+        default:
+            return 'unknown';
+    }
+}
+
+function storeActionExt(action: OutActionExtended) {
+    if (action.type === 'malformed') {
+        return (builder: Builder) => {
+            builder.storeSlice(action.data.beginParse());
+        };
+    }
+
+    return storeOutAction(action);
+}
+
+export function storeOutListExt(actions: OutActionExtended[]) {
+    const cell = actions.reduce(
+        (cell, action) => beginCell().storeRef(cell).store(storeActionExt(action)).endCell(),
+        beginCell().endCell(),
+    );
+
+    return (builder: Builder) => {
+        builder.storeSlice(cell.beginParse());
+    };
+}
+
+// loadOutList from @ton/core, but with exception handling
+export function loadOutListExt(data: Slice): OutActionExtended[] {
+    const actions: OutActionExtended[] = [];
+    while (data.remainingRefs) {
+        const nextCell = data.loadRef();
+        const dataOrig = data.clone();
+        const dataCell = data.asCell();
+
+        try {
+            actions.push(loadOutAction(data));
+        } catch {
+            const actionType = preloadActionType(dataOrig);
+            actions.push({
+                type: 'malformed',
+                subtype: actionType,
+                data: dataCell,
+            });
+        }
+        data = nextCell.beginParse();
+    }
+
+    return actions.reverse();
+}
+
 export type Verbosity = 'none' | 'vm_logs' | 'vm_logs_location' | 'vm_logs_gas' | 'vm_logs_full' | 'vm_logs_verbose';
 
 const verbosityToExecutorVerbosity: Record<Verbosity, ExecutorVerbosity> = {
@@ -123,7 +215,7 @@ export type SmartContractTransaction = Transaction & {
     callStack?: string;
     oldStorage?: Cell;
     newStorage?: Cell;
-    outActions?: OutAction[];
+    outActions?: OutActionExtended[];
 };
 
 export type MessageParams = Partial<{
@@ -207,17 +299,17 @@ export type SmartContractSnapshot = {
 export class SmartContract {
     readonly address: Address;
     readonly blockchain: Blockchain;
-    #account: string;
-    #parsedAccount?: ShardAccount;
-    #lastTxTime: number;
-    #verbosity?: Partial<LogsVerbosity>;
-    #debug?: boolean;
+    private _account: string;
+    private parsedAccount?: ShardAccount;
+    private lastTxTime: number;
+    private _verbosity?: Partial<LogsVerbosity>;
+    private _debug?: boolean;
 
     constructor(shardAccount: ShardAccount, blockchain: Blockchain) {
         this.address = shardAccount.account!.addr;
-        this.#account = beginCell().store(storeShardAccount(shardAccount)).endCell().toBoc().toString('base64');
-        this.#parsedAccount = shardAccount;
-        this.#lastTxTime = shardAccount.account?.storageStats.lastPaid ?? 0;
+        this._account = beginCell().store(storeShardAccount(shardAccount)).endCell().toBoc().toString('base64');
+        this.parsedAccount = shardAccount;
+        this.lastTxTime = shardAccount.account?.storageStats.lastPaid ?? 0;
         this.blockchain = blockchain;
     }
 
@@ -225,8 +317,8 @@ export class SmartContract {
         return deepcopy({
             address: this.address,
             account: this.account,
-            lastTxTime: this.#lastTxTime,
-            verbosity: this.#verbosity,
+            lastTxTime: this.lastTxTime,
+            verbosity: this._verbosity,
         });
     }
 
@@ -236,8 +328,8 @@ export class SmartContract {
         }
 
         this.account = deepcopy(snapshot.account);
-        this.#lastTxTime = snapshot.lastTxTime;
-        this.#verbosity = snapshot.verbosity === undefined ? undefined : { ...snapshot.verbosity };
+        this.lastTxTime = snapshot.lastTxTime;
+        this._verbosity = snapshot.verbosity === undefined ? undefined : { ...snapshot.verbosity };
     }
 
     get ec() {
@@ -282,16 +374,16 @@ export class SmartContract {
     }
 
     get account() {
-        if (this.#parsedAccount === undefined) {
-            this.#parsedAccount = loadShardAccount(Cell.fromBase64(this.#account).beginParse());
+        if (this.parsedAccount === undefined) {
+            this.parsedAccount = loadShardAccount(Cell.fromBase64(this._account).beginParse());
         }
-        return this.#parsedAccount;
+        return this.parsedAccount;
     }
 
     set account(account: ShardAccount) {
-        this.#account = beginCell().store(storeShardAccount(account)).endCell().toBoc().toString('base64');
-        this.#parsedAccount = account;
-        this.#lastTxTime = account.account?.storageStats.lastPaid ?? 0;
+        this._account = beginCell().store(storeShardAccount(account)).endCell().toBoc().toString('base64');
+        this.parsedAccount = account;
+        this.lastTxTime = account.account?.storageStats.lastPaid ?? 0;
     }
 
     static create(blockchain: Blockchain, args: { address: Address; code: Cell; data: Cell; balance: bigint }) {
@@ -305,15 +397,15 @@ export class SmartContract {
     protected createCommonArgs(params?: MessageParams): RunCommonArgs {
         const now = params?.now ?? this.blockchain.now ?? Math.floor(Date.now() / 1000);
 
-        if (now < this.#lastTxTime) {
-            throw new TimeError(this.address, this.#lastTxTime, now);
+        if (now < this.lastTxTime) {
+            throw new TimeError(this.address, this.lastTxTime, now);
         }
 
         return {
             config: this.blockchain.configBase64,
             libs: this.blockchain.libs ?? null,
             verbosity: verbosityToExecutorVerbosity[this.verbosity.vmLogs],
-            shardAccount: this.#account,
+            shardAccount: this._account,
             now,
             lt: this.blockchain.lt,
             randomSeed: params?.randomSeed ?? this.blockchain.random ?? Buffer.alloc(32),
@@ -391,18 +483,18 @@ export class SmartContract {
 
         const tx = loadTransaction(Cell.fromBase64(res.result.transaction).beginParse());
 
-        this.#account = res.result.shardAccount;
-        this.#parsedAccount = undefined;
-        this.#lastTxTime = tx.now;
+        this._account = res.result.shardAccount;
+        this.parsedAccount = undefined;
+        this.lastTxTime = tx.now;
 
         let newStorage: Cell | undefined = undefined;
         if (this.blockchain.recordStorage && this.account.account?.storage.state.type === 'active') {
             newStorage = this.account.account?.storage.state.state.data ?? undefined;
         }
 
-        let outActions: OutAction[] | undefined = undefined;
+        let outActions: OutActionExtended[] | undefined = undefined;
         if (res.result.actions) {
-            outActions = loadOutList(Cell.fromBase64(res.result.actions).beginParse());
+            outActions = loadOutListExt(Cell.fromBase64(res.result.actions).beginParse());
         }
 
         return {
@@ -505,7 +597,7 @@ export class SmartContract {
     get verbosity() {
         return {
             ...this.blockchain.verbosity,
-            ...this.#verbosity,
+            ...this._verbosity,
         };
     }
 
@@ -515,21 +607,21 @@ export class SmartContract {
 
     setVerbosity(verbosity: Partial<LogsVerbosity> | Verbosity | undefined) {
         if (typeof verbosity === 'string') {
-            this.#verbosity = {
-                ...this.#verbosity,
+            this._verbosity = {
+                ...this._verbosity,
                 vmLogs: verbosity,
                 blockchainLogs: verbosity !== 'none',
             };
         } else {
-            this.#verbosity = verbosity;
+            this._verbosity = verbosity;
         }
     }
 
     get debug() {
-        return this.#debug ?? this.blockchain.debug;
+        return this._debug ?? this.blockchain.debug;
     }
 
     setDebug(debug: boolean | undefined) {
-        this.#debug = debug;
+        this._debug = debug;
     }
 }
