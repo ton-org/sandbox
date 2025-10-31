@@ -25,6 +25,7 @@
     "@ton/toolchain": "the-ton-tech/toolchain#v1.4.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.1.0",
+    "@types/ws": "^8.5.10",
     "eslint": "^9.28.0",
     "jest": "^30.0.5",
     "jest-config": "^30.0.5",
@@ -64,6 +65,7 @@
     "chalk": "^4.1.2",
     "fflate": "^0.8.2",
     "table": "^6.9.0",
-    "ton-assembly": "0.1.2"
+    "ton-assembly": "0.1.2",
+    "ws": "^8.18.2"
   }
 }
