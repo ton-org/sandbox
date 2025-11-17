@@ -26,6 +26,7 @@ import { TickOrTock } from '../executor/Executor';
 import { compileLocal } from './test_utils/compileTolk';
 import { prepareRandSeed } from './test_utils/randomSeed';
 import { createBlockId } from './test_utils/blockId';
+import { loadConfig } from '../config/configParser';
 
 describe('Blockchain', () => {
     it('should print debug logs', async () => {
@@ -1261,6 +1262,24 @@ describe('Blockchain', () => {
         const res = await smc.get('myhash');
         expect(res.stackReader.readBigNumber()).toBe(
             BigInt('0x' + beginCell().storeUint(0, 32).endCell().hash().toString('hex')),
+        );
+    });
+
+    it('should support new address directives', async () => {
+        const code = await compileLocal('std_addr.tolk');
+        const data = new Cell();
+        const blockchain = await Blockchain.create();
+        const addr = randomAddress();
+        await blockchain.setShardAccount(addr, createShardAccount({ address: addr, code, data, balance: toNano('1') }));
+
+        console.log(loadConfig(blockchain.config)[8].anon0.capabilities);
+        await blockchain.sendMessage(
+            internal({
+                from: randomAddress(),
+                to: addr,
+                body: beginCell().storeAddress(randomAddress()).endCell(),
+                value: toNano('0.5'),
+            }),
         );
     });
 
