@@ -20,7 +20,7 @@
     "@ton/core": "^0.61.0",
     "@ton/crypto": "3.3.0",
     "@ton/test-utils": "^0.7.0",
-    "@ton/tolk-js": "^1.0.0",
+    "@ton/tolk-js": "^1.2.0",
     "@ton/ton": "^15.2.1",
     "@ton/toolchain": "the-ton-tech/toolchain#v1.4.0",
     "@types/jest": "^30.0.0",
