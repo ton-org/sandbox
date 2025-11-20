@@ -40,7 +40,7 @@ import { collectAsmCoverage, collectTxsCoverage, mergeCoverages, Coverage } from
 import { MessageQueueManager } from './MessageQueueManager';
 import { AsyncLock } from '../utils/AsyncLock';
 import { BlockchainSnapshot } from './BlockchainSnapshot';
-import { requireOptional } from '../utils/require';
+import { requireTestUtils } from '../utils/require';
 
 const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS';
 
@@ -918,7 +918,7 @@ export class Blockchain {
         return new Blockchain({
             executor: opts?.executor ?? (await Executor.create()),
             storage: opts?.storage ?? new LocalBlockchainStorage(),
-            meta: opts?.meta ?? requireOptional('@ton/test-utils')?.contractsMeta,
+            meta: opts?.meta ?? requireTestUtils()?.contractsMeta,
             ...opts,
         });
     }
