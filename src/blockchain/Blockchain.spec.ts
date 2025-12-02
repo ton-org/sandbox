@@ -1264,6 +1264,41 @@ describe('Blockchain', () => {
         );
     });
 
+    describe('openContract init validation', () => {
+        it('allows null code in init', async () => {
+            const blockchain = await Blockchain.create();
+
+            class NullCodeContract implements Contract {
+                address = randomAddress();
+                init = { code: null, data: new Cell() };
+            }
+
+            expect(() => blockchain.openContract(new NullCodeContract())).not.toThrow();
+        });
+
+        it('allows null data in init', async () => {
+            const blockchain = await Blockchain.create();
+
+            class NullDataContract implements Contract {
+                address = randomAddress();
+                init = { code: new Cell(), data: null };
+            }
+
+            expect(() => blockchain.openContract(new NullDataContract())).not.toThrow();
+        });
+
+        it('rejects invalid init fields', async () => {
+            const blockchain = await Blockchain.create();
+
+            class InvalidInitContract implements Contract {
+                address = randomAddress();
+                init = { code: {} as unknown as Cell, data: new Cell() };
+            }
+
+            expect(() => blockchain.openContract(new InvalidInitContract())).toThrow('Invalid init.code');
+        });
+    });
+
     describe('snapshots', () => {
         it('should not affect blockchain while modifying snapshot.prevBlocksInfo', async () => {
             const blockchain = await Blockchain.create();

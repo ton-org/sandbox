@@ -668,10 +668,10 @@ export class Blockchain {
         }
         address = contract.address;
         if (contract.init) {
-            if (!(contract.init.code instanceof Cell)) {
+            if (contract.init.code !== undefined && contract.init.code !== null && !(contract.init.code instanceof Cell)) {
                 throw Error('Invalid init.code');
             }
-            if (!(contract.init.data instanceof Cell)) {
+            if (contract.init.data !== undefined && contract.init.data !== null && !(contract.init.data instanceof Cell)) {
                 throw Error('Invalid init.data');
             }
             init = contract.init;
