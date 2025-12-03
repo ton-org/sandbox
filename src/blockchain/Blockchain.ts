@@ -935,7 +935,7 @@ export class Blockchain {
      * @param [opts.storage] Contracts storage used for blockchain. If omitted {@link LocalBlockchainStorage} is used.
      * @param [opts.meta] Optional contracts metadata provider. If not provided, {@link @ton/test-utils.contractsMeta} will be used to accumulate contracts metadata.
      * @param [opts.autoDeployLibs] Optional flag. If set to true, libraries will be collected automatically
-     * @param [opts.useWebsocket] Send data to websocket using `opts.connectionOptions` options.
+     * @param [opts.uiOptions] Optional object to configure the UI connector.
      * @example
      * const blockchain = await Blockchain.create({ config: 'slim' });
      *
