@@ -40,7 +40,7 @@ import { collectAsmCoverage, collectTxsCoverage, mergeCoverages, Coverage } from
 import { MessageQueueManager } from './MessageQueueManager';
 import { AsyncLock } from '../utils/AsyncLock';
 import { BlockchainSnapshot } from './BlockchainSnapshot';
-import { requireOptional } from '../utils/require';
+import { requireTestUtils } from '../utils/require';
 import { noop } from '../utils/noop';
 import { getOptionalEnv } from '../utils/environment';
 import { IUIConnector } from '../ui/connection/UIConnector';
@@ -961,7 +961,7 @@ export class Blockchain {
         const blockchain = new Blockchain({
             executor: opts?.executor ?? (await Executor.create()),
             storage: opts?.storage ?? new LocalBlockchainStorage(),
-            meta: opts?.meta ?? requireOptional('@ton/test-utils')?.contractsMeta,
+            meta: opts?.meta ?? requireTestUtils()?.contractsMeta,
             ...opts,
             uiOptions: {
                 enabled: uiEnabled,
