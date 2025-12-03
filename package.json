@@ -26,6 +26,7 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^24.1.0",
     "eslint": "^9.28.0",
+    "globals": "^16.4.0",
     "jest": "^30.0.5",
     "jest-config": "^30.0.5",
     "jest-environment-node": "^30.0.5",

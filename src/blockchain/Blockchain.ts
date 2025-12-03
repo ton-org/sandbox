@@ -41,6 +41,12 @@ import { MessageQueueManager } from './MessageQueueManager';
 import { AsyncLock } from '../utils/AsyncLock';
 import { BlockchainSnapshot } from './BlockchainSnapshot';
 import { requireTestUtils } from '../utils/require';
+import { noop } from '../utils/noop';
+import { getOptionalEnv } from '../utils/environment';
+import { IUIConnector } from '../ui/connection/UIConnector';
+import { WebSocketConnectionOptions } from '../ui/connection/websocket/types';
+import { OneTimeWebSocketConnector } from '../ui/connection/websocket/OneTimeWebSocketConnector';
+import { IUIManager, UIManager } from '../ui/UIManager';
 
 const CREATE_WALLETS_PREFIX = 'CREATE_WALLETS';
 
@@ -130,6 +136,7 @@ export function toSandboxContract<T>(contract: OpenedContract<T>): SandboxContra
 export type PendingMessage = (
     | ({
           type: 'message';
+          callStack?: string;
           mode?: number;
       } & Message)
     | {
@@ -174,6 +181,8 @@ export type SendMessageIterParams = MessageParams & {
     allowParallel?: boolean;
 };
 
+export type UIOptions = { enabled?: boolean; connector?: IUIConnector } & WebSocketConnectionOptions;
+
 export class Blockchain {
     protected lock = new AsyncLock();
 
@@ -199,6 +208,7 @@ export class Blockchain {
     protected transactions: BlockchainTransaction[] = [];
 
     protected defaultQueueManager: MessageQueueManager;
+    protected uiManager: IUIManager;
 
     protected collectCoverage: boolean = false;
     protected readonly coverageTransactions: BlockchainTransaction[][] = [];
@@ -323,6 +333,7 @@ export class Blockchain {
         storage: BlockchainStorage;
         meta?: ContractsMeta;
         autoDeployLibs?: boolean;
+        uiOptions?: UIOptions;
     }) {
         this.networkConfig = blockchainConfigToBase64(opts.config);
         this.executor = opts.executor;
@@ -331,6 +342,21 @@ export class Blockchain {
         this.autoDeployLibs = opts.autoDeployLibs ?? false;
 
         this.defaultQueueManager = this.createQueueManager();
+        this.uiManager = this.createUiManager(opts.uiOptions);
+    }
+
+    protected createUiManager(opts?: UIOptions): IUIManager {
+        if (!opts?.enabled) {
+            // noop implementation
+            return { publishTransactions: noop };
+        }
+
+        const connector = opts.connector ?? new OneTimeWebSocketConnector(opts);
+
+        return new UIManager(connector, {
+            getMeta: (address) => this.meta?.get(address),
+            knownContracts: () => this.storage.knownContracts(),
+        });
     }
 
     protected createQueueManager(): MessageQueueManager {
@@ -341,8 +367,11 @@ export class Blockchain {
             getLibs: () => this.libs,
             setLibs: (value: Cell | undefined) => (this.libs = value),
             getAutoDeployLibs: () => this.autoDeployLibs,
-            registerTxsForCoverage: (txs) => this.registerTxsForCoverage(txs),
-            addTransaction: (transaction: BlockchainTransaction) => this.transactions.push(transaction),
+            onTransactions: (txs) => {
+                this.registerTxsForCoverage(txs);
+                this.uiManager.publishTransactions(txs);
+            },
+            onTransaction: (transaction: BlockchainTransaction) => this.transactions.push(transaction),
         });
     }
 
@@ -655,11 +684,12 @@ export class Blockchain {
      * Opens contract. Returns proxy that substitutes the blockchain Provider in methods starting with get and set.
      *
      * @param contract Contract to open.
+     * @param name     Name of the contract.
      *
      * @example
      * const contract = blockchain.openContract(new Contract(address));
      */
-    openContract<T extends Contract>(contract: T) {
+    openContract<T extends Contract>(contract: T, name?: string) {
         let address: Address;
         let init: StateInit | undefined = undefined;
 
@@ -685,7 +715,7 @@ export class Blockchain {
             init = contract.init;
         }
 
-        this.meta?.upsert(address, { wrapperName: contract?.constructor?.name, abi: contract.abi });
+        this.meta?.upsert(address, { wrapperName: name ?? contract?.constructor?.name, abi: contract.abi });
 
         const provider = this.provider(address, init);
 
@@ -816,6 +846,7 @@ export class Blockchain {
      */
     public enableCoverage(enable: boolean = true) {
         this.collectCoverage = enable;
+        this.verbosity.print = false;
         this.verbosity.vmLogs = 'vm_logs_verbose';
     }
 
@@ -904,6 +935,7 @@ export class Blockchain {
      * @param [opts.storage] Contracts storage used for blockchain. If omitted {@link LocalBlockchainStorage} is used.
      * @param [opts.meta] Optional contracts metadata provider. If not provided, {@link @ton/test-utils.contractsMeta} will be used to accumulate contracts metadata.
      * @param [opts.autoDeployLibs] Optional flag. If set to true, libraries will be collected automatically
+     * @param [opts.uiOptions] Optional object to configure the UI connector.
      * @example
      * const blockchain = await Blockchain.create({ config: 'slim' });
      *
@@ -922,12 +954,26 @@ export class Blockchain {
         storage?: BlockchainStorage;
         meta?: ContractsMeta;
         autoDeployLibs?: boolean;
+        uiOptions?: UIOptions;
     }) {
-        return new Blockchain({
+        const uiEnabled = opts?.uiOptions?.enabled ?? getOptionalEnv('SANDBOX_UI_ENABLED', 'boolean');
+
+        const blockchain = new Blockchain({
             executor: opts?.executor ?? (await Executor.create()),
             storage: opts?.storage ?? new LocalBlockchainStorage(),
             meta: opts?.meta ?? requireTestUtils()?.contractsMeta,
             ...opts,
+            uiOptions: {
+                enabled: uiEnabled,
+                ...opts?.uiOptions,
+            },
         });
+
+        if (uiEnabled) {
+            blockchain.verbosity.print = false;
+            blockchain.verbosity.vmLogs = 'vm_logs_verbose';
+        }
+
+        return blockchain;
     }
 }
