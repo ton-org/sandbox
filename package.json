@@ -64,6 +64,6 @@
     "chalk": "^4.1.2",
     "fflate": "^0.8.2",
     "table": "^6.9.0",
-    "ton-assembly": "0.1.2"
+    "ton-assembly": "0.6.1"
   }
 }
