@@ -1386,7 +1386,7 @@ __metadata:
     jest-config: "npm:^30.0.5"
     jest-environment-node: "npm:^30.0.5"
     table: "npm:^6.9.0"
-    ton-assembly: "npm:0.1.2"
+    ton-assembly: "npm:0.6.1"
     ts-jest: "npm:^29.4.1"
     ts-node: "npm:^10.9.1"
     typescript: "npm:^5.8.3"
@@ -6303,18 +6303,30 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ton-assembly@npm:0.1.2":
-  version: 0.1.2
-  resolution: "ton-assembly@npm:0.1.2"
+"ton-assembly@npm:0.6.1":
+  version: 0.6.1
+  resolution: "ton-assembly@npm:0.6.1"
   dependencies:
     "@tonstudio/parser-runtime": "npm:^0.0.1"
     cac: "npm:^6.7.14"
+    ton-source-map: "npm:^0.2.2"
   peerDependencies:
     "@ton/core": ">=0.61.0"
+  peerDependenciesMeta:
+    "@ton/core":
+      optional: false
   bin:
     tasm: dist/cli/assembler.js
     tdisasm: dist/cli/disassembler.js
-  checksum: 10/237a2ee57ec9673386e9805c56ed5c614c49a7494d8d386982ae8c2574f209270187e7bfcbc81e3fe0f2a1f12788e81faf1a34b59d4cc2c14ea4f7a7f960e7cd
+    tfift: dist/cli/fift-compiler.js
+  checksum: 10/c1d4a80d8be67efbbebc2d76c085119c01f52a64f4e0b1ca1aed934fb40eaddb617cc3a547ac209cb5986efc63d9b75b043cc99a704ce543bf29a4c6c2b7edb4
+  languageName: node
+  linkType: hard
+
+"ton-source-map@npm:^0.2.2":
+  version: 0.2.2
+  resolution: "ton-source-map@npm:0.2.2"
+  checksum: 10/922995ca98a36912ccb611ffcca08e1a35e76e2f334aae9f22e13f0e9ff8cd2f83f0c75468350c98d27295fa124b9c5b5673fbc1b448a3e4d4aad78c98918324
   languageName: node
   linkType: hard
 

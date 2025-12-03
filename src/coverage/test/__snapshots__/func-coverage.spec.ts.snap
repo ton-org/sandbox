@@ -1,22 +1,22 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`func asm coverage simple if 1`] = `
 "Coverage Summary:
 Lines: 11/14 (78.57%)
-Total Gas: 351
-Total Hits: 11
+Total Gas: 379
+Total Hits: 12
 
 Instruction Stats:
-  DICTIGETJMPZ   | 126 gas | 1 hits |  126 avg gas |  35.90%
-  DICTPUSHCONST  |  34 gas | 1 hits |   34 avg gas |   9.69%
-  SETGLOB        |  33 gas | 2 hits | 16.5 avg gas |   9.40%
-  SETCP          |  26 gas | 1 hits |   26 avg gas |   7.41%
-  GETGLOB        |  26 gas | 1 hits |   26 avg gas |   7.41%
-  GTINT          |  26 gas | 1 hits |   26 avg gas |   7.41%
-  PUSHINT_8      |  26 gas | 1 hits |   26 avg gas |   7.41%
-  PUSHINT_4      |  18 gas | 1 hits |   18 avg gas |   5.13%
-  PUSHCONT_SHORT |  18 gas | 1 hits |   18 avg gas |   5.13%
-  IFJMP          |  18 gas | 1 hits |   18 avg gas |   5.13%
+  DICTIGETJMPZ   | 126 gas | 1 hits |   126 avg gas |  33.25%
+  SETGLOB        |  61 gas | 3 hits | 20.33 avg gas |  16.09%
+  DICTPUSHCONST  |  34 gas | 1 hits |    34 avg gas |   8.97%
+  SETCP          |  26 gas | 1 hits |    26 avg gas |   6.86%
+  GETGLOB        |  26 gas | 1 hits |    26 avg gas |   6.86%
+  GTINT          |  26 gas | 1 hits |    26 avg gas |   6.86%
+  PUSHINT_8      |  26 gas | 1 hits |    26 avg gas |   6.86%
+  PUSHINT_4      |  18 gas | 1 hits |    18 avg gas |   4.75%
+  PUSHCONT_SHORT |  18 gas | 1 hits |    18 avg gas |   4.75%
+  IFJMP          |  18 gas | 1 hits |    18 avg gas |   4.75%
 
 Annotated Code:
  1 ✓ | SETCP 0                                  | gas:26    | hits:1
@@ -32,7 +32,7 @@ Annotated Code:
 11   |         }                                |           |
 12 ✓ |         IFJMP                            | gas:18    | hits:1
 13 ✓ |         PUSHINT_8 15                     | gas:26    | hits:1
-14 ✓ |         SETGLOB 1                        | gas:5     | hits:1
+14 ✓ |         SETGLOB 1                        | gas:33    | hits:2
 15   |     }                                    |           |
 16   | ]                                        |           |
 17 ✓ | DICTIGETJMPZ                             | gas:126   | hits:1
@@ -43,19 +43,19 @@ Annotated Code:
 exports[`func asm coverage simple if 2 1`] = `
 "Coverage Summary:
 Lines: 11/14 (78.57%)
-Total Gas: 359
-Total Hits: 11
+Total Gas: 387
+Total Hits: 12
 
 Instruction Stats:
-  DICTIGETJMPZ   | 126 gas | 1 hits |  126 avg gas |  35.10%
-  PUSHINT_8      |  52 gas | 2 hits |   26 avg gas |  14.48%
-  DICTPUSHCONST  |  34 gas | 1 hits |   34 avg gas |   9.47%
-  SETGLOB        |  33 gas | 2 hits | 16.5 avg gas |   9.19%
-  SETCP          |  26 gas | 1 hits |   26 avg gas |   7.24%
-  GETGLOB        |  26 gas | 1 hits |   26 avg gas |   7.24%
-  GTINT          |  26 gas | 1 hits |   26 avg gas |   7.24%
-  PUSHCONT_SHORT |  18 gas | 1 hits |   18 avg gas |   5.01%
-  IFJMP          |  18 gas | 1 hits |   18 avg gas |   5.01%
+  DICTIGETJMPZ   | 126 gas | 1 hits |   126 avg gas |  32.56%
+  SETGLOB        |  61 gas | 3 hits | 20.33 avg gas |  15.76%
+  PUSHINT_8      |  52 gas | 2 hits |    26 avg gas |  13.44%
+  DICTPUSHCONST  |  34 gas | 1 hits |    34 avg gas |   8.79%
+  SETCP          |  26 gas | 1 hits |    26 avg gas |   6.72%
+  GETGLOB        |  26 gas | 1 hits |    26 avg gas |   6.72%
+  GTINT          |  26 gas | 1 hits |    26 avg gas |   6.72%
+  PUSHCONT_SHORT |  18 gas | 1 hits |    18 avg gas |   4.65%
+  IFJMP          |  18 gas | 1 hits |    18 avg gas |   4.65%
 
 Annotated Code:
  1 ✓ | SETCP 0                                  | gas:26    | hits:1
@@ -67,7 +67,7 @@ Annotated Code:
  7 ✓ |         GTINT 10                         | gas:26    | hits:1
  8 ✓ |         PUSHCONT_SHORT {                 | gas:18    | hits:1
  9 ✓ |             PUSHINT_8 20                 | gas:26    | hits:1
-10 ✓ |             SETGLOB 1                    | gas:5     | hits:1
+10 ✓ |             SETGLOB 1                    | gas:33    | hits:2
 11   |         }                                |           |
 12 ✓ |         IFJMP                            | gas:18    | hits:1
 13 ✗ |         PUSHINT_8 15                     |           |

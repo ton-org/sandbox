@@ -1,6 +1,6 @@
 {
   "name": "@ton/sandbox",
-  "version": "0.38.0",
+  "version": "0.39.0",
   "description": "TON transaction emulator",
   "main": "dist/index.js",
   "license": "MIT",
@@ -65,6 +65,6 @@
     "chalk": "^4.1.2",
     "fflate": "^0.8.2",
     "table": "^6.9.0",
-    "ton-assembly": "0.1.2"
+    "ton-assembly": "0.6.1"
   }
 }
