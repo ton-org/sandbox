@@ -354,6 +354,19 @@ function getDebuggerWasmBinary() {
     return debuggerWasmBinary;
 }
 
+function splitVmLog(log: string): { vmLog: string; debugLog: string } {
+    const vm: string[] = [];
+    const debug: string[] = [];
+    for (const line of log.split('\n')) {
+        if (line.startsWith('#DEBUG#')) {
+            debug.push(line);
+        } else {
+            vm.push(line);
+        }
+    }
+    return { vmLog: vm.join('\n'), debugLog: debug.join('\n') };
+}
+
 export class Executor implements IExecutor {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private module: any;
@@ -363,7 +376,8 @@ export class Executor implements IExecutor {
         config: string;
         verbosity: number;
     };
-    private debugLogs: string[] = [];
+
+    // TODO: this is not used anymore - debug logs are now included in the VM log, and so we cannot emit them during execution
     debugLogFunc: (s: string) => void = () => {};
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -372,29 +386,15 @@ export class Executor implements IExecutor {
         this.heap = new Heap(module);
     }
 
-    private handleDebugLog(text: string) {
-        this.debugLogs.push(text);
-        this.debugLogFunc(text);
-    }
-
     static async create(opts?: { debug?: boolean }) {
         const binary = opts?.debug ? getDebuggerWasmBinary() : getWasmBinary();
         const module = opts?.debug ? DebuggerEmulatorModule : EmulatorModule;
 
         let ex: Executor | undefined = undefined;
-        const printErr = (text: string) => {
-            if (ex === undefined) {
-                // eslint-disable-next-line no-console
-                console.error('Debug log received before executor was created:', text);
-            } else {
-                ex.handleDebugLog(text);
-            }
-        };
 
         ex = new Executor(
             await module({
                 wasmBinary: binary,
-                printErr,
             }),
         );
         return ex;
@@ -405,13 +405,11 @@ export class Executor implements IExecutor {
 
         let stack = serializeTuple(args.stack);
 
-        this.debugLogs = [];
         const resp = JSON.parse(
             this.extractString(
                 this.invoke('_run_get_method', [JSON.stringify(params), stack.toBoc().toString('base64'), args.config]),
             ),
         );
-        const debugLogs = this.debugLogs.join('\n');
 
         if (resp.fail) {
             // eslint-disable-next-line no-console
@@ -419,17 +417,23 @@ export class Executor implements IExecutor {
             throw new Error('Unknown emulation error');
         }
 
+        const { vmLog, debugLog } = splitVmLog('vm_log' in resp.output ? resp.output.vm_log : '');
+
         return {
-            output: resp.output,
+            output:
+                'vm_log' in resp.output
+                    ? {
+                          ...resp.output,
+                          vm_log: vmLog,
+                      }
+                    : resp.output,
             logs: resp.logs,
-            debugLogs,
+            debugLogs: debugLog,
         };
     }
 
     private runCommon(args: (string | number)[]): EmulationResult {
-        this.debugLogs = [];
         const resp = JSON.parse(this.extractString(this.invoke('_emulate_with_emulator', args)));
-        const debugLogs = this.debugLogs.join('\n');
 
         if (resp.fail) {
             // eslint-disable-next-line no-console
@@ -441,13 +445,15 @@ export class Executor implements IExecutor {
 
         const result: ResultSuccess | ResultError = resp.output;
 
+        const { vmLog, debugLog } = splitVmLog('vm_log' in result ? result.vm_log : '');
+
         return {
             result: result.success
                 ? {
                       success: true,
                       transaction: result.transaction,
                       shardAccount: result.shard_account,
-                      vmLog: result.vm_log,
+                      vmLog: vmLog,
                       actions: result.actions,
                   }
                 : {
@@ -456,13 +462,13 @@ export class Executor implements IExecutor {
                       vmResults:
                           'vm_log' in result
                               ? {
-                                    vmLog: result.vm_log,
+                                    vmLog: vmLog,
                                     vmExitCode: result.vm_exit_code,
                                 }
                               : undefined,
                   },
             logs,
-            debugLogs,
+            debugLogs: debugLog,
         };
     }
 
@@ -538,7 +544,6 @@ export class Executor implements IExecutor {
 
         let stack = serializeTuple(args.stack);
 
-        this.debugLogs = [];
         const res = this.invoke('_setup_sbs_get_method', [
             JSON.stringify(params),
             stack.toBoc().toString('base64'),
@@ -611,12 +616,18 @@ export class Executor implements IExecutor {
     sbsGetMethodResult(ptr: number): GetMethodResult {
         const resp = JSON.parse(this.extractString(this.invoke('_sbs_get_method_result', [ptr])));
 
-        const debugLogs = this.debugLogs.join('\n');
+        const { vmLog, debugLog } = splitVmLog('vm_log' in resp ? resp.vm_log : '');
 
         return {
-            output: resp,
+            output:
+                'vm_log' in resp
+                    ? {
+                          ...resp,
+                          vm_log: vmLog,
+                      }
+                    : resp,
             logs: 'BLOCKCHAIN LOGS ARE NOT AVAILABLE IN DEBUGGER BETA',
-            debugLogs,
+            debugLogs: debugLog,
         };
     }
 
@@ -625,7 +636,6 @@ export class Executor implements IExecutor {
 
         const params: EmulationInternalParams = runCommonArgsToInternalParams(args);
 
-        this.debugLogs = [];
         const res = this.invoke('_emulate_sbs', [
             emptr,
             args.libs?.toBoc().toString('base64') ?? 0,
@@ -700,7 +710,7 @@ export class Executor implements IExecutor {
     sbsTransactionResult(ptr: number): EmulationResult {
         const result = JSON.parse(this.extractString(this.invoke('_em_sbs_result', [ptr])));
 
-        const debugLogs = this.debugLogs.join('\n');
+        const { vmLog, debugLog } = splitVmLog('vm_log' in result ? result.vm_log : '');
 
         return {
             result: result.success
@@ -708,7 +718,7 @@ export class Executor implements IExecutor {
                       success: true,
                       transaction: result.transaction,
                       shardAccount: result.shard_account,
-                      vmLog: result.vm_log,
+                      vmLog: vmLog,
                       actions: result.actions,
                   }
                 : {
@@ -717,13 +727,13 @@ export class Executor implements IExecutor {
                       vmResults:
                           'vm_log' in result
                               ? {
-                                    vmLog: result.vm_log,
+                                    vmLog: vmLog,
                                     vmExitCode: result.vm_exit_code,
                                 }
                               : undefined,
                   },
             logs: 'BLOCKCHAIN LOGS ARE NOT AVAILABLE IN DEBUGGER BETA',
-            debugLogs,
+            debugLogs: debugLog,
         };
     }
 

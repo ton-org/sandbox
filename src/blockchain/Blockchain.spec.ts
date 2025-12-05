@@ -44,7 +44,7 @@ describe('Blockchain', () => {
         );
 
         // eslint-disable-next-line no-console
-        console.log('transaction');
+        console.log('transaction (debug logs should follow)');
 
         await blockchain.sendMessage({
             info: {
@@ -64,7 +64,7 @@ describe('Blockchain', () => {
         });
 
         // eslint-disable-next-line no-console
-        console.log('get method');
+        console.log('get method (debug logs should follow)');
 
         await blockchain.runGetMethod(testAddress, 'test_dump', [
             { type: 'int', value: 3n },
