@@ -6,7 +6,7 @@ The key difference of this package from [ton-contract-executor](https://github.c
 
 ## Content
 
-* [Instalation](#installation)
+* [Installation](#installation)
 * [Usage](#usage)
 * [Writing Tests](#writing-tests)
   * [Basic test template](#basic-test-template)
