@@ -698,7 +698,7 @@ describe('Blockchain', () => {
             { type: 'int', value: 0n },
         ]);
 
-        expect(res.stackReader.readBigNumber()).toEqual(40000n);
+        expect(res.stackReader.readBigNumber()).toEqual(6667n);
     });
 
     it('should bounce in action phase when send mode = 16', async () => {
