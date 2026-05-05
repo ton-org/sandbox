@@ -13,11 +13,11 @@ jobs:
     if: github.repository == 'ton-org/sandbox'
 
     steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js 18
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v6
+      - name: Use Node.js 22
+        uses: actions/setup-node@v6
         with:
-          node-version: '18.x'
+          node-version: '22.x'
           always-auth: true
       - name: Install Yarn
         run: npm install -g yarn
