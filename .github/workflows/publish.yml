@@ -9,14 +9,17 @@ jobs:
     runs-on: ubuntu-latest
     environment: prod
     if: github.repository == 'ton-org/sandbox'
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js 18
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v6
+      - name: Use Node.js 22
+        uses: actions/setup-node@v6
         with:
-          node-version: '18.x'
-          always-auth: true
+          node-version: '22.x'
+          registry-url: 'https://registry.npmjs.org'
       - name: Install Yarn
         run: npm install -g yarn
       - name: Install dependencies
@@ -25,13 +28,5 @@ jobs:
         run: yarn test
       - name: Build
         run: yarn build
-      - name: Setup .yarnrc.yml
-        run: |
-          yarn config set npmAuthToken $NPM_AUTH_TOKEN
-          yarn config set npmAlwaysAuth true
-        env:
-          NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
       - name: Publish
-        env:
-          NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
-        run: yarn npm publish --access public
+        run: npm publish --provenance --access public
