@@ -1,0 +1,27 @@
+name: Test Example
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  test-example:
+    name: Test Example
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup toolchain
+        uses: the-ton-tech/toolchain/build@v1.4.0
+        with:
+          node-version: '22.x'
+
+      - name: Patch example and test execution
+        run: |
+          cd examples
+          yarn link ..
+          yarn run examples
