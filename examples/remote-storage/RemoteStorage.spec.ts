@@ -7,6 +7,8 @@ import { NftItem } from '../contracts/NftItem';
 import '@ton/test-utils'; // register matchers
 import { Elector } from '../contracts/Elector';
 
+jest.setTimeout(30_000);
+
 describe('RemoteStorage', () => {
     it('should pull a contract from the real network and interact with it', async () => {
         const blkch = await Blockchain.create({
