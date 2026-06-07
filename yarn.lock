@@ -1434,8 +1434,8 @@ __metadata:
   linkType: hard
 
 "@ton/ton@npm:^15.2.1":
-  version: 15.2.1
-  resolution: "@ton/ton@npm:15.2.1"
+  version: 15.4.0
+  resolution: "@ton/ton@npm:15.4.0"
   dependencies:
     axios: "npm:^1.6.7"
     dataloader: "npm:^2.0.0"
@@ -1443,9 +1443,9 @@ __metadata:
     teslabot: "npm:^1.3.0"
     zod: "npm:^3.21.4"
   peerDependencies:
-    "@ton/core": ">=0.60.0"
+    "@ton/core": ">=0.62.0 <1.0.0"
     "@ton/crypto": ">=3.2.0"
-  checksum: 10/25edc421250c7e754dcf79ed3bf05d72c29fc06ba61302380d95e58f04325585ef42bf56e493c142ac20445caef04ed6150e6e1e99c0dd15314ca16c854c7155
+  checksum: 10/9ed3c3e26ea1b0d5991534980afc3b46a2a9eaf851e23b2d1ec6109f569f531eb74c0f8a3e8829f592e221f2fe0d9c34323057603ba40168b1893123acef9ad1
   languageName: node
   linkType: hard
 
