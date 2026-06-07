@@ -59,7 +59,7 @@
     "lint:fix": "eslint . --max-warnings 0 --fix",
     "config:pack": "ts-node ./scripts/pack-config.ts"
   },
-  "packageManager": "yarn@4.9.2",
+  "packageManager": "yarn@4.17.0+sha512.c2957de2f9025ab14d63b24d0d8be1f1655810e22c341042c27f7ecd017b180ec12db73d69ac366d71b304ef9f069349ce462de96f04f8f1da317f4f762c95ae",
   "dependencies": {
     "chalk": "^4.1.2",
     "table": "^6.9.0",
