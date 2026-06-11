@@ -51,7 +51,7 @@
   },
   "scripts": {
     "wasm:pack": "ts-node ./scripts/pack-wasm.ts",
-    "wasm:copy": "cp src/executor/emulator-emscripten.js src/executor/emulator-emscripten.wasm.js src/executor/emulator-emscripten.debugger.js src/executor/emulator-emscripten.debugger.bpatch.gzip.js ./dist/executor",
+    "wasm:copy": "cp src/executor/emulator-emscripten.js src/executor/emulator-emscripten.wasm.js ./dist/executor",
     "test": "yarn wasm:pack && yarn jest src",
     "build": "rm -rf dist && yarn wasm:pack && tsc && yarn wasm:copy",
     "bt": "yarn build && yarn test",
@@ -61,9 +61,7 @@
   },
   "packageManager": "yarn@4.9.2",
   "dependencies": {
-    "@vscode/debugadapter": "^1.68.0",
     "chalk": "^4.1.2",
-    "fflate": "^0.8.2",
     "table": "^6.9.0",
     "ton-assembly": "0.6.1"
   }

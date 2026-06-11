@@ -1377,10 +1377,8 @@ __metadata:
     "@ton/toolchain": "the-ton-tech/toolchain#v1.4.0"
     "@types/jest": "npm:^30.0.0"
     "@types/node": "npm:^24.1.0"
-    "@vscode/debugadapter": "npm:^1.68.0"
     chalk: "npm:^4.1.2"
     eslint: "npm:^9.28.0"
-    fflate: "npm:^0.8.2"
     globals: "npm:^16.4.0"
     jest: "npm:^30.0.5"
     jest-config: "npm:^30.0.5"
@@ -1923,22 +1921,6 @@ __metadata:
   version: 1.11.1
   resolution: "@unrs/resolver-binding-win32-x64-msvc@npm:1.11.1"
   conditions: os=win32 & cpu=x64
-  languageName: node
-  linkType: hard
-
-"@vscode/debugadapter@npm:^1.68.0":
-  version: 1.68.0
-  resolution: "@vscode/debugadapter@npm:1.68.0"
-  dependencies:
-    "@vscode/debugprotocol": "npm:1.68.0"
-  checksum: 10/8945b85883fa13b09d23ecd8aa2d014616e06a22797d4432013e8ca5cb867ec853c6f0d05bf6cb23fbc80ebfcb4fe994d4afb132bf04d367e5f6a121f5c39b99
-  languageName: node
-  linkType: hard
-
-"@vscode/debugprotocol@npm:1.68.0":
-  version: 1.68.0
-  resolution: "@vscode/debugprotocol@npm:1.68.0"
-  checksum: 10/3e3a8d795d9d2a58c14da969c5ea0696065c1989780e7c3c221b9a65105143869a2da0a38b237fc017d39e9595c07b9b4872e7d75ebc4817a97f7654dffe4a57
   languageName: node
   linkType: hard
 
