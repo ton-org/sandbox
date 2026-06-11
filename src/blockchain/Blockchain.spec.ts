@@ -6,7 +6,6 @@ import {
     contractAddress,
     ContractProvider,
     Dictionary,
-    ExtraCurrency,
     Sender,
     storeMessageRelaxed,
     storeTransaction,
