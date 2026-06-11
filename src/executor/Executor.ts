@@ -1,14 +1,10 @@
-import { Address, beginCell, Cell, parseTuple, serializeTuple, TupleItem } from '@ton/core';
-import { gunzipSync } from 'fflate';
+import { Address, Cell, serializeTuple, TupleItem } from '@ton/core';
 
 import { base64Decode } from '../utils/base64';
 import { ExtraCurrency } from '../utils/ec';
-import { decodePatch } from '../utils/bpatch';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const EmulatorModule = require('./emulator-emscripten.js');
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const DebuggerEmulatorModule = require('./emulator-emscripten.debugger.js');
 
 export type BlockId = {
     workchain: number;
@@ -340,20 +336,6 @@ function getWasmBinary() {
     return wasmBinary;
 }
 
-let debuggerWasmBinary: Uint8Array | undefined = undefined;
-function getDebuggerWasmBinary() {
-    if (debuggerWasmBinary !== undefined) {
-        return debuggerWasmBinary;
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const patch = base64Decode(require('./emulator-emscripten.debugger.bpatch.gzip.js').DebuggerPatchGzip);
-    const unzipped = gunzipSync(patch);
-    debuggerWasmBinary = decodePatch(getWasmBinary(), unzipped);
-
-    return debuggerWasmBinary;
-}
-
 function splitVmLog(log: string): { vmLog: string; debugLog: string } {
     const vm: string[] = [];
     const debug: string[] = [];
@@ -376,25 +358,18 @@ export class Executor implements IExecutor {
         config: string;
         verbosity: number;
     };
-
-    // TODO: this is not used anymore - debug logs are now included in the VM log, and so we cannot emit them during execution
-    debugLogFunc: (s: string) => void = () => {};
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     private constructor(module: any) {
         this.module = module;
         this.heap = new Heap(module);
     }
 
-    static async create(opts?: { debug?: boolean }) {
-        const binary = opts?.debug ? getDebuggerWasmBinary() : getWasmBinary();
-        const module = opts?.debug ? DebuggerEmulatorModule : EmulatorModule;
-
+    static async create() {
         let ex: Executor | undefined = undefined;
 
         ex = new Executor(
-            await module({
-                wasmBinary: binary,
+            await EmulatorModule({
+                wasmBinary: getWasmBinary(),
             }),
         );
         return ex;
@@ -537,204 +512,6 @@ export class Executor implements IExecutor {
         }
 
         return this.module[method](...invocationArgs);
-    }
-
-    sbsGetMethodSetup(args: GetMethodArgs) {
-        const params = getMethodArgsToInternalParams(args);
-
-        let stack = serializeTuple(args.stack);
-
-        const res = this.invoke('_setup_sbs_get_method', [
-            JSON.stringify(params),
-            stack.toBoc().toString('base64'),
-            args.config,
-        ]);
-
-        return res;
-    }
-
-    destroyTvmEmulator(ptr: number) {
-        this.invoke('_destroy_tvm_emulator', [ptr]);
-    }
-
-    sbsGetMethodStep(ptr: number) {
-        const res = this.invoke('_sbs_step', [ptr]);
-
-        return res !== 0;
-    }
-
-    sbsGetMethodStack(ptr: number) {
-        const resp = this.extractString(this.invoke('_sbs_get_stack', [ptr]));
-
-        return parseTuple(Cell.fromBase64(resp));
-    }
-
-    sbsGetMethodC7(ptr: number) {
-        const resp = this.extractString(this.invoke('_sbs_get_c7', [ptr]));
-
-        return parseTuple(
-            beginCell().storeUint(1, 24).storeRef(Cell.EMPTY).storeSlice(Cell.fromBase64(resp).beginParse()).endCell(),
-        )[0];
-    }
-
-    sbsGetMethodGetContDistinguisher(ptr: number) {
-        return this.invoke('_sbs_get_cont_distinguisher', [ptr]);
-    }
-
-    sbsGetMethodSetContDistinguishers(
-        ptr: number,
-        distinguisher: number,
-        trueDistinguisher: number,
-        falseDistinguisher: number,
-    ) {
-        this.invoke('_sbs_set_cont_distinguishers', [ptr, distinguisher, trueDistinguisher, falseDistinguisher]);
-    }
-
-    sbsGetMethodGetContDistinguisherTriggered(ptr: number) {
-        return this.invoke('_sbs_get_cont_distinguisher_triggered', [ptr]) !== 0;
-    }
-
-    sbsGetMethodSetTryParams(ptr: number, primed: number, triggered: number) {
-        this.invoke('_sbs_set_try_params', [ptr, primed, triggered]);
-    }
-
-    sbsGetMethodGetTriggeredTryParam(ptr: number) {
-        return this.invoke('_sbs_get_triggered_try_param', [ptr]);
-    }
-
-    sbsGetMethodCodePos(ptr: number) {
-        const resp = this.extractString(this.invoke('_sbs_get_code_pos', [ptr]));
-
-        const parts = resp.split(':');
-
-        return {
-            hash: parts[0],
-            offset: parseInt(parts[1]),
-        };
-    }
-
-    sbsGetMethodResult(ptr: number): GetMethodResult {
-        const resp = JSON.parse(this.extractString(this.invoke('_sbs_get_method_result', [ptr])));
-
-        const { vmLog, debugLog } = splitVmLog('vm_log' in resp ? resp.vm_log : '');
-
-        return {
-            output:
-                'vm_log' in resp
-                    ? {
-                          ...resp,
-                          vm_log: vmLog,
-                      }
-                    : resp,
-            logs: 'BLOCKCHAIN LOGS ARE NOT AVAILABLE IN DEBUGGER BETA',
-            debugLogs: debugLog,
-        };
-    }
-
-    sbsTransactionSetup(args: RunTransactionArgs) {
-        const emptr = this.invoke('_create_emulator', [args.config, verbosityToNum[args.verbosity]]);
-
-        const params: EmulationInternalParams = runCommonArgsToInternalParams(args);
-
-        const res = this.invoke('_emulate_sbs', [
-            emptr,
-            args.libs?.toBoc().toString('base64') ?? 0,
-            args.shardAccount,
-            args.message.toBoc().toString('base64'),
-            JSON.stringify(params),
-        ]);
-
-        return { res, emptr };
-    }
-
-    destroyEmulator(ptr: number) {
-        this.invoke('_destroy_emulator', [ptr]);
-    }
-
-    sbsTransactionStep(ptr: number) {
-        const res = this.invoke('_em_sbs_step', [ptr]);
-
-        return res !== 0;
-    }
-
-    sbsTransactionCodePos(ptr: number) {
-        const resp = this.extractString(this.invoke('_em_sbs_code_pos', [ptr]));
-
-        const parts = resp.split(':');
-
-        return {
-            hash: parts[0],
-            offset: parseInt(parts[1]),
-        };
-    }
-
-    sbsTransactionStack(ptr: number) {
-        const resp = this.extractString(this.invoke('_em_sbs_stack', [ptr]));
-
-        return parseTuple(Cell.fromBase64(resp));
-    }
-
-    sbsTransactionC7(ptr: number) {
-        const resp = this.extractString(this.invoke('_em_sbs_c7', [ptr]));
-
-        return parseTuple(
-            beginCell().storeUint(1, 24).storeRef(Cell.EMPTY).storeSlice(Cell.fromBase64(resp).beginParse()).endCell(),
-        )[0];
-    }
-
-    sbsTransactionGetContDistinguisher(ptr: number) {
-        return this.invoke('_em_sbs_get_cont_distinguisher', [ptr]);
-    }
-
-    sbsTransactionSetContDistinguishers(
-        ptr: number,
-        distinguisher: number,
-        trueDistinguisher: number,
-        falseDistinguisher: number,
-    ) {
-        this.invoke('_em_sbs_set_cont_distinguishers', [ptr, distinguisher, trueDistinguisher, falseDistinguisher]);
-    }
-
-    sbsTransactionGetContDistinguisherTriggered(ptr: number) {
-        return this.invoke('_em_sbs_get_cont_distinguisher_triggered', [ptr]) !== 0;
-    }
-
-    sbsTransactionSetTryParams(ptr: number, primed: number, triggered: number) {
-        this.invoke('_em_sbs_set_try_params', [ptr, primed, triggered]);
-    }
-
-    sbsTransactionGetTriggeredTryParam(ptr: number) {
-        return this.invoke('_em_sbs_get_triggered_try_param', [ptr]);
-    }
-
-    sbsTransactionResult(ptr: number): EmulationResult {
-        const result = JSON.parse(this.extractString(this.invoke('_em_sbs_result', [ptr])));
-
-        const { vmLog, debugLog } = splitVmLog('vm_log' in result ? result.vm_log : '');
-
-        return {
-            result: result.success
-                ? {
-                      success: true,
-                      transaction: result.transaction,
-                      shardAccount: result.shard_account,
-                      vmLog: vmLog,
-                      actions: result.actions,
-                  }
-                : {
-                      success: false,
-                      error: result.error,
-                      vmResults:
-                          'vm_log' in result
-                              ? {
-                                    vmLog: vmLog,
-                                    vmExitCode: result.vm_exit_code,
-                                }
-                              : undefined,
-                  },
-            logs: 'BLOCKCHAIN LOGS ARE NOT AVAILABLE IN DEBUGGER BETA',
-            debugLogs: debugLog,
-        };
     }
 
     private extractString(ptr: number): string {
