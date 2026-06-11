@@ -125,6 +125,7 @@ workchain_v2#a7 enabled_since:uint32 monitor_min_split:(## 8)
   zerostate_root_hash:bits256 zerostate_file_hash:bits256
   version:uint32 format:(WorkchainFormat basic)
   split_merge_timings:WcSplitMergeTimings
+  persistent_state_split_depth:(## 8) { persistent_state_split_depth <= 63 }
   = WorkchainDescr;
 
 _ workchains:(HashmapE 32 WorkchainDescr) = ConfigParam 12;
@@ -170,7 +171,11 @@ config_gas_prices#_ GasLimitsPrices = ConfigParam 21;
 
 param_limits#c3 underload:# soft_limit:# { underload <= soft_limit }
   hard_limit:# { soft_limit <= hard_limit } = ParamLimits;
+imported_msg_queue_limits#d3 max_bytes:# max_msgs:# = ImportedMsgQueueLimits;
 block_limits#5d bytes:ParamLimits gas:ParamLimits lt_delta:ParamLimits
+  = BlockLimits;
+block_limits_v2#5e bytes:ParamLimits gas:ParamLimits lt_delta:ParamLimits
+  collated_data:ParamLimits imported_msg_queue:ImportedMsgQueueLimits
   = BlockLimits;
 
 config_mc_block_limits#_ BlockLimits = ConfigParam 22;
@@ -212,7 +217,7 @@ consensus_config_v3#d8 flags:(## 7) { flags = 0 } new_catchain_ids:Bool
   max_block_bytes:uint32 max_collated_bytes:uint32
   proto_version:uint16 = ConsensusConfig;
 
-consensus_config_v4#d9 flags:(## 7) { flags = 0 } new_catchain_ids:Bool
+consensus_config_v4#d9 flags:(## 6) { flags = 0 } use_quic:Bool new_catchain_ids:Bool
   round_candidates:(## 8) { round_candidates >= 1 }
   next_candidate_delay_ms:uint32 consensus_timeout_ms:uint32
   fast_attempts:uint32 attempt_duration:uint32 catchain_max_deps:uint32
@@ -221,6 +226,13 @@ consensus_config_v4#d9 flags:(## 7) { flags = 0 } new_catchain_ids:Bool
 
 _ CatchainConfig = ConfigParam 28;
 _ ConsensusConfig = ConfigParam 29;
+
+simplex_config#21 flags:(## 7) use_quic:Bool
+  target_rate_ms:uint32 slots_per_leader_window:uint32
+  first_block_timeout_ms:uint32 max_leader_window_desync:uint32 = NewConsensusConfig;
+simplex_config_v2#22 flags:(## 6) enable_observers:Bool use_quic:Bool slots_per_leader_window:uint32 noncritical_params:(HashmapE 8 uint32) = NewConsensusConfig;
+new_consensus_config_all#10 mc:(Maybe ^NewConsensusConfig) shard:(Maybe ^NewConsensusConfig) = NewConsensusConfigAll;
+_ NewConsensusConfigAll = ConfigParam 30;
 
 _ fundamental_smc_addr:(HashmapE 256 True) = ConfigParam 31;
 _ prev_validators:ValidatorSet = ConfigParam 32;
@@ -246,9 +258,10 @@ _ MisbehaviourPunishmentConfig = ConfigParam 40;
 size_limits_config#01 max_msg_bits:uint32 max_msg_cells:uint32 max_library_cells:uint32 max_vm_data_depth:uint16
   max_ext_msg_size:uint32 max_ext_msg_depth:uint16 = SizeLimitsConfig;
 size_limits_config_v2#02 max_msg_bits:uint32 max_msg_cells:uint32 max_library_cells:uint32 max_vm_data_depth:uint16
-  max_ext_msg_size:uint32 max_ext_msg_depth:uint16 max_acc_state_cells:uint32 max_acc_state_bits:uint32
+  max_ext_msg_size:uint32 max_ext_msg_depth:uint16 max_acc_state_cells:uint32 max_mc_acc_state_cells:uint32
   max_acc_public_libraries:uint32 defer_out_queue_size_limit:uint32 max_msg_extra_currencies:uint32
-  max_acc_fixed_prefix_length:uint8 = SizeLimitsConfig;
+  max_acc_fixed_prefix_length:uint8 acc_state_cells_for_storage_dict:uint32
+  max_transaction_library_loads:(Maybe uint32) = SizeLimitsConfig;
 _ SizeLimitsConfig = ConfigParam 43;
 
 // key is [ wc:int32 addr:uint256 ]
