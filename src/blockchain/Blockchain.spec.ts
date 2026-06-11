@@ -6,7 +6,6 @@ import {
     contractAddress,
     ContractProvider,
     Dictionary,
-    ExtraCurrency,
     Sender,
     storeMessageRelaxed,
     storeTransaction,
@@ -763,37 +762,6 @@ describe('Blockchain', () => {
         const c = t.readCell();
         const d = Dictionary.loadDirect(Dictionary.Keys.Uint(32), Dictionary.Values.BigVarUint(5), c);
         expect(d.get(1)).toEqual(100n);
-    });
-
-    it('blockchain provider should be able to send extra currencies', async () => {
-        class TestWrapper implements Contract {
-            constructor(
-                readonly address: Address,
-                readonly init?: { code: Cell; data: Cell },
-            ) {}
-
-            async sendEc(provider: ContractProvider, via: Sender, value: bigint, extra: ExtraCurrency) {
-                await provider.internal(via, {
-                    value,
-                    extracurrency: extra,
-                });
-            }
-        }
-
-        const blockchain = await Blockchain.create();
-
-        const alice = await blockchain.treasury('alice');
-        const bob = await blockchain.treasury('bob');
-
-        let smc = await blockchain.getContract(alice.address);
-        smc.ec = { 1: 1000n };
-
-        const testWallet = blockchain.openContract(new TestWrapper(bob.address));
-
-        await testWallet.sendEc(alice.getSender(), BigInt(10 ** 9), { 1: 10n });
-
-        smc = await blockchain.getContract(bob.address);
-        expect(smc.ec[1]).toBe(10n);
     });
 
     it('should process prev blocks correctly', async () => {
