@@ -11,9 +11,3 @@ encode(
     './src/executor/emulator-emscripten.wasm.js',
     'EmulatorEmscriptenWasm',
 );
-
-encode(
-    './src/executor/emulator-emscripten.debugger.bpatch.gzip',
-    './src/executor/emulator-emscripten.debugger.bpatch.gzip.js',
-    'DebuggerPatchGzip',
-);
