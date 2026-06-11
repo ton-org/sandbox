@@ -370,6 +370,8 @@ _ max_validators:(## 16) max_main_validators:(## 16) min_validators:(## 16)
 
 // _ ConsensusConfig = ConfigParam 29;
 
+// _ NewConsensusConfigAll = ConfigParam 30;
+
 // _ fundamental_smc_addr:(HashmapE 256 True) = ConfigParam 31;
 
 // _ prev_validators:ValidatorSet = ConfigParam 32;
@@ -406,7 +408,7 @@ _ max_validators:(## 16) max_main_validators:(## 16) min_validators:(## 16)
 
 // _ JettonBridgeParams = ConfigParam 82;
 
-export type ConfigParam = ConfigParam__ | ConfigParam__1 | ConfigParam__2 | ConfigParam__3 | ConfigParam__4 | ConfigParam__5 | ConfigParam__6 | ConfigParam__7 | ConfigParam__8 | ConfigParam__9 | ConfigParam__10 | ConfigParam__11 | ConfigParam__12 | ConfigParam__13 | ConfigParam__14 | ConfigParam__15 | ConfigParam__16 | ConfigParam__17 | ConfigParam__18 | ConfigParam__19 | ConfigParam_config_mc_gas_prices | ConfigParam_config_gas_prices | ConfigParam_config_mc_block_limits | ConfigParam_config_block_limits | ConfigParam_config_mc_fwd_prices | ConfigParam_config_fwd_prices | ConfigParam__26 | ConfigParam__27 | ConfigParam__28 | ConfigParam__29 | ConfigParam__30 | ConfigParam__31 | ConfigParam__32 | ConfigParam__33 | ConfigParam__34 | ConfigParam__35 | ConfigParam__36 | ConfigParam__37 | ConfigParam__38 | ConfigParam__39 | ConfigParam__40 | ConfigParam__41 | ConfigParam__42 | ConfigParam__43 | ConfigParam__44 | ConfigParam__45;
+export type ConfigParam = ConfigParam__ | ConfigParam__1 | ConfigParam__2 | ConfigParam__3 | ConfigParam__4 | ConfigParam__5 | ConfigParam__6 | ConfigParam__7 | ConfigParam__8 | ConfigParam__9 | ConfigParam__10 | ConfigParam__11 | ConfigParam__12 | ConfigParam__13 | ConfigParam__14 | ConfigParam__15 | ConfigParam__16 | ConfigParam__17 | ConfigParam__18 | ConfigParam__19 | ConfigParam_config_mc_gas_prices | ConfigParam_config_gas_prices | ConfigParam_config_mc_block_limits | ConfigParam_config_block_limits | ConfigParam_config_mc_fwd_prices | ConfigParam_config_fwd_prices | ConfigParam__26 | ConfigParam__27 | ConfigParam__28 | ConfigParam__29 | ConfigParam__30 | ConfigParam__31 | ConfigParam__32 | ConfigParam__33 | ConfigParam__34 | ConfigParam__35 | ConfigParam__36 | ConfigParam__37 | ConfigParam__38 | ConfigParam__39 | ConfigParam__40 | ConfigParam__41 | ConfigParam__42 | ConfigParam__43 | ConfigParam__44 | ConfigParam__45 | ConfigParam__46;
 
 export interface ConfigParam__ {
     readonly kind: 'ConfigParam__';
@@ -559,67 +561,67 @@ export interface ConfigParam__27 {
 
 export interface ConfigParam__28 {
     readonly kind: 'ConfigParam__28';
-    readonly fundamental_smc_addr: Dictionary<bigint, True>;
+    readonly anon0: NewConsensusConfigAll;
 }
 
 export interface ConfigParam__29 {
     readonly kind: 'ConfigParam__29';
-    readonly prev_validators: ValidatorSet;
+    readonly fundamental_smc_addr: Dictionary<bigint, True>;
 }
 
 export interface ConfigParam__30 {
     readonly kind: 'ConfigParam__30';
-    readonly prev_temp_validators: ValidatorSet;
+    readonly prev_validators: ValidatorSet;
 }
 
 export interface ConfigParam__31 {
     readonly kind: 'ConfigParam__31';
-    readonly cur_validators: ValidatorSet;
+    readonly prev_temp_validators: ValidatorSet;
 }
 
 export interface ConfigParam__32 {
     readonly kind: 'ConfigParam__32';
-    readonly cur_temp_validators: ValidatorSet;
+    readonly cur_validators: ValidatorSet;
 }
 
 export interface ConfigParam__33 {
     readonly kind: 'ConfigParam__33';
-    readonly next_validators: ValidatorSet;
+    readonly cur_temp_validators: ValidatorSet;
 }
 
 export interface ConfigParam__34 {
     readonly kind: 'ConfigParam__34';
-    readonly next_temp_validators: ValidatorSet;
+    readonly next_validators: ValidatorSet;
 }
 
 export interface ConfigParam__35 {
     readonly kind: 'ConfigParam__35';
-    readonly anon0: Dictionary<bigint, ValidatorSignedTempKey>;
+    readonly next_temp_validators: ValidatorSet;
 }
 
 export interface ConfigParam__36 {
     readonly kind: 'ConfigParam__36';
-    readonly anon0: MisbehaviourPunishmentConfig;
+    readonly anon0: Dictionary<bigint, ValidatorSignedTempKey>;
 }
 
 export interface ConfigParam__37 {
     readonly kind: 'ConfigParam__37';
-    readonly anon0: SizeLimitsConfig;
+    readonly anon0: MisbehaviourPunishmentConfig;
 }
 
 export interface ConfigParam__38 {
     readonly kind: 'ConfigParam__38';
-    readonly anon0: SuspendedAddressList;
+    readonly anon0: SizeLimitsConfig;
 }
 
 export interface ConfigParam__39 {
     readonly kind: 'ConfigParam__39';
-    readonly anon0: PrecompiledContractsConfig;
+    readonly anon0: SuspendedAddressList;
 }
 
 export interface ConfigParam__40 {
     readonly kind: 'ConfigParam__40';
-    readonly anon0: OracleBridgeParams;
+    readonly anon0: PrecompiledContractsConfig;
 }
 
 export interface ConfigParam__41 {
@@ -634,7 +636,7 @@ export interface ConfigParam__42 {
 
 export interface ConfigParam__43 {
     readonly kind: 'ConfigParam__43';
-    readonly anon0: JettonBridgeParams;
+    readonly anon0: OracleBridgeParams;
 }
 
 export interface ConfigParam__44 {
@@ -644,6 +646,11 @@ export interface ConfigParam__44 {
 
 export interface ConfigParam__45 {
     readonly kind: 'ConfigParam__45';
+    readonly anon0: JettonBridgeParams;
+}
+
+export interface ConfigParam__46 {
+    readonly kind: 'ConfigParam__46';
     readonly anon0: JettonBridgeParams;
 }
 
@@ -778,6 +785,7 @@ workchain_v2#a7 enabled_since:uint32 monitor_min_split:(## 8)
   zerostate_root_hash:bits256 zerostate_file_hash:bits256
   version:uint32 format:(WorkchainFormat basic)
   split_merge_timings:WcSplitMergeTimings
+  persistent_state_split_depth:(## 8) { persistent_state_split_depth <= 63 }
   = WorkchainDescr;
 */
 
@@ -814,6 +822,7 @@ export interface WorkchainDescr_workchain_v2 {
     readonly version: number;
     readonly format: WorkchainFormat;
     readonly split_merge_timings: WcSplitMergeTimings;
+    readonly persistent_state_split_depth: number;
 }
 
 // complaint_prices#1a deposit:Grams bit_price:Grams cell_price:Grams = ComplaintPricing;
@@ -909,16 +918,41 @@ export interface ParamLimits {
     readonly hard_limit: number;
 }
 
+// imported_msg_queue_limits#d3 max_bytes:# max_msgs:# = ImportedMsgQueueLimits;
+
+export interface ImportedMsgQueueLimits {
+    readonly kind: 'ImportedMsgQueueLimits';
+    readonly max_bytes: number;
+    readonly max_msgs: number;
+}
+
 /*
 block_limits#5d bytes:ParamLimits gas:ParamLimits lt_delta:ParamLimits
   = BlockLimits;
 */
 
-export interface BlockLimits {
-    readonly kind: 'BlockLimits';
+/*
+block_limits_v2#5e bytes:ParamLimits gas:ParamLimits lt_delta:ParamLimits
+  collated_data:ParamLimits imported_msg_queue:ImportedMsgQueueLimits
+  = BlockLimits;
+*/
+
+export type BlockLimits = BlockLimits_block_limits | BlockLimits_block_limits_v2;
+
+export interface BlockLimits_block_limits {
+    readonly kind: 'BlockLimits_block_limits';
     readonly bytes: ParamLimits;
     readonly gas: ParamLimits;
     readonly lt_delta: ParamLimits;
+}
+
+export interface BlockLimits_block_limits_v2 {
+    readonly kind: 'BlockLimits_block_limits_v2';
+    readonly bytes: ParamLimits;
+    readonly gas: ParamLimits;
+    readonly lt_delta: ParamLimits;
+    readonly collated_data: ParamLimits;
+    readonly imported_msg_queue: ImportedMsgQueueLimits;
 }
 
 /*
@@ -992,7 +1026,7 @@ consensus_config_v3#d8 flags:(## 7) { flags = 0 } new_catchain_ids:Bool
 */
 
 /*
-consensus_config_v4#d9 flags:(## 7) { flags = 0 } new_catchain_ids:Bool
+consensus_config_v4#d9 flags:(## 6) { flags = 0 } use_quic:Bool new_catchain_ids:Bool
   round_candidates:(## 8) { round_candidates >= 1 }
   next_candidate_delay_ms:uint32 consensus_timeout_ms:uint32
   fast_attempts:uint32 attempt_duration:uint32 catchain_max_deps:uint32
@@ -1046,6 +1080,7 @@ export interface ConsensusConfig_consensus_config_v3 {
 export interface ConsensusConfig_consensus_config_v4 {
     readonly kind: 'ConsensusConfig_consensus_config_v4';
     readonly flags: number;
+    readonly use_quic: Bool;
     readonly new_catchain_ids: Bool;
     readonly round_candidates: number;
     readonly next_candidate_delay_ms: number;
@@ -1057,6 +1092,43 @@ export interface ConsensusConfig_consensus_config_v4 {
     readonly max_collated_bytes: number;
     readonly proto_version: number;
     readonly catchain_max_blocks_coeff: number;
+}
+
+/*
+simplex_config#21 flags:(## 7) use_quic:Bool
+  target_rate_ms:uint32 slots_per_leader_window:uint32
+  first_block_timeout_ms:uint32 max_leader_window_desync:uint32 = NewConsensusConfig;
+*/
+
+// simplex_config_v2#22 flags:(## 6) enable_observers:Bool use_quic:Bool slots_per_leader_window:uint32 noncritical_params:(HashmapE 8 uint32) = NewConsensusConfig;
+
+export type NewConsensusConfig = NewConsensusConfig_simplex_config | NewConsensusConfig_simplex_config_v2;
+
+export interface NewConsensusConfig_simplex_config {
+    readonly kind: 'NewConsensusConfig_simplex_config';
+    readonly flags: number;
+    readonly use_quic: Bool;
+    readonly target_rate_ms: number;
+    readonly slots_per_leader_window: number;
+    readonly first_block_timeout_ms: number;
+    readonly max_leader_window_desync: number;
+}
+
+export interface NewConsensusConfig_simplex_config_v2 {
+    readonly kind: 'NewConsensusConfig_simplex_config_v2';
+    readonly flags: number;
+    readonly enable_observers: Bool;
+    readonly use_quic: Bool;
+    readonly slots_per_leader_window: number;
+    readonly noncritical_params: Dictionary<number, number>;
+}
+
+// new_consensus_config_all#10 mc:(Maybe ^NewConsensusConfig) shard:(Maybe ^NewConsensusConfig) = NewConsensusConfigAll;
+
+export interface NewConsensusConfigAll {
+    readonly kind: 'NewConsensusConfigAll';
+    readonly mc: Maybe<NewConsensusConfig>;
+    readonly shard: Maybe<NewConsensusConfig>;
 }
 
 // validator_temp_key#3 adnl_addr:bits256 temp_public_key:SigPubKey seqno:# valid_until:uint32 = ValidatorTempKey;
@@ -1109,9 +1181,10 @@ size_limits_config#01 max_msg_bits:uint32 max_msg_cells:uint32 max_library_cells
 
 /*
 size_limits_config_v2#02 max_msg_bits:uint32 max_msg_cells:uint32 max_library_cells:uint32 max_vm_data_depth:uint16
-  max_ext_msg_size:uint32 max_ext_msg_depth:uint16 max_acc_state_cells:uint32 max_acc_state_bits:uint32
+  max_ext_msg_size:uint32 max_ext_msg_depth:uint16 max_acc_state_cells:uint32 max_mc_acc_state_cells:uint32
   max_acc_public_libraries:uint32 defer_out_queue_size_limit:uint32 max_msg_extra_currencies:uint32
-  max_acc_fixed_prefix_length:uint8 = SizeLimitsConfig;
+  max_acc_fixed_prefix_length:uint8 acc_state_cells_for_storage_dict:uint32
+  max_transaction_library_loads:(Maybe uint32) = SizeLimitsConfig;
 */
 
 export type SizeLimitsConfig = SizeLimitsConfig_size_limits_config | SizeLimitsConfig_size_limits_config_v2;
@@ -1135,11 +1208,13 @@ export interface SizeLimitsConfig_size_limits_config_v2 {
     readonly max_ext_msg_size: number;
     readonly max_ext_msg_depth: number;
     readonly max_acc_state_cells: number;
-    readonly max_acc_state_bits: number;
+    readonly max_mc_acc_state_cells: number;
     readonly max_acc_public_libraries: number;
     readonly defer_out_queue_size_limit: number;
     readonly max_msg_extra_currencies: number;
     readonly max_acc_fixed_prefix_length: number;
+    readonly acc_state_cells_for_storage_dict: number;
+    readonly max_transaction_library_loads: Maybe<number>;
 }
 
 // suspended_address_list#00 addresses:(HashmapE 288 Unit) suspended_until:uint32 = SuspendedAddressList;
@@ -1995,6 +2070,8 @@ _ max_validators:(## 16) max_main_validators:(## 16) min_validators:(## 16)
 
 // _ ConsensusConfig = ConfigParam 29;
 
+// _ NewConsensusConfigAll = ConfigParam 30;
+
 // _ fundamental_smc_addr:(HashmapE 256 True) = ConfigParam 31;
 
 // _ prev_validators:ValidatorSet = ConfigParam 32;
@@ -2295,13 +2372,21 @@ export function loadConfigParam(slice: Slice, arg0: number): ConfigParam {
         }
 
     }
+    if ((arg0 == 30)) {
+        let anon0: NewConsensusConfigAll = loadNewConsensusConfigAll(slice);
+        return {
+            kind: 'ConfigParam__28',
+            anon0: anon0,
+        }
+
+    }
     if ((arg0 == 31)) {
         let fundamental_smc_addr: Dictionary<bigint, True> = Dictionary.load(Dictionary.Keys.BigUint(256), {
             serialize: () => { throw new Error('Not implemented') },
             parse: loadTrue,
         }, slice);
         return {
-            kind: 'ConfigParam__28',
+            kind: 'ConfigParam__29',
             fundamental_smc_addr: fundamental_smc_addr,
         }
 
@@ -2309,7 +2394,7 @@ export function loadConfigParam(slice: Slice, arg0: number): ConfigParam {
     if ((arg0 == 32)) {
         let prev_validators: ValidatorSet = loadValidatorSet(slice);
         return {
-            kind: 'ConfigParam__29',
+            kind: 'ConfigParam__30',
             prev_validators: prev_validators,
         }
 
@@ -2317,7 +2402,7 @@ export function loadConfigParam(slice: Slice, arg0: number): ConfigParam {
     if ((arg0 == 33)) {
         let prev_temp_validators: ValidatorSet = loadValidatorSet(slice);
         return {
-            kind: 'ConfigParam__30',
+            kind: 'ConfigParam__31',
             prev_temp_validators: prev_temp_validators,
         }
 
@@ -2325,7 +2410,7 @@ export function loadConfigParam(slice: Slice, arg0: number): ConfigParam {
     if ((arg0 == 34)) {
         let cur_validators: ValidatorSet = loadValidatorSet(slice);
         return {
-            kind: 'ConfigParam__31',
+            kind: 'ConfigParam__32',
             cur_validators: cur_validators,
         }
 
@@ -2333,7 +2418,7 @@ export function loadConfigParam(slice: Slice, arg0: number): ConfigParam {
     if ((arg0 == 35)) {
         let cur_temp_validators: ValidatorSet = loadValidatorSet(slice);
         return {
-            kind: 'ConfigParam__32',
+            kind: 'ConfigParam__33',
             cur_temp_validators: cur_temp_validators,
         }
 
@@ -2341,7 +2426,7 @@ export function loadConfigParam(slice: Slice, arg0: number): ConfigParam {
     if ((arg0 == 36)) {
         let next_validators: ValidatorSet = loadValidatorSet(slice);
         return {
-            kind: 'ConfigParam__33',
+            kind: 'ConfigParam__34',
             next_validators: next_validators,
         }
 
@@ -2349,7 +2434,7 @@ export function loadConfigParam(slice: Slice, arg0: number): ConfigParam {
     if ((arg0 == 37)) {
         let next_temp_validators: ValidatorSet = loadValidatorSet(slice);
         return {
-            kind: 'ConfigParam__34',
+            kind: 'ConfigParam__35',
             next_temp_validators: next_temp_validators,
         }
 
@@ -2360,7 +2445,7 @@ export function loadConfigParam(slice: Slice, arg0: number): ConfigParam {
             parse: loadValidatorSignedTempKey,
         }, slice);
         return {
-            kind: 'ConfigParam__35',
+            kind: 'ConfigParam__36',
             anon0: anon0,
         }
 
@@ -2368,7 +2453,7 @@ export function loadConfigParam(slice: Slice, arg0: number): ConfigParam {
     if ((arg0 == 40)) {
         let anon0: MisbehaviourPunishmentConfig = loadMisbehaviourPunishmentConfig(slice);
         return {
-            kind: 'ConfigParam__36',
+            kind: 'ConfigParam__37',
             anon0: anon0,
         }
 
@@ -2376,7 +2461,7 @@ export function loadConfigParam(slice: Slice, arg0: number): ConfigParam {
     if ((arg0 == 43)) {
         let anon0: SizeLimitsConfig = loadSizeLimitsConfig(slice);
         return {
-            kind: 'ConfigParam__37',
+            kind: 'ConfigParam__38',
             anon0: anon0,
         }
 
@@ -2384,7 +2469,7 @@ export function loadConfigParam(slice: Slice, arg0: number): ConfigParam {
     if ((arg0 == 44)) {
         let anon0: SuspendedAddressList = loadSuspendedAddressList(slice);
         return {
-            kind: 'ConfigParam__38',
+            kind: 'ConfigParam__39',
             anon0: anon0,
         }
 
@@ -2392,7 +2477,7 @@ export function loadConfigParam(slice: Slice, arg0: number): ConfigParam {
     if ((arg0 == 45)) {
         let anon0: PrecompiledContractsConfig = loadPrecompiledContractsConfig(slice);
         return {
-            kind: 'ConfigParam__39',
+            kind: 'ConfigParam__40',
             anon0: anon0,
         }
 
@@ -2400,7 +2485,7 @@ export function loadConfigParam(slice: Slice, arg0: number): ConfigParam {
     if ((arg0 == 71)) {
         let anon0: OracleBridgeParams = loadOracleBridgeParams(slice);
         return {
-            kind: 'ConfigParam__40',
+            kind: 'ConfigParam__41',
             anon0: anon0,
         }
 
@@ -2408,7 +2493,7 @@ export function loadConfigParam(slice: Slice, arg0: number): ConfigParam {
     if ((arg0 == 72)) {
         let anon0: OracleBridgeParams = loadOracleBridgeParams(slice);
         return {
-            kind: 'ConfigParam__41',
+            kind: 'ConfigParam__42',
             anon0: anon0,
         }
 
@@ -2416,7 +2501,7 @@ export function loadConfigParam(slice: Slice, arg0: number): ConfigParam {
     if ((arg0 == 73)) {
         let anon0: OracleBridgeParams = loadOracleBridgeParams(slice);
         return {
-            kind: 'ConfigParam__42',
+            kind: 'ConfigParam__43',
             anon0: anon0,
         }
 
@@ -2424,7 +2509,7 @@ export function loadConfigParam(slice: Slice, arg0: number): ConfigParam {
     if ((arg0 == 79)) {
         let anon0: JettonBridgeParams = loadJettonBridgeParams(slice);
         return {
-            kind: 'ConfigParam__43',
+            kind: 'ConfigParam__44',
             anon0: anon0,
         }
 
@@ -2432,7 +2517,7 @@ export function loadConfigParam(slice: Slice, arg0: number): ConfigParam {
     if ((arg0 == 81)) {
         let anon0: JettonBridgeParams = loadJettonBridgeParams(slice);
         return {
-            kind: 'ConfigParam__44',
+            kind: 'ConfigParam__45',
             anon0: anon0,
         }
 
@@ -2440,12 +2525,12 @@ export function loadConfigParam(slice: Slice, arg0: number): ConfigParam {
     if ((arg0 == 82)) {
         let anon0: JettonBridgeParams = loadJettonBridgeParams(slice);
         return {
-            kind: 'ConfigParam__45',
+            kind: 'ConfigParam__46',
             anon0: anon0,
         }
 
     }
-    throw new Error('Expected one of "ConfigParam__", "ConfigParam__1", "ConfigParam__2", "ConfigParam__3", "ConfigParam__4", "ConfigParam__5", "ConfigParam__6", "ConfigParam__7", "ConfigParam__8", "ConfigParam__9", "ConfigParam__10", "ConfigParam__11", "ConfigParam__12", "ConfigParam__13", "ConfigParam__14", "ConfigParam__15", "ConfigParam__16", "ConfigParam__17", "ConfigParam__18", "ConfigParam__19", "ConfigParam_config_mc_gas_prices", "ConfigParam_config_gas_prices", "ConfigParam_config_mc_block_limits", "ConfigParam_config_block_limits", "ConfigParam_config_mc_fwd_prices", "ConfigParam_config_fwd_prices", "ConfigParam__26", "ConfigParam__27", "ConfigParam__28", "ConfigParam__29", "ConfigParam__30", "ConfigParam__31", "ConfigParam__32", "ConfigParam__33", "ConfigParam__34", "ConfigParam__35", "ConfigParam__36", "ConfigParam__37", "ConfigParam__38", "ConfigParam__39", "ConfigParam__40", "ConfigParam__41", "ConfigParam__42", "ConfigParam__43", "ConfigParam__44", "ConfigParam__45" in loading "ConfigParam", but data does not satisfy any constructor');
+    throw new Error('Expected one of "ConfigParam__", "ConfigParam__1", "ConfigParam__2", "ConfigParam__3", "ConfigParam__4", "ConfigParam__5", "ConfigParam__6", "ConfigParam__7", "ConfigParam__8", "ConfigParam__9", "ConfigParam__10", "ConfigParam__11", "ConfigParam__12", "ConfigParam__13", "ConfigParam__14", "ConfigParam__15", "ConfigParam__16", "ConfigParam__17", "ConfigParam__18", "ConfigParam__19", "ConfigParam_config_mc_gas_prices", "ConfigParam_config_gas_prices", "ConfigParam_config_mc_block_limits", "ConfigParam_config_block_limits", "ConfigParam_config_mc_fwd_prices", "ConfigParam_config_fwd_prices", "ConfigParam__26", "ConfigParam__27", "ConfigParam__28", "ConfigParam__29", "ConfigParam__30", "ConfigParam__31", "ConfigParam__32", "ConfigParam__33", "ConfigParam__34", "ConfigParam__35", "ConfigParam__36", "ConfigParam__37", "ConfigParam__38", "ConfigParam__39", "ConfigParam__40", "ConfigParam__41", "ConfigParam__42", "ConfigParam__43", "ConfigParam__44", "ConfigParam__45", "ConfigParam__46" in loading "ConfigParam", but data does not satisfy any constructor');
 }
 
 export function storeConfigParam(configParam: ConfigParam): (builder: Builder) => void {
@@ -2657,6 +2742,12 @@ export function storeConfigParam(configParam: ConfigParam): (builder: Builder) =
     }
     if ((configParam.kind == 'ConfigParam__28')) {
         return ((builder: Builder) => {
+            storeNewConsensusConfigAll(configParam.anon0)(builder);
+        })
+
+    }
+    if ((configParam.kind == 'ConfigParam__29')) {
+        return ((builder: Builder) => {
             builder.storeDict(configParam.fundamental_smc_addr, Dictionary.Keys.BigUint(256), {
                 serialize: ((arg: True, builder: Builder) => {
                 storeTrue(arg)(builder);
@@ -2666,43 +2757,43 @@ export function storeConfigParam(configParam: ConfigParam): (builder: Builder) =
         })
 
     }
-    if ((configParam.kind == 'ConfigParam__29')) {
+    if ((configParam.kind == 'ConfigParam__30')) {
         return ((builder: Builder) => {
             storeValidatorSet(configParam.prev_validators)(builder);
         })
 
     }
-    if ((configParam.kind == 'ConfigParam__30')) {
+    if ((configParam.kind == 'ConfigParam__31')) {
         return ((builder: Builder) => {
             storeValidatorSet(configParam.prev_temp_validators)(builder);
         })
 
     }
-    if ((configParam.kind == 'ConfigParam__31')) {
+    if ((configParam.kind == 'ConfigParam__32')) {
         return ((builder: Builder) => {
             storeValidatorSet(configParam.cur_validators)(builder);
         })
 
     }
-    if ((configParam.kind == 'ConfigParam__32')) {
+    if ((configParam.kind == 'ConfigParam__33')) {
         return ((builder: Builder) => {
             storeValidatorSet(configParam.cur_temp_validators)(builder);
         })
 
     }
-    if ((configParam.kind == 'ConfigParam__33')) {
+    if ((configParam.kind == 'ConfigParam__34')) {
         return ((builder: Builder) => {
             storeValidatorSet(configParam.next_validators)(builder);
         })
 
     }
-    if ((configParam.kind == 'ConfigParam__34')) {
+    if ((configParam.kind == 'ConfigParam__35')) {
         return ((builder: Builder) => {
             storeValidatorSet(configParam.next_temp_validators)(builder);
         })
 
     }
-    if ((configParam.kind == 'ConfigParam__35')) {
+    if ((configParam.kind == 'ConfigParam__36')) {
         return ((builder: Builder) => {
             builder.storeDict(configParam.anon0, Dictionary.Keys.BigUint(256), {
                 serialize: ((arg: ValidatorSignedTempKey, builder: Builder) => {
@@ -2713,33 +2804,27 @@ export function storeConfigParam(configParam: ConfigParam): (builder: Builder) =
         })
 
     }
-    if ((configParam.kind == 'ConfigParam__36')) {
+    if ((configParam.kind == 'ConfigParam__37')) {
         return ((builder: Builder) => {
             storeMisbehaviourPunishmentConfig(configParam.anon0)(builder);
         })
 
     }
-    if ((configParam.kind == 'ConfigParam__37')) {
+    if ((configParam.kind == 'ConfigParam__38')) {
         return ((builder: Builder) => {
             storeSizeLimitsConfig(configParam.anon0)(builder);
         })
 
     }
-    if ((configParam.kind == 'ConfigParam__38')) {
+    if ((configParam.kind == 'ConfigParam__39')) {
         return ((builder: Builder) => {
             storeSuspendedAddressList(configParam.anon0)(builder);
         })
 
     }
-    if ((configParam.kind == 'ConfigParam__39')) {
-        return ((builder: Builder) => {
-            storePrecompiledContractsConfig(configParam.anon0)(builder);
-        })
-
-    }
     if ((configParam.kind == 'ConfigParam__40')) {
         return ((builder: Builder) => {
-            storeOracleBridgeParams(configParam.anon0)(builder);
+            storePrecompiledContractsConfig(configParam.anon0)(builder);
         })
 
     }
@@ -2757,7 +2842,7 @@ export function storeConfigParam(configParam: ConfigParam): (builder: Builder) =
     }
     if ((configParam.kind == 'ConfigParam__43')) {
         return ((builder: Builder) => {
-            storeJettonBridgeParams(configParam.anon0)(builder);
+            storeOracleBridgeParams(configParam.anon0)(builder);
         })
 
     }
@@ -2773,7 +2858,13 @@ export function storeConfigParam(configParam: ConfigParam): (builder: Builder) =
         })
 
     }
-    throw new Error('Expected one of "ConfigParam__", "ConfigParam__1", "ConfigParam__2", "ConfigParam__3", "ConfigParam__4", "ConfigParam__5", "ConfigParam__6", "ConfigParam__7", "ConfigParam__8", "ConfigParam__9", "ConfigParam__10", "ConfigParam__11", "ConfigParam__12", "ConfigParam__13", "ConfigParam__14", "ConfigParam__15", "ConfigParam__16", "ConfigParam__17", "ConfigParam__18", "ConfigParam__19", "ConfigParam_config_mc_gas_prices", "ConfigParam_config_gas_prices", "ConfigParam_config_mc_block_limits", "ConfigParam_config_block_limits", "ConfigParam_config_mc_fwd_prices", "ConfigParam_config_fwd_prices", "ConfigParam__26", "ConfigParam__27", "ConfigParam__28", "ConfigParam__29", "ConfigParam__30", "ConfigParam__31", "ConfigParam__32", "ConfigParam__33", "ConfigParam__34", "ConfigParam__35", "ConfigParam__36", "ConfigParam__37", "ConfigParam__38", "ConfigParam__39", "ConfigParam__40", "ConfigParam__41", "ConfigParam__42", "ConfigParam__43", "ConfigParam__44", "ConfigParam__45" in loading "ConfigParam", but data does not satisfy any constructor');
+    if ((configParam.kind == 'ConfigParam__46')) {
+        return ((builder: Builder) => {
+            storeJettonBridgeParams(configParam.anon0)(builder);
+        })
+
+    }
+    throw new Error('Expected one of "ConfigParam__", "ConfigParam__1", "ConfigParam__2", "ConfigParam__3", "ConfigParam__4", "ConfigParam__5", "ConfigParam__6", "ConfigParam__7", "ConfigParam__8", "ConfigParam__9", "ConfigParam__10", "ConfigParam__11", "ConfigParam__12", "ConfigParam__13", "ConfigParam__14", "ConfigParam__15", "ConfigParam__16", "ConfigParam__17", "ConfigParam__18", "ConfigParam__19", "ConfigParam_config_mc_gas_prices", "ConfigParam_config_gas_prices", "ConfigParam_config_mc_block_limits", "ConfigParam_config_block_limits", "ConfigParam_config_mc_fwd_prices", "ConfigParam_config_fwd_prices", "ConfigParam__26", "ConfigParam__27", "ConfigParam__28", "ConfigParam__29", "ConfigParam__30", "ConfigParam__31", "ConfigParam__32", "ConfigParam__33", "ConfigParam__34", "ConfigParam__35", "ConfigParam__36", "ConfigParam__37", "ConfigParam__38", "ConfigParam__39", "ConfigParam__40", "ConfigParam__41", "ConfigParam__42", "ConfigParam__43", "ConfigParam__44", "ConfigParam__45", "ConfigParam__46" in loading "ConfigParam", but data does not satisfy any constructor');
 }
 
 /*
@@ -3190,6 +3281,7 @@ workchain_v2#a7 enabled_since:uint32 monitor_min_split:(## 8)
   zerostate_root_hash:bits256 zerostate_file_hash:bits256
   version:uint32 format:(WorkchainFormat basic)
   split_merge_timings:WcSplitMergeTimings
+  persistent_state_split_depth:(## 8) { persistent_state_split_depth <= 63 }
   = WorkchainDescr;
 */
 
@@ -3246,11 +3338,15 @@ export function loadWorkchainDescr(slice: Slice): WorkchainDescr {
         let version: number = slice.loadUint(32);
         let format: WorkchainFormat = loadWorkchainFormat(slice, basic);
         let split_merge_timings: WcSplitMergeTimings = loadWcSplitMergeTimings(slice);
+        let persistent_state_split_depth: number = slice.loadUint(8);
         if ((!(monitor_min_split <= min_split))) {
             throw new Error('Condition (monitor_min_split <= min_split) is not satisfied while loading "WorkchainDescr_workchain_v2" for type "WorkchainDescr"');
         }
         if ((!(flags == 0))) {
             throw new Error('Condition (flags == 0) is not satisfied while loading "WorkchainDescr_workchain_v2" for type "WorkchainDescr"');
+        }
+        if ((!(persistent_state_split_depth <= 63))) {
+            throw new Error('Condition (persistent_state_split_depth <= 63) is not satisfied while loading "WorkchainDescr_workchain_v2" for type "WorkchainDescr"');
         }
         return {
             kind: 'WorkchainDescr_workchain_v2',
@@ -3267,6 +3363,7 @@ export function loadWorkchainDescr(slice: Slice): WorkchainDescr {
             version: version,
             format: format,
             split_merge_timings: split_merge_timings,
+            persistent_state_split_depth: persistent_state_split_depth,
         }
 
     }
@@ -3314,11 +3411,15 @@ export function storeWorkchainDescr(workchainDescr: WorkchainDescr): (builder: B
             builder.storeUint(workchainDescr.version, 32);
             storeWorkchainFormat(workchainDescr.format)(builder);
             storeWcSplitMergeTimings(workchainDescr.split_merge_timings)(builder);
+            builder.storeUint(workchainDescr.persistent_state_split_depth, 8);
             if ((!(workchainDescr.monitor_min_split <= workchainDescr.min_split))) {
                 throw new Error('Condition (workchainDescr.monitor_min_split <= workchainDescr.min_split) is not satisfied while loading "WorkchainDescr_workchain_v2" for type "WorkchainDescr"');
             }
             if ((!(workchainDescr.flags == 0))) {
                 throw new Error('Condition (workchainDescr.flags == 0) is not satisfied while loading "WorkchainDescr_workchain_v2" for type "WorkchainDescr"');
+            }
+            if ((!(workchainDescr.persistent_state_split_depth <= 63))) {
+                throw new Error('Condition (workchainDescr.persistent_state_split_depth <= 63) is not satisfied while loading "WorkchainDescr_workchain_v2" for type "WorkchainDescr"');
             }
         })
 
@@ -3578,8 +3679,40 @@ export function storeParamLimits(paramLimits: ParamLimits): (builder: Builder) =
 
 }
 
+// imported_msg_queue_limits#d3 max_bytes:# max_msgs:# = ImportedMsgQueueLimits;
+
+export function loadImportedMsgQueueLimits(slice: Slice): ImportedMsgQueueLimits {
+    if (((slice.remainingBits >= 8) && (slice.preloadUint(8) == 0xd3))) {
+        slice.loadUint(8);
+        let max_bytes: number = slice.loadUint(32);
+        let max_msgs: number = slice.loadUint(32);
+        return {
+            kind: 'ImportedMsgQueueLimits',
+            max_bytes: max_bytes,
+            max_msgs: max_msgs,
+        }
+
+    }
+    throw new Error('Expected one of "ImportedMsgQueueLimits" in loading "ImportedMsgQueueLimits", but data does not satisfy any constructor');
+}
+
+export function storeImportedMsgQueueLimits(importedMsgQueueLimits: ImportedMsgQueueLimits): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeUint(0xd3, 8);
+        builder.storeUint(importedMsgQueueLimits.max_bytes, 32);
+        builder.storeUint(importedMsgQueueLimits.max_msgs, 32);
+    })
+
+}
+
 /*
 block_limits#5d bytes:ParamLimits gas:ParamLimits lt_delta:ParamLimits
+  = BlockLimits;
+*/
+
+/*
+block_limits_v2#5e bytes:ParamLimits gas:ParamLimits lt_delta:ParamLimits
+  collated_data:ParamLimits imported_msg_queue:ImportedMsgQueueLimits
   = BlockLimits;
 */
 
@@ -3590,24 +3723,55 @@ export function loadBlockLimits(slice: Slice): BlockLimits {
         let gas: ParamLimits = loadParamLimits(slice);
         let lt_delta: ParamLimits = loadParamLimits(slice);
         return {
-            kind: 'BlockLimits',
+            kind: 'BlockLimits_block_limits',
             bytes: bytes,
             gas: gas,
             lt_delta: lt_delta,
         }
 
     }
-    throw new Error('Expected one of "BlockLimits" in loading "BlockLimits", but data does not satisfy any constructor');
+    if (((slice.remainingBits >= 8) && (slice.preloadUint(8) == 0x5e))) {
+        slice.loadUint(8);
+        let bytes: ParamLimits = loadParamLimits(slice);
+        let gas: ParamLimits = loadParamLimits(slice);
+        let lt_delta: ParamLimits = loadParamLimits(slice);
+        let collated_data: ParamLimits = loadParamLimits(slice);
+        let imported_msg_queue: ImportedMsgQueueLimits = loadImportedMsgQueueLimits(slice);
+        return {
+            kind: 'BlockLimits_block_limits_v2',
+            bytes: bytes,
+            gas: gas,
+            lt_delta: lt_delta,
+            collated_data: collated_data,
+            imported_msg_queue: imported_msg_queue,
+        }
+
+    }
+    throw new Error('Expected one of "BlockLimits_block_limits", "BlockLimits_block_limits_v2" in loading "BlockLimits", but data does not satisfy any constructor');
 }
 
 export function storeBlockLimits(blockLimits: BlockLimits): (builder: Builder) => void {
-    return ((builder: Builder) => {
-        builder.storeUint(0x5d, 8);
-        storeParamLimits(blockLimits.bytes)(builder);
-        storeParamLimits(blockLimits.gas)(builder);
-        storeParamLimits(blockLimits.lt_delta)(builder);
-    })
+    if ((blockLimits.kind == 'BlockLimits_block_limits')) {
+        return ((builder: Builder) => {
+            builder.storeUint(0x5d, 8);
+            storeParamLimits(blockLimits.bytes)(builder);
+            storeParamLimits(blockLimits.gas)(builder);
+            storeParamLimits(blockLimits.lt_delta)(builder);
+        })
 
+    }
+    if ((blockLimits.kind == 'BlockLimits_block_limits_v2')) {
+        return ((builder: Builder) => {
+            builder.storeUint(0x5e, 8);
+            storeParamLimits(blockLimits.bytes)(builder);
+            storeParamLimits(blockLimits.gas)(builder);
+            storeParamLimits(blockLimits.lt_delta)(builder);
+            storeParamLimits(blockLimits.collated_data)(builder);
+            storeImportedMsgQueueLimits(blockLimits.imported_msg_queue)(builder);
+        })
+
+    }
+    throw new Error('Expected one of "BlockLimits_block_limits", "BlockLimits_block_limits_v2" in loading "BlockLimits", but data does not satisfy any constructor');
 }
 
 /*
@@ -3757,7 +3921,7 @@ consensus_config_v3#d8 flags:(## 7) { flags = 0 } new_catchain_ids:Bool
 */
 
 /*
-consensus_config_v4#d9 flags:(## 7) { flags = 0 } new_catchain_ids:Bool
+consensus_config_v4#d9 flags:(## 6) { flags = 0 } use_quic:Bool new_catchain_ids:Bool
   round_candidates:(## 8) { round_candidates >= 1 }
   next_candidate_delay_ms:uint32 consensus_timeout_ms:uint32
   fast_attempts:uint32 attempt_duration:uint32 catchain_max_deps:uint32
@@ -3862,7 +4026,8 @@ export function loadConsensusConfig(slice: Slice): ConsensusConfig {
     }
     if (((slice.remainingBits >= 8) && (slice.preloadUint(8) == 0xd9))) {
         slice.loadUint(8);
-        let flags: number = slice.loadUint(7);
+        let flags: number = slice.loadUint(6);
+        let use_quic: Bool = loadBool(slice);
         let new_catchain_ids: Bool = loadBool(slice);
         let round_candidates: number = slice.loadUint(8);
         let next_candidate_delay_ms: number = slice.loadUint(32);
@@ -3883,6 +4048,7 @@ export function loadConsensusConfig(slice: Slice): ConsensusConfig {
         return {
             kind: 'ConsensusConfig_consensus_config_v4',
             flags: flags,
+            use_quic: use_quic,
             new_catchain_ids: new_catchain_ids,
             round_candidates: round_candidates,
             next_candidate_delay_ms: next_candidate_delay_ms,
@@ -3966,7 +4132,8 @@ export function storeConsensusConfig(consensusConfig: ConsensusConfig): (builder
     if ((consensusConfig.kind == 'ConsensusConfig_consensus_config_v4')) {
         return ((builder: Builder) => {
             builder.storeUint(0xd9, 8);
-            builder.storeUint(consensusConfig.flags, 7);
+            builder.storeUint(consensusConfig.flags, 6);
+            storeBool(consensusConfig.use_quic)(builder);
             storeBool(consensusConfig.new_catchain_ids)(builder);
             builder.storeUint(consensusConfig.round_candidates, 8);
             builder.storeUint(consensusConfig.next_candidate_delay_ms, 32);
@@ -3988,6 +4155,147 @@ export function storeConsensusConfig(consensusConfig: ConsensusConfig): (builder
 
     }
     throw new Error('Expected one of "ConsensusConfig_consensus_config", "ConsensusConfig_consensus_config_new", "ConsensusConfig_consensus_config_v3", "ConsensusConfig_consensus_config_v4" in loading "ConsensusConfig", but data does not satisfy any constructor');
+}
+
+/*
+simplex_config#21 flags:(## 7) use_quic:Bool
+  target_rate_ms:uint32 slots_per_leader_window:uint32
+  first_block_timeout_ms:uint32 max_leader_window_desync:uint32 = NewConsensusConfig;
+*/
+
+// simplex_config_v2#22 flags:(## 6) enable_observers:Bool use_quic:Bool slots_per_leader_window:uint32 noncritical_params:(HashmapE 8 uint32) = NewConsensusConfig;
+
+export function loadNewConsensusConfig(slice: Slice): NewConsensusConfig {
+    if (((slice.remainingBits >= 8) && (slice.preloadUint(8) == 0x21))) {
+        slice.loadUint(8);
+        let flags: number = slice.loadUint(7);
+        let use_quic: Bool = loadBool(slice);
+        let target_rate_ms: number = slice.loadUint(32);
+        let slots_per_leader_window: number = slice.loadUint(32);
+        let first_block_timeout_ms: number = slice.loadUint(32);
+        let max_leader_window_desync: number = slice.loadUint(32);
+        return {
+            kind: 'NewConsensusConfig_simplex_config',
+            flags: flags,
+            use_quic: use_quic,
+            target_rate_ms: target_rate_ms,
+            slots_per_leader_window: slots_per_leader_window,
+            first_block_timeout_ms: first_block_timeout_ms,
+            max_leader_window_desync: max_leader_window_desync,
+        }
+
+    }
+    if (((slice.remainingBits >= 8) && (slice.preloadUint(8) == 0x22))) {
+        slice.loadUint(8);
+        let flags: number = slice.loadUint(6);
+        let enable_observers: Bool = loadBool(slice);
+        let use_quic: Bool = loadBool(slice);
+        let slots_per_leader_window: number = slice.loadUint(32);
+        let noncritical_params: Dictionary<number, number> = Dictionary.load(Dictionary.Keys.Uint(8), {
+            serialize: () => { throw new Error('Not implemented') },
+            parse: ((slice: Slice) => {
+            return slice.loadUint(32)
+
+        }),
+        }, slice);
+        return {
+            kind: 'NewConsensusConfig_simplex_config_v2',
+            flags: flags,
+            enable_observers: enable_observers,
+            use_quic: use_quic,
+            slots_per_leader_window: slots_per_leader_window,
+            noncritical_params: noncritical_params,
+        }
+
+    }
+    throw new Error('Expected one of "NewConsensusConfig_simplex_config", "NewConsensusConfig_simplex_config_v2" in loading "NewConsensusConfig", but data does not satisfy any constructor');
+}
+
+export function storeNewConsensusConfig(newConsensusConfig: NewConsensusConfig): (builder: Builder) => void {
+    if ((newConsensusConfig.kind == 'NewConsensusConfig_simplex_config')) {
+        return ((builder: Builder) => {
+            builder.storeUint(0x21, 8);
+            builder.storeUint(newConsensusConfig.flags, 7);
+            storeBool(newConsensusConfig.use_quic)(builder);
+            builder.storeUint(newConsensusConfig.target_rate_ms, 32);
+            builder.storeUint(newConsensusConfig.slots_per_leader_window, 32);
+            builder.storeUint(newConsensusConfig.first_block_timeout_ms, 32);
+            builder.storeUint(newConsensusConfig.max_leader_window_desync, 32);
+        })
+
+    }
+    if ((newConsensusConfig.kind == 'NewConsensusConfig_simplex_config_v2')) {
+        return ((builder: Builder) => {
+            builder.storeUint(0x22, 8);
+            builder.storeUint(newConsensusConfig.flags, 6);
+            storeBool(newConsensusConfig.enable_observers)(builder);
+            storeBool(newConsensusConfig.use_quic)(builder);
+            builder.storeUint(newConsensusConfig.slots_per_leader_window, 32);
+            builder.storeDict(newConsensusConfig.noncritical_params, Dictionary.Keys.Uint(8), {
+                serialize: ((arg: number, builder: Builder) => {
+                ((arg: number) => {
+                    return ((builder: Builder) => {
+                        builder.storeUint(arg, 32);
+                    })
+
+                })(arg)(builder);
+            }),
+                parse: () => { throw new Error('Not implemented') },
+            });
+        })
+
+    }
+    throw new Error('Expected one of "NewConsensusConfig_simplex_config", "NewConsensusConfig_simplex_config_v2" in loading "NewConsensusConfig", but data does not satisfy any constructor');
+}
+
+// new_consensus_config_all#10 mc:(Maybe ^NewConsensusConfig) shard:(Maybe ^NewConsensusConfig) = NewConsensusConfigAll;
+
+export function loadNewConsensusConfigAll(slice: Slice): NewConsensusConfigAll {
+    if (((slice.remainingBits >= 8) && (slice.preloadUint(8) == 0x10))) {
+        slice.loadUint(8);
+        let mc: Maybe<NewConsensusConfig> = loadMaybe<NewConsensusConfig>(slice, ((slice: Slice) => {
+            let slice1 = slice.loadRef().beginParse(true);
+            return loadNewConsensusConfig(slice1)
+
+        }));
+        let shard: Maybe<NewConsensusConfig> = loadMaybe<NewConsensusConfig>(slice, ((slice: Slice) => {
+            let slice1 = slice.loadRef().beginParse(true);
+            return loadNewConsensusConfig(slice1)
+
+        }));
+        return {
+            kind: 'NewConsensusConfigAll',
+            mc: mc,
+            shard: shard,
+        }
+
+    }
+    throw new Error('Expected one of "NewConsensusConfigAll" in loading "NewConsensusConfigAll", but data does not satisfy any constructor');
+}
+
+export function storeNewConsensusConfigAll(newConsensusConfigAll: NewConsensusConfigAll): (builder: Builder) => void {
+    return ((builder: Builder) => {
+        builder.storeUint(0x10, 8);
+        storeMaybe<NewConsensusConfig>(newConsensusConfigAll.mc, ((arg: NewConsensusConfig) => {
+            return ((builder: Builder) => {
+                let cell1 = beginCell();
+                storeNewConsensusConfig(arg)(cell1);
+                builder.storeRef(cell1);
+
+            })
+
+        }))(builder);
+        storeMaybe<NewConsensusConfig>(newConsensusConfigAll.shard, ((arg: NewConsensusConfig) => {
+            return ((builder: Builder) => {
+                let cell1 = beginCell();
+                storeNewConsensusConfig(arg)(cell1);
+                builder.storeRef(cell1);
+
+            })
+
+        }))(builder);
+    })
+
 }
 
 // validator_temp_key#3 adnl_addr:bits256 temp_public_key:SigPubKey seqno:# valid_until:uint32 = ValidatorTempKey;
@@ -4119,9 +4427,10 @@ size_limits_config#01 max_msg_bits:uint32 max_msg_cells:uint32 max_library_cells
 
 /*
 size_limits_config_v2#02 max_msg_bits:uint32 max_msg_cells:uint32 max_library_cells:uint32 max_vm_data_depth:uint16
-  max_ext_msg_size:uint32 max_ext_msg_depth:uint16 max_acc_state_cells:uint32 max_acc_state_bits:uint32
+  max_ext_msg_size:uint32 max_ext_msg_depth:uint16 max_acc_state_cells:uint32 max_mc_acc_state_cells:uint32
   max_acc_public_libraries:uint32 defer_out_queue_size_limit:uint32 max_msg_extra_currencies:uint32
-  max_acc_fixed_prefix_length:uint8 = SizeLimitsConfig;
+  max_acc_fixed_prefix_length:uint8 acc_state_cells_for_storage_dict:uint32
+  max_transaction_library_loads:(Maybe uint32) = SizeLimitsConfig;
 */
 
 export function loadSizeLimitsConfig(slice: Slice): SizeLimitsConfig {
@@ -4153,11 +4462,16 @@ export function loadSizeLimitsConfig(slice: Slice): SizeLimitsConfig {
         let max_ext_msg_size: number = slice.loadUint(32);
         let max_ext_msg_depth: number = slice.loadUint(16);
         let max_acc_state_cells: number = slice.loadUint(32);
-        let max_acc_state_bits: number = slice.loadUint(32);
+        let max_mc_acc_state_cells: number = slice.loadUint(32);
         let max_acc_public_libraries: number = slice.loadUint(32);
         let defer_out_queue_size_limit: number = slice.loadUint(32);
         let max_msg_extra_currencies: number = slice.loadUint(32);
         let max_acc_fixed_prefix_length: number = slice.loadUint(8);
+        let acc_state_cells_for_storage_dict: number = slice.loadUint(32);
+        let max_transaction_library_loads: Maybe<number> = loadMaybe<number>(slice, ((slice: Slice) => {
+            return slice.loadUint(32)
+
+        }));
         return {
             kind: 'SizeLimitsConfig_size_limits_config_v2',
             max_msg_bits: max_msg_bits,
@@ -4167,11 +4481,13 @@ export function loadSizeLimitsConfig(slice: Slice): SizeLimitsConfig {
             max_ext_msg_size: max_ext_msg_size,
             max_ext_msg_depth: max_ext_msg_depth,
             max_acc_state_cells: max_acc_state_cells,
-            max_acc_state_bits: max_acc_state_bits,
+            max_mc_acc_state_cells: max_mc_acc_state_cells,
             max_acc_public_libraries: max_acc_public_libraries,
             defer_out_queue_size_limit: defer_out_queue_size_limit,
             max_msg_extra_currencies: max_msg_extra_currencies,
             max_acc_fixed_prefix_length: max_acc_fixed_prefix_length,
+            acc_state_cells_for_storage_dict: acc_state_cells_for_storage_dict,
+            max_transaction_library_loads: max_transaction_library_loads,
         }
 
     }
@@ -4201,11 +4517,18 @@ export function storeSizeLimitsConfig(sizeLimitsConfig: SizeLimitsConfig): (buil
             builder.storeUint(sizeLimitsConfig.max_ext_msg_size, 32);
             builder.storeUint(sizeLimitsConfig.max_ext_msg_depth, 16);
             builder.storeUint(sizeLimitsConfig.max_acc_state_cells, 32);
-            builder.storeUint(sizeLimitsConfig.max_acc_state_bits, 32);
+            builder.storeUint(sizeLimitsConfig.max_mc_acc_state_cells, 32);
             builder.storeUint(sizeLimitsConfig.max_acc_public_libraries, 32);
             builder.storeUint(sizeLimitsConfig.defer_out_queue_size_limit, 32);
             builder.storeUint(sizeLimitsConfig.max_msg_extra_currencies, 32);
             builder.storeUint(sizeLimitsConfig.max_acc_fixed_prefix_length, 8);
+            builder.storeUint(sizeLimitsConfig.acc_state_cells_for_storage_dict, 32);
+            storeMaybe<number>(sizeLimitsConfig.max_transaction_library_loads, ((arg: number) => {
+                return ((builder: Builder) => {
+                    builder.storeUint(arg, 32);
+                })
+
+            }))(builder);
         })
 
     }
