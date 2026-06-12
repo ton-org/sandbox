@@ -10,8 +10,7 @@ on:
       - '*.md'
       - '*.png'
     branches:
-      - main
-      - develop
+      - master
   pull_request:
     paths-ignore:
       - '.github/workflows/publish.yml'
@@ -21,8 +20,7 @@ on:
       - '*.md'
       - '*.png'
     branches:
-      - main
-      - develop
+      - master
 
 jobs:
   lint:
