@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.43.0] - 2026-06-12
+
 ### Changed
 
 - Updated emulator WASM binary.
+- Updated global config to version of 01.06.2026 (seqno 72712993)
 
 ### Removed
 
