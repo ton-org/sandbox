@@ -11,24 +11,35 @@ jobs:
     runs-on: ubuntu-latest
     environment: deploy
     if: github.repository == 'ton-org/sandbox'
+
     permissions:
-      id-token: write
       contents: read
+      id-token: write
 
     steps:
-      - uses: actions/checkout@v6
-      - name: Use Node.js 22
-        uses: actions/setup-node@v6
+      - name: Fetch Sources
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          node-version: '22.x'
+          persist-credentials: false
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
-      - name: Install Yarn
-        run: npm install -g yarn
+          package-manager-cache: false
+
       - name: Install dependencies
-        run: yarn
+        run: yarn install --immutable --check-cache --check-resolutions
+
       - name: Run tests
-        run: yarn test
+        run: yarn run test
+
       - name: Build
-        run: yarn build
+        run: yarn run build
+
       - name: Publish
-        run: npm publish --provenance --access public
+        run: yarn npm publish --provenance --access public
