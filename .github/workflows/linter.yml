@@ -1,23 +1,20 @@
-name: Publish to NPM
+name: Run tests
 
 on:
   push:
-    tags:
-      - '[0-9]+.[0-9]+.[0-9]+'
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
-permissions: { }
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  publish:
-    name: Publish
+  test:
     runs-on: ubuntu-latest
-    environment: deploy
-    if: github.repository == 'ton-org/sandbox'
-
-    permissions:
-      contents: read
-      id-token: write
-
     steps:
       - name: Fetch Sources
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -31,17 +28,16 @@ jobs:
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: '24'
-          registry-url: 'https://registry.npmjs.org'
-          package-manager-cache: false
+          cache: 'yarn'
 
       - name: Install dependencies
         run: yarn install --immutable --check-cache --check-resolutions
 
-      - name: Run tests
-        run: yarn run test
+      - name: Check yarn dedupe
+        run: yarn dedupe --check
 
-      - name: Build
-        run: yarn run build
+      - name: Run prettier
+        run: yarn run fmt:check
 
-      - name: Publish
-        run: npm publish --access public
+      - name: Run eslint
+        run: yarn run lint:ts
