@@ -1,7 +1,11 @@
 {
   "name": "@ton/sandbox-examples",
   "version": "0.0.1",
+  "private": true,
   "license": "MIT",
+  "scripts": {
+    "examples": "jest --runInBand"
+  },
   "devDependencies": {
     "@ton-community/func-js": "^0.10.0",
     "@ton/core": "^0.61.0",
@@ -13,9 +17,5 @@
     "jest": "^30.0.5",
     "ts-jest": "^29.4.1",
     "typescript": "^5.8.3"
-  },
-  "scripts": {
-    "examples": "jest --runInBand"
-  },
-  "private": true
+  }
 }

@@ -2,29 +2,38 @@
   "name": "@ton/sandbox",
   "version": "0.43.0",
   "description": "TON transaction emulator",
-  "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ton-org/sandbox.git"
+  },
   "license": "MIT",
   "author": "TonTech",
+  "main": "dist/index.js",
   "files": [
     "jest-environment.js",
     "jest-reporter.js",
     "dist/**/*"
   ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ton-org/sandbox.git"
+  "scripts": {
+    "bt": "yarn build && yarn test",
+    "build": "rm -rf dist && yarn wasm:pack && tsc && yarn wasm:copy",
+    "config:pack": "ts-node ./scripts/pack-config.ts",
+    "fmt": "biome format --write .",
+    "fmt:check": "biome format .",
+    "lint": "yarn fmt:check && yarn lint:ts",
+    "lint:fix": "yarn fmt && yarn lint:ts --fix",
+    "lint:ts": "eslint . --max-warnings 0",
+    "test": "yarn wasm:pack && yarn jest src",
+    "wasm:copy": "cp src/executor/emulator-emscripten.js src/executor/emulator-emscripten.wasm.js ./dist/executor",
+    "wasm:pack": "ts-node ./scripts/pack-wasm.ts"
   },
-  "prettier": {
-    "arrowParens": "avoid",
-    "bracketSpacing": false,
-    "printWidth": 100,
-    "semi": false,
-    "singleQuote": false,
-    "tabWidth": 2,
-    "trailingComma": "all",
-    "useTabs": false
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "table": "^6.9.0",
+    "ton-assembly": "0.6.1"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.0",
     "@ton-community/func-js": "^0.10.0",
     "@ton/core": "^0.61.0",
     "@ton/crypto": "3.3.0",
@@ -58,20 +67,5 @@
       "optional": true
     }
   },
-  "scripts": {
-    "wasm:pack": "ts-node ./scripts/pack-wasm.ts",
-    "wasm:copy": "cp src/executor/emulator-emscripten.js src/executor/emulator-emscripten.wasm.js ./dist/executor",
-    "test": "yarn wasm:pack && yarn jest src",
-    "build": "rm -rf dist && yarn wasm:pack && tsc && yarn wasm:copy",
-    "bt": "yarn build && yarn test",
-    "lint": "eslint . --max-warnings 0",
-    "lint:fix": "eslint . --max-warnings 0 --fix",
-    "config:pack": "ts-node ./scripts/pack-config.ts"
-  },
-  "packageManager": "yarn@4.17.0+sha512.c2957de2f9025ab14d63b24d0d8be1f1655810e22c341042c27f7ecd017b180ec12db73d69ac366d71b304ef9f069349ce462de96f04f8f1da317f4f762c95ae",
-  "dependencies": {
-    "chalk": "^4.1.2",
-    "table": "^6.9.0",
-    "ton-assembly": "0.6.1"
-  }
+  "packageManager": "yarn@4.17.0+sha512.c2957de2f9025ab14d63b24d0d8be1f1655810e22c341042c27f7ecd017b180ec12db73d69ac366d71b304ef9f069349ce462de96f04f8f1da317f4f762c95ae"
 }

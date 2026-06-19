@@ -36,7 +36,7 @@ jobs:
       - name: Check yarn dedupe
         run: yarn dedupe --check
 
-      - name: Run prettier
+      - name: Run Biome
         run: yarn run fmt:check
 
       - name: Run eslint
