@@ -16,6 +16,7 @@ permissions: { }
 
 jobs:
   test:
+    name: Lint
     runs-on: ubuntu-latest
 
     permissions:
