@@ -36,5 +36,12 @@ jobs:
       - name: Build
         run: bun run build
 
+      - name: Setup Node
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+
       - name: Publish
         run: npm publish --access public
