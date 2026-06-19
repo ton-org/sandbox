@@ -2,31 +2,52 @@
   "name": "@ton/sandbox",
   "version": "0.43.0",
   "description": "TON transaction emulator",
-  "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ton-org/sandbox.git"
+  },
   "license": "MIT",
-  "author": "TonTech",
+  "author": {
+    "name": "TonTech",
+    "url": "https://ton.tech"
+  },
+  "maintainers": [
+    {
+      "name": "TON Core"
+    }
+  ],
+  "main": "dist/index.js",
   "files": [
     "jest-environment.js",
     "jest-reporter.js",
     "dist/**/*"
   ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ton-org/sandbox.git"
+  "scripts": {
+    "build": "rm -rf dist && bun run wasm:pack && tsc && bun run wasm:copy",
+    "config:pack": "ts-node ./scripts/pack-config.ts",
+    "fmt": "biome format --write .",
+    "fmt:check": "biome format .",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
+    "test": "jest src",
+    "wasm:copy": "cp src/executor/emulator-emscripten.js src/executor/emulator-emscripten.wasm.js ./dist/executor",
+    "wasm:pack": "ts-node ./scripts/pack-wasm.ts"
   },
-  "prettier": "@ton/toolchain/prettier",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "table": "^6.9.0",
+    "ton-assembly": "0.6.1"
+  },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.0",
     "@ton-community/func-js": "^0.10.0",
     "@ton/core": "^0.61.0",
     "@ton/crypto": "3.3.0",
     "@ton/test-utils": "^0.7.0",
     "@ton/tolk-js": "^1.0.0",
     "@ton/ton": "^15.2.1",
-    "@ton/toolchain": "the-ton-tech/toolchain#v1.4.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.1.0",
-    "eslint": "^9.28.0",
-    "globals": "^16.4.0",
     "jest": "^30.0.5",
     "jest-config": "^30.0.5",
     "jest-environment-node": "^30.0.5",
@@ -48,21 +69,5 @@
     "jest": {
       "optional": true
     }
-  },
-  "scripts": {
-    "wasm:pack": "ts-node ./scripts/pack-wasm.ts",
-    "wasm:copy": "cp src/executor/emulator-emscripten.js src/executor/emulator-emscripten.wasm.js ./dist/executor",
-    "test": "yarn wasm:pack && yarn jest src",
-    "build": "rm -rf dist && yarn wasm:pack && tsc && yarn wasm:copy",
-    "bt": "yarn build && yarn test",
-    "lint": "eslint . --max-warnings 0",
-    "lint:fix": "eslint . --max-warnings 0 --fix",
-    "config:pack": "ts-node ./scripts/pack-config.ts"
-  },
-  "packageManager": "yarn@4.9.2",
-  "dependencies": {
-    "chalk": "^4.1.2",
-    "table": "^6.9.0",
-    "ton-assembly": "0.6.1"
   }
 }

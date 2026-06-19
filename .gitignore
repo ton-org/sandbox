@@ -5,11 +5,3 @@ coverage/
 !src/coverage/
 src/coverage/test/output
 .sandbox-metric-raw.jsonl
-
-# yarn
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
