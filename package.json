@@ -7,7 +7,15 @@
     "url": "git+https://github.com/ton-org/sandbox.git"
   },
   "license": "MIT",
-  "author": "TonTech",
+  "author": {
+    "name": "TonTech",
+    "url": "https://ton.tech"
+  },
+  "maintainers": [
+    {
+      "name": "TON Core"
+    }
+  ],
   "main": "dist/index.js",
   "files": [
     "jest-environment.js",
@@ -15,14 +23,13 @@
     "dist/**/*"
   ],
   "scripts": {
-    "bt": "yarn build && yarn test",
-    "build": "rm -rf dist && yarn wasm:pack && tsc && yarn wasm:copy",
+    "build": "rm -rf dist && yarn run wasm:pack && tsc && yarn run wasm:copy",
     "config:pack": "ts-node ./scripts/pack-config.ts",
     "fmt": "biome format --write .",
     "fmt:check": "biome format .",
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",
-    "test": "yarn wasm:pack && yarn jest src",
+    "test": "jest src",
     "wasm:copy": "cp src/executor/emulator-emscripten.js src/executor/emulator-emscripten.wasm.js ./dist/executor",
     "wasm:pack": "ts-node ./scripts/pack-wasm.ts"
   },
