@@ -1,21 +1,15 @@
 {
-    "compilerOptions": {
-        "target": "esnext",
-        "outDir": "dist",
-        "module": "commonjs",
-        "declaration": true,
-        "esModuleInterop": true,
-        "forceConsistentCasingInFileNames": true,
-        "strict": true,
-        "skipLibCheck": true,
-        "removeComments": false,
-    },
-    "include": [
-        "src/**/*"
-    ],
-    "exclude": [
-        "**/*.fixture.ts",
-        "**/*.spec.ts",
-        "**/test_utils/**/*"
-    ]
+  "compilerOptions": {
+    "target": "esnext",
+    "outDir": "dist",
+    "module": "commonjs",
+    "declaration": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "removeComments": false
+  },
+  "include": ["src/**/*"],
+  "exclude": ["**/*.fixture.ts", "**/*.spec.ts", "**/test_utils/**/*"]
 }

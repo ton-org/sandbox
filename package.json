@@ -14,7 +14,16 @@
     "type": "git",
     "url": "git+https://github.com/ton-org/sandbox.git"
   },
-  "prettier": "@ton/toolchain/prettier",
+  "prettier": {
+    "arrowParens": "avoid",
+    "bracketSpacing": false,
+    "printWidth": 100,
+    "semi": false,
+    "singleQuote": false,
+    "tabWidth": 2,
+    "trailingComma": "all",
+    "useTabs": false
+  },
   "devDependencies": {
     "@ton-community/func-js": "^0.10.0",
     "@ton/core": "^0.61.0",
