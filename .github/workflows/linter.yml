@@ -37,7 +37,4 @@ jobs:
         run: yarn dedupe --check
 
       - name: Run Biome
-        run: yarn run fmt:check
-
-      - name: Run eslint
-        run: yarn run lint:ts
+        run: yarn run lint

@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!src/executor/**"]
+    "includes": ["**", "!src/executor", "!src/metric/fixtures/complex.fixture.ts"]
   },
   "formatter": {
     "enabled": true,
@@ -16,15 +16,6 @@
     "indentWidth": 2,
     "lineEnding": "lf",
     "lineWidth": 100
-  },
-  "javascript": {
-    "formatter": {
-      "arrowParentheses": "asNeeded",
-      "bracketSpacing": false,
-      "quoteStyle": "double",
-      "semicolons": "asNeeded",
-      "trailingCommas": "all"
-    }
   },
   "assist": {
     "enabled": true,
@@ -37,6 +28,9 @@
     }
   },
   "linter": {
-    "enabled": false
+    "enabled": true,
+    "rules": {
+      "preset": "recommended"
+    }
   }
 }
