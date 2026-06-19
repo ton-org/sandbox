@@ -29,7 +29,7 @@
     "fmt:check": "biome format .",
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",
-    "test": "bun run wasm:pack && jest src",
+    "test": "jest src",
     "wasm:copy": "cp src/executor/emulator-emscripten.js src/executor/emulator-emscripten.wasm.js ./dist/executor",
     "wasm:pack": "ts-node ./scripts/pack-wasm.ts"
   },
