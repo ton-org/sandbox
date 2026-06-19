@@ -5,7 +5,3 @@ coverage/
 !src/coverage/
 src/coverage/test/output
 .sandbox-metric-raw.jsonl
-
-# yarn
-yarn-error.log
-.yarn/
