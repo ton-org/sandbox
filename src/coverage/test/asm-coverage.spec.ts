@@ -1,4 +1,4 @@
-import {runtime, text} from "ton-assembly";
+import {runtime, text} from "@ton/tasm";
 import {generateTextReport, generateHtmlReport} from "../";
 import {mkdirSync, writeFileSync, existsSync} from "node:fs";
 import {executeInstructions} from "./execute";
@@ -219,4 +219,3 @@ describe("asm coverage", () => {
         ),
     );
 });
-
