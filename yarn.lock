@@ -1371,6 +1371,7 @@ __metadata:
     "@ton-community/func-js": "npm:^0.10.0"
     "@ton/core": "npm:^0.61.0"
     "@ton/crypto": "npm:3.3.0"
+    "@ton/tasm": "npm:0.6.1"
     "@ton/test-utils": "npm:^0.7.0"
     "@ton/tolk-js": "npm:^1.0.0"
     "@ton/ton": "npm:^15.2.1"
@@ -1384,7 +1385,6 @@ __metadata:
     jest-config: "npm:^30.0.5"
     jest-environment-node: "npm:^30.0.5"
     table: "npm:^6.9.0"
-    ton-assembly: "npm:0.6.1"
     ts-jest: "npm:^29.4.1"
     ts-node: "npm:^10.9.1"
     typescript: "npm:^5.8.3"
@@ -1401,6 +1401,26 @@ __metadata:
       optional: true
   languageName: unknown
   linkType: soft
+
+"@ton/tasm@npm:0.6.1":
+  version: 0.6.1
+  resolution: "@ton/tasm@npm:0.6.1"
+  dependencies:
+    "@tonstudio/parser-runtime": "npm:^0.0.1"
+    cac: "npm:^6.7.14"
+    ton-source-map: "npm:^0.2.2"
+  peerDependencies:
+    "@ton/core": ">=0.61.0"
+  peerDependenciesMeta:
+    "@ton/core":
+      optional: false
+  bin:
+    tasm: dist/cli/assembler.js
+    tdisasm: dist/cli/disassembler.js
+    tfift: dist/cli/fift-compiler.js
+  checksum: 10/39349838bf262a1c36557820ad973ad0eeea715c99c6d295ffb3dd83c5292d3cfe13e47f023b80d501b7d660d6d116d84fffaa6ecd22c13ee20f1c24dd233961
+  languageName: node
+  linkType: hard
 
 "@ton/test-utils@npm:^0.7.0":
   version: 0.7.0
@@ -6282,26 +6302,6 @@ __metadata:
   dependencies:
     is-number: "npm:^7.0.0"
   checksum: 10/10dda13571e1f5ad37546827e9b6d4252d2e0bc176c24a101252153ef435d83696e2557fe128c4678e4e78f5f01e83711c703eef9814eb12dab028580d45980a
-  languageName: node
-  linkType: hard
-
-"ton-assembly@npm:0.6.1":
-  version: 0.6.1
-  resolution: "ton-assembly@npm:0.6.1"
-  dependencies:
-    "@tonstudio/parser-runtime": "npm:^0.0.1"
-    cac: "npm:^6.7.14"
-    ton-source-map: "npm:^0.2.2"
-  peerDependencies:
-    "@ton/core": ">=0.61.0"
-  peerDependenciesMeta:
-    "@ton/core":
-      optional: false
-  bin:
-    tasm: dist/cli/assembler.js
-    tdisasm: dist/cli/disassembler.js
-    tfift: dist/cli/fift-compiler.js
-  checksum: 10/c1d4a80d8be67efbbebc2d76c085119c01f52a64f4e0b1ca1aed934fb40eaddb617cc3a547ac209cb5986efc63d9b75b043cc99a704ce543bf29a4c6c2b7edb4
   languageName: node
   linkType: hard
 

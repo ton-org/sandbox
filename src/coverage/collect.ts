@@ -1,7 +1,7 @@
 import {Address, beginCell, Cell} from "@ton/core";
 import {BlockchainTransaction} from "../blockchain/Blockchain";
 import {buildLineInfo, CoverageData} from "./data";
-import {runtime, text, trace} from "ton-assembly";
+import {runtime, text, trace} from "@ton/tasm";
 
 export function collectAsmCoverage(cell: Cell, logs: string): CoverageData {
     const [cleanCell, mapping] = recompileCell(cell);

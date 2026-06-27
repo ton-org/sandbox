@@ -1,11 +1,11 @@
-import {runtime} from "ton-assembly";
+import {runtime} from "@ton/tasm";
 import {generateTextReport, generateHtmlReport} from "../";
 import {mkdirSync, writeFileSync, existsSync} from "node:fs";
 import {executeInstructions} from "./execute";
 import {collectAsmCoverage} from "../collect";
 import {compileFunc} from "@ton-community/func-js";
 import {Cell} from "@ton/core";
-import {decompileCell} from "ton-assembly/dist/runtime";
+import {decompileCell} from "@ton/tasm/dist/runtime";
 
 describe("func asm coverage", () => {
     const test =

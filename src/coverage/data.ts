@@ -1,4 +1,4 @@
-import type {trace} from "ton-assembly";
+import type {trace} from "@ton/tasm";
 import {Cell} from "@ton/core";
 
 export type CoverageData = {

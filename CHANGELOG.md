@@ -67,7 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fixed coverage by updating `ton-assembly`
+- Fixed coverage by updating `@ton/tasm`
 - Fixed `requireOptional` typing
 
 ## [0.37.1] - 2025-09-03
